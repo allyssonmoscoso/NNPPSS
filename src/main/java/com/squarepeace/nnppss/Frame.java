@@ -6,7 +6,9 @@ package com.squarepeace.nnppss;
 
 import com.squarepeace.nnppss.Utilities;
 import java.io.IOException;
+import java.util.regex.Pattern;
 import javax.swing.JTable;
+import javax.swing.RowFilter;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
@@ -44,7 +46,6 @@ public class Frame extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         jtData = new javax.swing.JTable();
         jcbCategory = new javax.swing.JComboBox<>();
-        jbSearch = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -71,13 +72,6 @@ public class Frame extends javax.swing.JFrame {
 
         jcbCategory.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
-        jbSearch.setText("Search");
-        jbSearch.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jbSearchActionPerformed(evt);
-            }
-        });
-
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -93,11 +87,9 @@ public class Frame extends javax.swing.JFrame {
                 .addComponent(jbsearch)
                 .addGap(18, 18, 18)
                 .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(28, 28, 28)
-                .addComponent(jbSearch)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 107, Short.MAX_VALUE)
+                .addGap(31, 31, 31)
                 .addComponent(jbRefresh)
-                .addGap(25, 25, 25))
+                .addContainerGap(219, Short.MAX_VALUE))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addComponent(jScrollPane1)
                 .addContainerGap())
@@ -112,8 +104,7 @@ public class Frame extends javax.swing.JFrame {
                     .addComponent(jcbCategory, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jbsearch)
                     .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jbRefresh)
-                    .addComponent(jbSearch))
+                    .addComponent(jbRefresh))
                 .addGap(26, 26, 26)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 552, Short.MAX_VALUE)
                 .addContainerGap())
@@ -160,12 +151,26 @@ public class Frame extends javax.swing.JFrame {
         jtData.setModel(model);    
     }//GEN-LAST:event_jbRefreshActionPerformed
 
-    private void jbSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbSearchActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jbSearchActionPerformed
-
     private void jtfSearchKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jtfSearchKeyPressed
-  
+        
+        Utilities utilities = new Utilities();
+
+        // Crear un nuevo modelo de tabla usando los datos del archivo TSV
+        DefaultTableModel model;
+        
+        try {
+            model = utilities.readTSV();
+        } catch (IOException e) {
+            // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
+            e.printStackTrace();
+            // Si ocurre un error al leer el archivo, salir del método
+            return;
+        }
+        
+       TableRowSorter<DefaultTableModel> tr = new TableRowSorter<DefaultTableModel>(model);
+        jtData.setRowSorter(tr);
+        String searchText = jtfSearch.getText().trim();
+        tr.setRowFilter(RowFilter.regexFilter("(?i)" + Pattern.quote(searchText)));
     }//GEN-LAST:event_jtfSearchKeyPressed
 
     /**
@@ -208,7 +213,6 @@ public class Frame extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JButton jbRefresh;
-    private javax.swing.JButton jbSearch;
     private javax.swing.JLabel jbsearch;
     private javax.swing.JComboBox<String> jcbCategory;
     private javax.swing.JComboBox<String> jcbPlatform;

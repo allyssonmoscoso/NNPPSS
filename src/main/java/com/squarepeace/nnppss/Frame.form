@@ -55,11 +55,9 @@
                   <Component id="jbsearch" min="-2" max="-2" attributes="0"/>
                   <EmptySpace type="separate" max="-2" attributes="0"/>
                   <Component id="jtfSearch" min="-2" pref="162" max="-2" attributes="0"/>
-                  <EmptySpace min="-2" pref="28" max="-2" attributes="0"/>
-                  <Component id="jbSearch" min="-2" max="-2" attributes="0"/>
-                  <EmptySpace pref="107" max="32767" attributes="0"/>
+                  <EmptySpace min="-2" pref="31" max="-2" attributes="0"/>
                   <Component id="jbRefresh" min="-2" max="-2" attributes="0"/>
-                  <EmptySpace min="-2" pref="25" max="-2" attributes="0"/>
+                  <EmptySpace pref="219" max="32767" attributes="0"/>
               </Group>
               <Group type="102" attributes="0">
                   <Component id="jScrollPane1" max="32767" attributes="0"/>
@@ -78,7 +76,6 @@
                       <Component id="jbsearch" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="jtfSearch" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="jbRefresh" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="jbSearch" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace min="-2" pref="26" max="-2" attributes="0"/>
                   <Component id="jScrollPane1" pref="552" max="32767" attributes="0"/>
@@ -169,14 +166,6 @@
           <AuxValues>
             <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
           </AuxValues>
-        </Component>
-        <Component class="javax.swing.JButton" name="jbSearch">
-          <Properties>
-            <Property name="text" type="java.lang.String" value="Search"/>
-          </Properties>
-          <Events>
-            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jbSearchActionPerformed"/>
-          </Events>
         </Component>
       </SubComponents>
     </Container>
