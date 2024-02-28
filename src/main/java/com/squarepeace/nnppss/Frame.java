@@ -6,6 +6,8 @@ package com.squarepeace.nnppss;
 
 import com.squarepeace.nnppss.Utilities;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
 import javax.swing.JTable;
 import javax.swing.RowFilter;
@@ -14,7 +16,6 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
-
 /**
  *
  * @author allysson
@@ -27,7 +28,7 @@ public class Frame extends javax.swing.JFrame {
     public Frame() {
         initComponents();
     }
-    
+     
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -41,11 +42,9 @@ public class Frame extends javax.swing.JFrame {
         jbsearch = new javax.swing.JLabel();
         jbRefresh = new javax.swing.JButton();
         jtfSearch = new javax.swing.JTextField();
-        jcbPlatform = new javax.swing.JComboBox<>();
         jcbRegion = new javax.swing.JComboBox<>();
         jScrollPane1 = new javax.swing.JScrollPane();
         jtData = new javax.swing.JTable();
-        jcbCategory = new javax.swing.JComboBox<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -64,26 +63,16 @@ public class Frame extends javax.swing.JFrame {
             }
         });
 
-        jcbPlatform.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-
-        jcbRegion.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-
         jScrollPane1.setViewportView(jtData);
-
-        jcbCategory.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGap(28, 28, 28)
-                .addComponent(jcbPlatform, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(31, 31, 31)
+                .addGap(157, 157, 157)
                 .addComponent(jcbRegion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jcbCategory, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(78, 78, 78)
+                .addGap(194, 194, 194)
                 .addComponent(jbsearch)
                 .addGap(18, 18, 18)
                 .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -99,9 +88,7 @@ public class Frame extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(19, 19, 19)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jcbPlatform, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jcbRegion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jcbCategory, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jbsearch)
                     .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jbRefresh))
@@ -148,9 +135,42 @@ public class Frame extends javax.swing.JFrame {
             return;
         }
         
-        jtData.setModel(model);    
-    }//GEN-LAST:event_jbRefreshActionPerformed
+        jtData.setModel(model);
+        
+        // Obtener el número de columnas
+        int columnCount = model.getColumnCount();
+        
+        //int regionColumnIndex = -2;
+        
+        int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
+        
+         // Verificar si la columna de la región existe
+        if (regionColumnIndex != -2) {
+            // Crear un conjunto para almacenar valores únicos de la columna de la región
+            Set<String> regionSet = new HashSet<>();
 
+            // Iterar sobre las filas para obtener los valores únicos de la región
+            for (int row = 0; row < model.getRowCount(); row++) {
+                // Obtener el valor de la región en la fila actual
+                String region = (String) model.getValueAt(row, regionColumnIndex);
+
+                // Agregar el valor al conjunto
+                regionSet.add(region);
+            }
+
+            // Limpiar el JComboBox
+            jcbRegion.removeAllItems();
+
+            // Agregar los elementos únicos al JComboBox
+            for (String region : regionSet) {
+                jcbRegion.addItem(region);
+            }
+        } else {
+            System.out.println("La columna de la región no existe en la tabla.");
+        }
+        
+    }//GEN-LAST:event_jbRefreshActionPerformed
+     
     private void jtfSearchKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jtfSearchKeyPressed
         
         Utilities utilities = new Utilities();
@@ -214,8 +234,6 @@ public class Frame extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JButton jbRefresh;
     private javax.swing.JLabel jbsearch;
-    private javax.swing.JComboBox<String> jcbCategory;
-    private javax.swing.JComboBox<String> jcbPlatform;
     private javax.swing.JComboBox<String> jcbRegion;
     private javax.swing.JTable jtData;
     private javax.swing.JTextField jtfSearch;
