@@ -6,7 +6,9 @@ package com.squarepeace.nnppss;
 
 import com.squarepeace.nnppss.Utilities;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.swing.JTable;
@@ -60,6 +62,12 @@ public class Frame extends javax.swing.JFrame {
         jtfSearch.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 jtfSearchKeyPressed(evt);
+            }
+        });
+
+        jcbRegion.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jcbRegionItemStateChanged(evt);
             }
         });
 
@@ -193,6 +201,52 @@ public class Frame extends javax.swing.JFrame {
         tr.setRowFilter(RowFilter.regexFilter("(?i)" + Pattern.quote(searchText)));
     }//GEN-LAST:event_jtfSearchKeyPressed
 
+    private void jcbRegionItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jcbRegionItemStateChanged
+        
+        // Crear una instancia de Utilities
+        Utilities utilities = new Utilities();
+        
+        // Crear un nuevo modelo de tabla usando los datos del archivo TSV
+        DefaultTableModel model;
+        
+        try {
+            model = utilities.readTSV();
+        } catch (IOException e) {
+            // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
+            e.printStackTrace();
+            // Si ocurre un error al leer el archivo, salir del método
+            return;
+        }
+
+        // Crear un TableRowSorter para la tabla
+        TableRowSorter<DefaultTableModel> rowSorter = new TableRowSorter<>(model);
+        jtData.setRowSorter(rowSorter);
+        
+        // Obtener la región seleccionada
+        String selectedRegion = (String) jcbRegion.getSelectedItem();
+        // Filtrar la tabla por la región seleccionada
+        filtrarTablaPorRegion(rowSorter, selectedRegion);
+                
+        
+    }//GEN-LAST:event_jcbRegionItemStateChanged
+
+    private static void filtrarTablaPorRegion(TableRowSorter<DefaultTableModel> rowSorter, String region) {
+        // Crear un RowFilter para filtrar por la región seleccionada
+        RowFilter<DefaultTableModel, Integer> rowFilter = new RowFilter<DefaultTableModel, Integer>() {
+            @Override
+            public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                // Obtener el valor de la región en la fila actual
+                String regionInRow = (String) entry.getValue(1); // Supongamos que la columna de región es la primera
+
+                // Comparar el valor de la región en la fila con la región seleccionada
+                return regionInRow.equals(region);
+            }
+        };
+
+        // Establecer el RowFilter en el TableRowSorter
+        rowSorter.setRowFilter(rowFilter);
+    }
+    
     /**
      * @param args the command line arguments
      */
