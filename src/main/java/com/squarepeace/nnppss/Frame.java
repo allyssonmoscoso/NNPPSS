@@ -31,7 +31,7 @@ public class Frame extends javax.swing.JFrame {
     public Frame() {
         initComponents();
     }
-     
+     private DefaultTableModel originalModel; // Variable para almacenar el modelo de datos original
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -48,10 +48,11 @@ public class Frame extends javax.swing.JFrame {
         jcbRegion = new javax.swing.JComboBox<>();
         jScrollPane1 = new javax.swing.JScrollPane();
         jtData = new javax.swing.JTable();
+        jLabel1 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jbsearch.setText("Search");
+        jbsearch.setText("Search:");
 
         jbRefresh.setText("Refresh");
         jbRefresh.addActionListener(new java.awt.event.ActionListener() {
@@ -75,25 +76,34 @@ public class Frame extends javax.swing.JFrame {
             }
         });
 
+        jtData.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                jtDataMousePressed(evt);
+            }
+        });
         jScrollPane1.setViewportView(jtData);
+
+        jLabel1.setText("Region: ");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGap(157, 157, 157)
+                .addGap(234, 234, 234)
+                .addComponent(jLabel1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jcbRegion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(194, 194, 194)
+                .addGap(62, 62, 62)
                 .addComponent(jbsearch)
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(31, 31, 31)
                 .addComponent(jbRefresh)
-                .addContainerGap(219, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jScrollPane1)
-                .addContainerGap())
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 1231, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -103,7 +113,8 @@ public class Frame extends javax.swing.JFrame {
                     .addComponent(jcbRegion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jbsearch)
                     .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jbRefresh))
+                    .addComponent(jbRefresh)
+                    .addComponent(jLabel1))
                 .addGap(26, 26, 26)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 552, Short.MAX_VALUE)
                 .addContainerGap())
@@ -115,7 +126,7 @@ public class Frame extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+                .addGap(0, 3, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -129,57 +140,53 @@ public class Frame extends javax.swing.JFrame {
 
     private void jbRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRefreshActionPerformed
         
-        // Crear una instancia de Utilities
-        Utilities utilities = new Utilities();
+         // Crear una instancia de Utilities
+    Utilities utilities = new Utilities();
 
-        // Descargar el archivo TSV si es necesario
-        utilities.DownloadTSv();
+    // Descargar el archivo TSV si es necesario
+    utilities.DownloadTSv();
 
-        // Crear un nuevo modelo de tabla usando los datos del archivo TSV
-        DefaultTableModel model;
-        
-        try {
-            model = utilities.readTSV();
-        } catch (IOException e) {
-            // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
-            e.printStackTrace();
-            // Si ocurre un error al leer el archivo, salir del método
-            return;
+    // Crear un nuevo modelo de tabla usando los datos del archivo TSV
+    try {
+        originalModel = utilities.readTSV();
+    } catch (IOException e) {
+        // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
+        e.printStackTrace();
+        // Si ocurre un error al leer el archivo, salir del método
+        return;
+    }
+
+    jtData.setModel(originalModel);
+
+    // Obtener el número de columnas
+    int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
+
+    // Verificar si la columna de la región existe
+    if (regionColumnIndex != -1) {
+        // Crear un conjunto para almacenar valores únicos de la columna de la región
+        Set<String> regionSet = new HashSet<>();
+
+        // Iterar sobre las filas para obtener los valores únicos de la región
+        for (int row = 0; row < originalModel.getRowCount(); row++) {
+            // Obtener el valor de la región en la fila actual
+            String region = (String) originalModel.getValueAt(row, regionColumnIndex);
+
+            // Agregar el valor al conjunto
+            regionSet.add(region);
         }
-        
-        jtData.setModel(model);
-        
-        // Obtener el número de columnas
-        int columnCount = model.getColumnCount();
-        
-        //int regionColumnIndex = -2;
-        
-        int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
-        
-         // Verificar si la columna de la región existe
-        if (regionColumnIndex != -2) {
-            // Crear un conjunto para almacenar valores únicos de la columna de la región
-            Set<String> regionSet = new HashSet<>();
 
-            // Iterar sobre las filas para obtener los valores únicos de la región
-            for (int row = 0; row < model.getRowCount(); row++) {
-                // Obtener el valor de la región en la fila actual
-                String region = (String) model.getValueAt(row, regionColumnIndex);
+        // Limpiar el JComboBox
+        jcbRegion.removeAllItems();
+        // Agregar la opción para mostrar todas las regiones
+        jcbRegion.addItem("Todas las regiones");
 
-                // Agregar el valor al conjunto
-                regionSet.add(region);
-            }
-
-            // Limpiar el JComboBox
-            jcbRegion.removeAllItems();
-
-            // Agregar los elementos únicos al JComboBox
-            for (String region : regionSet) {
-                jcbRegion.addItem(region);
-            }
-        } else {
-            System.out.println("La columna de la región no existe en la tabla.");
+        // Agregar los elementos únicos al JComboBox
+        for (String region : regionSet) {
+            jcbRegion.addItem(region);
         }
+    } else {
+        System.out.println("La columna de la región no existe en la tabla.");
+    }
         
     }//GEN-LAST:event_jbRefreshActionPerformed
      
@@ -209,10 +216,10 @@ public class Frame extends javax.swing.JFrame {
         
         // Crear una instancia de Utilities
         Utilities utilities = new Utilities();
-        
-        // Crear un nuevo modelo de tabla usando los datos del archivo TSV
-        DefaultTableModel model;
-        
+
+        // Si no hay un TableRowSorter establecido, crear uno nuevo
+        DefaultTableModel model = (DefaultTableModel) jtData.getModel();
+
         try {
             model = utilities.readTSV();
         } catch (IOException e) {
@@ -222,46 +229,66 @@ public class Frame extends javax.swing.JFrame {
             return;
         }
 
-        // Crear un TableRowSorter para la tabla
-        TableRowSorter<DefaultTableModel> rowSorter = new TableRowSorter<>(model);
-        jtData.setRowSorter(rowSorter);
-        
         // Obtener la región seleccionada
-        String selectedRegion = (String) jcbRegion.getSelectedItem(); 
+    String selectedRegion = (String) jcbRegion.getSelectedItem(); 
+
+    if (selectedRegion.equals("Todas las regiones")) {
+        // Si se selecciona "Todas las regiones", mostrar toda la data sin filtrar
+        jtData.setRowSorter(null); // Eliminar cualquier filtro existente
+    } else {
         // Filtrar la tabla por la región seleccionada
+        TableRowSorter<DefaultTableModel> rowSorter = (TableRowSorter<DefaultTableModel>) jtData.getRowSorter();
+        if (rowSorter == null) {
+            
+            rowSorter = new TableRowSorter<>(model);
+            jtData.setRowSorter(rowSorter);
+        }
         filtrarTablaPorRegion(rowSorter, selectedRegion);
-        
+    }
+    
     }//GEN-LAST:event_jcbRegionItemStateChanged
 
     private void jtfSearchKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jtfSearchKeyReleased
         
-        // Crear una instancia de Utilities
-        Utilities utilities = new Utilities();
-        
-        // Crear un nuevo modelo de tabla usando los datos del archivo TSV
-        DefaultTableModel model;
-        
-        try {
-            model = utilities.readTSV();
-        } catch (IOException e) {
-            // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
-            e.printStackTrace();
-            // Si ocurre un error al leer el archivo, salir del método
-            return;
-        }
-        
-        TableRowSorter<DefaultTableModel> rowSorter = new TableRowSorter<>(model);
-        jtData.setRowSorter(rowSorter);    
-        
-        // Obtener la región seleccionada
-        String selectedRegion = (String) jcbRegion.getSelectedItem(); 
+      // Obtener el texto ingresado en el JTextField
+    String searchText = jtfSearch.getText().trim();
 
-        // Obtener el texto ingresado en el JTextField
-        String searchText = jtfSearch.getText();
+    // Obtener la región seleccionada
+    String selectedRegion = (String) jcbRegion.getSelectedItem();
 
-        // Filtrar la tabla por texto y región seleccionada
-        filtrarTablaPorTextoYRegion(rowSorter, searchText, selectedRegion);
+    // Crear un nuevo TableRowSorter si no existe
+    TableRowSorter<DefaultTableModel> rowSorter = (TableRowSorter<DefaultTableModel>) jtData.getRowSorter();
+    if (rowSorter == null) {
+        rowSorter = new TableRowSorter<>(originalModel);
+        jtData.setRowSorter(rowSorter);
+    }
+
+    // Aplicar el filtro de región si no se selecciona "Todas las regiones"
+    if (!selectedRegion.equals("Todas las regiones")) {
+        filtrarTablaPorRegion(rowSorter, selectedRegion);
+    } else {
+        // Si se selecciona "Todas las regiones", eliminar cualquier filtro de región existente
+        rowSorter.setRowFilter(null);
+    }
+
+    // Aplicar el filtro por texto al TableRowSorter existente
+    filtrarTablaPorTextoYRegion(rowSorter, searchText, selectedRegion);
+        
     }//GEN-LAST:event_jtfSearchKeyReleased
+
+    private void jtDataMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jtDataMousePressed
+        /* String selectedCellValue = (String) jtData.getValueAt(jtData.getSelectedRow() , jtData.getSelectedColumn());
+            System.out.println(selectedCellValue); */
+
+        int selectedRow = jtData.getSelectedRow();
+        if (selectedRow != -2) { // Verificar si se ha seleccionado una fila válida
+            DefaultTableModel model = (DefaultTableModel) jtData.getModel();
+            Object pkgDirectLinkValue = model.getValueAt(selectedRow, getColumnIndexByName(model, "PKG direct link"));
+            Object zRIFValue = model.getValueAt(selectedRow, getColumnIndexByName(model, "zRIF"));
+            System.out.println("PKG direct link: " + pkgDirectLinkValue); // Imprimir el valor de la columna "PKG direct link"
+            System.out.println("zRIF: " + zRIFValue); // Imprimir el valor de la columna "zRIF"
+        }
+    }//GEN-LAST:event_jtDataMousePressed
 
     private static void filtrarTablaPorRegion(TableRowSorter<DefaultTableModel> rowSorter, String region) {
         // Crear un RowFilter para filtrar por la región seleccionada
@@ -306,12 +333,19 @@ public class Frame extends javax.swing.JFrame {
     try {
         // Filtrar por texto ingresado
         rowFilterByText = RowFilter.regexFilter("(?i)" + searchText); // Ignore case
-        
-        // Filtrar por región seleccionada
-        rowFilterByRegion = RowFilter.regexFilter("(?i)" + region, 1); // Columna de la región supuesta que es la segunda (índice 1)
-        
+
+        // Filtrar por región seleccionada si no se selecciona "Todas las regiones"
+        if (!region.equals("Todas las regiones")) {
+            rowFilterByRegion = RowFilter.regexFilter("(?i)" + region, 1); // Columna de la región supuesta que es la segunda (índice 1)
+        }
+
         // Combinar los filtros
-        RowFilter<DefaultTableModel, Integer> combinedRowFilter = RowFilter.andFilter(Arrays.asList(rowFilterByText, rowFilterByRegion));
+        RowFilter<DefaultTableModel, Integer> combinedRowFilter;
+        if (rowFilterByRegion != null) {
+            combinedRowFilter = RowFilter.andFilter(Arrays.asList(rowFilterByText, rowFilterByRegion));
+        } else {
+            combinedRowFilter = rowFilterByText;
+        }
 
         // Establecer el RowFilter en el TableRowSorter
         rowSorter.setRowFilter(combinedRowFilter);
@@ -319,6 +353,15 @@ public class Frame extends javax.swing.JFrame {
         // Si hay un error en la expresión regular, simplemente no aplicamos ningún filtro
         return;
     }
+}
+    
+    private int getColumnIndexByName(DefaultTableModel model, String columnName) {
+    for (int i = 0; i < model.getColumnCount(); i++) {
+        if (model.getColumnName(i).equals(columnName)) {
+            return i;
+        }
+    }
+    return -1; // Si no se encuentra la columna, retornar -1
 }
     
     /**
@@ -358,6 +401,7 @@ public class Frame extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JButton jbRefresh;
