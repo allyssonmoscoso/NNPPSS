@@ -32,6 +32,9 @@ public class Frame extends javax.swing.JFrame {
         initComponents();
     }
      private DefaultTableModel originalModel; // Variable para almacenar el modelo de datos original
+     
+    // Declaración del TableRowSorter
+    private TableRowSorter<DefaultTableModel> rowSorter;
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -140,154 +143,100 @@ public class Frame extends javax.swing.JFrame {
 
     private void jbRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRefreshActionPerformed
         
-         // Crear una instancia de Utilities
-    Utilities utilities = new Utilities();
+        // Crear una instancia de Utilities
+        Utilities utilities = new Utilities();
 
-    // Descargar el archivo TSV si es necesario
-    utilities.DownloadTSv();
+        // Descargar el archivo TSV si es necesario
+        utilities.DownloadTSv();
 
-    // Crear un nuevo modelo de tabla usando los datos del archivo TSV
-    try {
-        originalModel = utilities.readTSV();
-    } catch (IOException e) {
-        // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
-        e.printStackTrace();
-        // Si ocurre un error al leer el archivo, salir del método
-        return;
-    }
-
-    jtData.setModel(originalModel);
-
-    // Obtener el número de columnas
-    int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
-
-    // Verificar si la columna de la región existe
-    if (regionColumnIndex != -1) {
-        // Crear un conjunto para almacenar valores únicos de la columna de la región
-        Set<String> regionSet = new HashSet<>();
-
-        // Iterar sobre las filas para obtener los valores únicos de la región
-        for (int row = 0; row < originalModel.getRowCount(); row++) {
-            // Obtener el valor de la región en la fila actual
-            String region = (String) originalModel.getValueAt(row, regionColumnIndex);
-
-            // Agregar el valor al conjunto
-            regionSet.add(region);
+        // Crear un nuevo modelo de tabla usando los datos del archivo TSV
+        try {
+            originalModel = utilities.readTSV();
+        } catch (IOException e) {
+            // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
+            e.printStackTrace();
+            // Si ocurre un error al leer el archivo, salir del método
+            return;
         }
 
-        // Limpiar el JComboBox
-        jcbRegion.removeAllItems();
-        // Agregar la opción para mostrar todas las regiones
-        jcbRegion.addItem("Todas las regiones");
+        jtData.setModel(originalModel);
 
-        // Agregar los elementos únicos al JComboBox
-        for (String region : regionSet) {
-            jcbRegion.addItem(region);
+        // Crear el TableRowSorter si no existe
+        if (rowSorter == null) {
+            rowSorter = new TableRowSorter<>(originalModel);
+            jtData.setRowSorter(rowSorter);
         }
-    } else {
-        System.out.println("La columna de la región no existe en la tabla.");
-    }
+
+        // Obtener el número de columnas
+        int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
+
+        // Verificar si la columna de la región existe
+        if (regionColumnIndex != -1) {
+            // Crear un conjunto para almacenar valores únicos de la columna de la región
+            Set<String> regionSet = new HashSet<>();
+
+            // Iterar sobre las filas para obtener los valores únicos de la región
+            for (int row = 0; row < originalModel.getRowCount(); row++) {
+                // Obtener el valor de la región en la fila actual
+                String region = (String) originalModel.getValueAt(row, regionColumnIndex);
+
+                // Agregar el valor al conjunto
+                regionSet.add(region);
+            }
+
+            // Limpiar el JComboBox
+            jcbRegion.removeAllItems();
+            // Agregar la opción para mostrar todas las regiones
+            jcbRegion.addItem("Todas las regiones");
+
+            // Agregar los elementos únicos al JComboBox
+            for (String region : regionSet) {
+                jcbRegion.addItem(region);
+            }
+        } else {
+            System.out.println("La columna de la región no existe en la tabla.");
+        }
         
     }//GEN-LAST:event_jbRefreshActionPerformed
      
     private void jtfSearchKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jtfSearchKeyPressed
-        
-        Utilities utilities = new Utilities();
-
-        // Crear un nuevo modelo de tabla usando los datos del archivo TSV
-        DefaultTableModel model;
-        
-        try {
-            model = utilities.readTSV();
-        } catch (IOException e) {
-            // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
-            e.printStackTrace();
-            // Si ocurre un error al leer el archivo, salir del método
-            return;
-        }
-        
-       TableRowSorter<DefaultTableModel> tr = new TableRowSorter<DefaultTableModel>(model);
-        jtData.setRowSorter(tr);
         String searchText = jtfSearch.getText().trim();
-        tr.setRowFilter(RowFilter.regexFilter("(?i)" + Pattern.quote(searchText)));
+        filtrarTablaPorTextoYRegion(searchText, (String) jcbRegion.getSelectedItem()); 
     }//GEN-LAST:event_jtfSearchKeyPressed
 
     private void jcbRegionItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jcbRegionItemStateChanged
         
-        // Crear una instancia de Utilities
-        Utilities utilities = new Utilities();
-
-        // Si no hay un TableRowSorter establecido, crear uno nuevo
-        DefaultTableModel model = (DefaultTableModel) jtData.getModel();
-
-        try {
-            model = utilities.readTSV();
-        } catch (IOException e) {
-            // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
-            e.printStackTrace();
-            // Si ocurre un error al leer el archivo, salir del método
-            return;
-        }
-
-        // Obtener la región seleccionada
-    String selectedRegion = (String) jcbRegion.getSelectedItem(); 
-
-    if (selectedRegion.equals("Todas las regiones")) {
-        // Si se selecciona "Todas las regiones", mostrar toda la data sin filtrar
-        jtData.setRowSorter(null); // Eliminar cualquier filtro existente
-    } else {
-        // Filtrar la tabla por la región seleccionada
-        TableRowSorter<DefaultTableModel> rowSorter = (TableRowSorter<DefaultTableModel>) jtData.getRowSorter();
-        if (rowSorter == null) {
-            
-            rowSorter = new TableRowSorter<>(model);
-            jtData.setRowSorter(rowSorter);
-        }
-        filtrarTablaPorRegion(rowSorter, selectedRegion);
-    }
+      String selectedRegion = (String) jcbRegion.getSelectedItem();
+        filtrarTablaPorTextoYRegion(jtfSearch.getText().trim(), selectedRegion);
     
     }//GEN-LAST:event_jcbRegionItemStateChanged
 
     private void jtfSearchKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jtfSearchKeyReleased
         
-      // Obtener el texto ingresado en el JTextField
-    String searchText = jtfSearch.getText().trim();
-
-    // Obtener la región seleccionada
-    String selectedRegion = (String) jcbRegion.getSelectedItem();
-
-    // Crear un nuevo TableRowSorter si no existe
-    TableRowSorter<DefaultTableModel> rowSorter = (TableRowSorter<DefaultTableModel>) jtData.getRowSorter();
-    if (rowSorter == null) {
-        rowSorter = new TableRowSorter<>(originalModel);
-        jtData.setRowSorter(rowSorter);
-    }
-
-    // Aplicar el filtro de región si no se selecciona "Todas las regiones"
-    if (!selectedRegion.equals("Todas las regiones")) {
-        filtrarTablaPorRegion(rowSorter, selectedRegion);
-    } else {
-        // Si se selecciona "Todas las regiones", eliminar cualquier filtro de región existente
-        rowSorter.setRowFilter(null);
-    }
-
-    // Aplicar el filtro por texto al TableRowSorter existente
-    filtrarTablaPorTextoYRegion(rowSorter, searchText, selectedRegion);
+      String searchText = jtfSearch.getText().trim();
+      filtrarTablaPorTextoYRegion(searchText, (String) jcbRegion.getSelectedItem());
         
     }//GEN-LAST:event_jtfSearchKeyReleased
 
     private void jtDataMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jtDataMousePressed
-        /* String selectedCellValue = (String) jtData.getValueAt(jtData.getSelectedRow() , jtData.getSelectedColumn());
-            System.out.println(selectedCellValue); */
-
+        
         int selectedRow = jtData.getSelectedRow();
-        if (selectedRow != -2) { // Verificar si se ha seleccionado una fila válida
-            DefaultTableModel model = (DefaultTableModel) jtData.getModel();
-            Object pkgDirectLinkValue = model.getValueAt(selectedRow, getColumnIndexByName(model, "PKG direct link"));
-            Object zRIFValue = model.getValueAt(selectedRow, getColumnIndexByName(model, "zRIF"));
-            System.out.println("PKG direct link: " + pkgDirectLinkValue); // Imprimir el valor de la columna "PKG direct link"
-            System.out.println("zRIF: " + zRIFValue); // Imprimir el valor de la columna "zRIF"
+    if (selectedRow != -1) { // Verificar si se ha seleccionado una fila válida
+        // Obtener el índice de la fila seleccionada en el modelo de la vista
+        int modelRowIndex = jtData.convertRowIndexToModel(selectedRow);
+
+        // Obtener el modelo de tabla filtrado a través del TableRowSorter
+        DefaultTableModel filteredModel = (DefaultTableModel) jtData.getModel();
+
+        // Obtener el valor de la columna "PKG direct link" en la fila seleccionada
+        Object pkgDirectLinkValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("PKG direct link"));
+        // Obtener el valor de la columna "zRIF" en la fila seleccionada
+        Object zRIFValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("zRIF"));
+
+        System.out.println("PKG direct link: " + pkgDirectLinkValue); // Imprimir el valor de la columna "PKG direct link"
+        System.out.println("zRIF: " + zRIFValue); // Imprimir el valor de la columna "zRIF"
         }
+        
     }//GEN-LAST:event_jtDataMousePressed
 
     private static void filtrarTablaPorRegion(TableRowSorter<DefaultTableModel> rowSorter, String region) {
@@ -326,7 +275,7 @@ public class Frame extends javax.swing.JFrame {
         rowSorter.setRowFilter(RowFilter.andFilter(filters));
     }
     
-    private static void filtrarTablaPorTextoYRegion(TableRowSorter<DefaultTableModel> rowSorter, String searchText, String region) {
+    private void filtrarTablaPorTextoYRegion(String searchText, String region) {
     // Crear un RowFilter para filtrar por el texto ingresado y la región seleccionada
     RowFilter<DefaultTableModel, Integer> rowFilterByText = null;
     RowFilter<DefaultTableModel, Integer> rowFilterByRegion = null;
@@ -336,28 +285,28 @@ public class Frame extends javax.swing.JFrame {
 
         // Filtrar por región seleccionada si no se selecciona "Todas las regiones"
         if (!region.equals("Todas las regiones")) {
-            rowFilterByRegion = RowFilter.regexFilter("(?i)" + region, 1); // Columna de la región supuesta que es la segunda (índice 1)
+            rowFilterByRegion = RowFilter.regexFilter("(?i)" + region, getColumnIndexByName("Region"));
         }
 
         // Combinar los filtros
-        RowFilter<DefaultTableModel, Integer> combinedRowFilter;
-        if (rowFilterByRegion != null) {
-            combinedRowFilter = RowFilter.andFilter(Arrays.asList(rowFilterByText, rowFilterByRegion));
-        } else {
-            combinedRowFilter = rowFilterByText;
-        }
+        List<RowFilter<DefaultTableModel, Integer>> filters = new ArrayList<>();
+        if (rowFilterByText != null) filters.add(rowFilterByText);
+        if (rowFilterByRegion != null) filters.add(rowFilterByRegion);
+
+        RowFilter<DefaultTableModel, Integer> combinedRowFilter = RowFilter.andFilter(filters);
 
         // Establecer el RowFilter en el TableRowSorter
         rowSorter.setRowFilter(combinedRowFilter);
     } catch (java.util.regex.PatternSyntaxException e) {
         // Si hay un error en la expresión regular, simplemente no aplicamos ningún filtro
+        rowSorter.setRowFilter(null);
         return;
     }
 }
     
-    private int getColumnIndexByName(DefaultTableModel model, String columnName) {
-    for (int i = 0; i < model.getColumnCount(); i++) {
-        if (model.getColumnName(i).equals(columnName)) {
+    private int getColumnIndexByName(String columnName) {
+    for (int i = 0; i < originalModel.getColumnCount(); i++) {
+        if (originalModel.getColumnName(i).equals(columnName)) {
             return i;
         }
     }
