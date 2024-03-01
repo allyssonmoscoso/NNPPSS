@@ -12,7 +12,7 @@ import javax.swing.table.DefaultTableModel;
 public class Utilities{
     
     public String URL_vita_games = "https://nopaystation.com/tsv/PSV_GAMES.tsv";
-    public String TSV = "PSV_GAMES.tsv";
+    public String TSV = "db/PSV_GAMES.tsv";
     
     
     public DefaultTableModel readTSV() throws FileNotFoundException, IOException {

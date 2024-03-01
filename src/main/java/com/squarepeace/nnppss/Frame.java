@@ -4,6 +4,8 @@
  */
 package com.squarepeace.nnppss;
 
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import com.squarepeace.nnppss.Utilities;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -326,64 +328,90 @@ public class Frame extends javax.swing.JFrame {
 }
     
     public void downloadFileInBackground(String fileURL, String localFilePath) {
-        // Hilo de descarga para no bloquear la interfaz de usuario
-        SwingWorker<Void, Integer> worker = new SwingWorker<Void, Integer>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                // Verificar si el archivo ya existe
-                File file = new File(localFilePath);
-                if (file.exists()) {
-                    JOptionPane.showMessageDialog(Frame.this, "El archivo ya existe. No es necesario descargarlo nuevamente.");                 
-                    return null; // Salir si el archivo ya existe
-                }
-
-                try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
-                     FileOutputStream fileOutputStream = new FileOutputStream(localFilePath)) {
-                    byte dataBuffer[] = new byte[1024];
-                    int bytesRead;
-                    long fileSize = getFileSize(fileURL);
-                    long bytesDownloaded = 0;
-
-                    // Leer y escribir datos del archivo
-                    while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                        fileOutputStream.write(dataBuffer, 0, bytesRead);
-                        bytesDownloaded += bytesRead;
-
-                        // Calcular y publicar el progreso
-                        int progress = (int) (bytesDownloaded * 100 / fileSize);
-                        publish(progress);
-                    }
-                } catch (IOException e) {
-                    // Manejar la excepción
-                    e.printStackTrace(); // Imprimir la traza de la excepción para depuración
-                }
-                return null;
+    // Hilo de descarga para no bloquear la interfaz de usuario
+    SwingWorker<Void, Integer> worker = new SwingWorker<Void, Integer>() {
+        @Override
+        protected Void doInBackground() throws Exception {
+            // Verificar si el archivo ya existe
+            File file = new File(localFilePath);
+            if (file.exists()) {
+                JOptionPane.showMessageDialog(Frame.this, "El archivo ya existe. No es necesario descargarlo nuevamente.");                 
+                return null; // Salir si el archivo ya existe
             }
-
-            @Override
-            protected void process(java.util.List<Integer> chunks) {
-                // Actualizar la barra de progreso con el último valor publicado
-                int progress = chunks.get(chunks.size() - 1);
-                jpbDownload.setValue(progress);
+            
+            // Verificar si las carpetas db y games existen, si no, crearlas
+            File dbFolder = new File("db");
+            File gamesFolder = new File("games");
+            if (!dbFolder.exists()) {
+                dbFolder.mkdir();
             }
+            if (!gamesFolder.exists()) {
+                gamesFolder.mkdir();
+            }
+            
+            try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
+                 FileOutputStream fileOutputStream = new FileOutputStream(localFilePath)) {
+                byte dataBuffer[] = new byte[1024];
+                int bytesRead;
+                long fileSize = getFileSize(fileURL);
+                long bytesDownloaded = 0;
 
-            @Override
-            protected void done() {
-                if (localFilePath.equals("PSV_GAMES.tsv")) {
+                // Leer y escribir datos del archivo
+                while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                    fileOutputStream.write(dataBuffer, 0, bytesRead);
+                    bytesDownloaded += bytesRead;
+
+                    // Calcular y publicar el progreso
+                    int progress = (int) (bytesDownloaded * 100 / fileSize);
+                    publish(progress);
+                }
+            } catch (IOException e) {
+                // Manejar la excepción
+                e.printStackTrace(); // Imprimir la traza de la excepción para depuración
+            }
+            return null;
+        }
+
+        @Override
+        protected void process(java.util.List<Integer> chunks) {
+            // Actualizar la barra de progreso con el último valor publicado
+            int progress = chunks.get(chunks.size() - 1);
+            jpbDownload.setValue(progress);
+        }
+
+        @Override
+        protected void done() {
+            // Verificar la extensión del archivo descargado
+            String extension = localFilePath.substring(localFilePath.lastIndexOf(".") + 1).toLowerCase();
+            switch (extension) {
+                case "tsv":
+                                        
+                    // Mover el archivo a la carpeta "db"
+                    moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));                   
                     JOptionPane.showMessageDialog(Frame.this, "Base de datos cargada");
                     fillTableAndComboBox();
-                }else{
-                
-                // Notificar al usuario que la descarga ha finalizado
-                JOptionPane.showMessageDialog(Frame.this, "Descarga completada.");
-                fillTableAndComboBox();
-                }
+                    
+                    break;
+                case "pkg":
+                    
+                    // Mover el archivo a la carpeta "games"
+                    moveFile(localFilePath, "games/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                    JOptionPane.showMessageDialog(Frame.this, "Descarga completada del PKG.");
+                    
+                    break;
+                default:
+                    // No hacer nada si la extensión no está definida
+                    break;
             }
-        };
+            // Notificar al usuario que la descarga ha finalizado
+            //JOptionPane.showMessageDialog(Frame.this, "Descarga completada.");
+            //fillTableAndComboBox();
+        }
+    };
 
-        // Ejecutar el SwingWorker
-        worker.execute();
-    }
+    // Ejecutar el SwingWorker
+    worker.execute();
+}
 
     // Método para obtener el tamaño del archivo remoto
     private long getFileSize(String fileURL) throws IOException {
@@ -394,15 +422,27 @@ public class Frame extends javax.swing.JFrame {
     }
     
     // Método para convertir el tamaño del archivo de bytes a MiB
-private String convertFileSize(Object fileSizeValue) {
-    if (fileSizeValue != null) {
-        long fileSize = Long.parseLong(fileSizeValue.toString());
-        double fileSizeMiB = fileSize / (1024 * 1024.0); // Convertir bytes a MiB
-        return String.format("%.1f MiB", fileSizeMiB);
-    } else {
-        return "desconocido"; // Si el valor del tamaño del archivo es nulo
+    private String convertFileSize(Object fileSizeValue) {
+        if (fileSizeValue != null) {
+            long fileSize = Long.parseLong(fileSizeValue.toString());
+            double fileSizeMiB = fileSize / (1024 * 1024.0); // Convertir bytes a MiB
+            return String.format("%.1f MiB", fileSizeMiB);
+        } else {
+            return "desconocido"; // Si el valor del tamaño del archivo es nulo
+        }
     }
-}
+
+    // Método para mover un archivo a una ubicación específica
+    private void moveFile(String sourceFilePath, String destinationFilePath) {
+        File sourceFile = new File(sourceFilePath);
+        File destinationFile = new File(destinationFilePath);
+        try {
+            Files.move(sourceFile.toPath(), destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            // Manejar cualquier excepción que pueda ocurrir al mover el archivo
+            e.printStackTrace();
+        }
+    }
 
     
     /**
