@@ -178,9 +178,11 @@ public class Frame extends javax.swing.JFrame {
 
     private void jcbRegionItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jcbRegionItemStateChanged
         
-      String selectedRegion = (String) jcbRegion.getSelectedItem();
-        filtrarTablaPorTextoYRegion(jtfSearch.getText().trim(), selectedRegion);
-    
+        String selectedRegion = (String) jcbRegion.getSelectedItem();
+        System.out.println("Selected Region: " + selectedRegion); // Mensaje de depuración
+        if (selectedRegion != null) {
+            filtrarTablaPorTextoYRegion(jtfSearch.getText().trim(), selectedRegion);
+        }
     }//GEN-LAST:event_jcbRegionItemStateChanged
 
     private void jtfSearchKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jtfSearchKeyReleased
@@ -204,9 +206,14 @@ public class Frame extends javax.swing.JFrame {
         Object pkgDirectLinkValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("PKG direct link"));
         // Obtener el valor de la columna "zRIF" en la fila seleccionada
         Object zRIFValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("zRIF"));
-
+        
+        // Extraer el nombre del archivo de la URL del paquete directo
+        String pkgDirectLink = pkgDirectLinkValue.toString();
+        String fileName = pkgDirectLink.substring(pkgDirectLink.lastIndexOf("/") + 1);
+             
         System.out.println("PKG direct link: " + pkgDirectLinkValue); // Imprimir el valor de la columna "PKG direct link"
         System.out.println("zRIF: " + zRIFValue); // Imprimir el valor de la columna "zRIF"
+        System.out.println("Nombre del archivo: " + fileName);
         }
         
     }//GEN-LAST:event_jtDataMousePressed
@@ -345,10 +352,15 @@ public class Frame extends javax.swing.JFrame {
 
             @Override
             protected void done() {
+                if (localFilePath.equals("PSV_GAMES.tsv")) {
+                    JOptionPane.showMessageDialog(Frame.this, "Base de datos cargada");
+                    fillTableAndComboBox();
+                }else{
+                
                 // Notificar al usuario que la descarga ha finalizado
                 JOptionPane.showMessageDialog(Frame.this, "Descarga completada.");
-                
                 fillTableAndComboBox();
+                }
             }
         };
 
