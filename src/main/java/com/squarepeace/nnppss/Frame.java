@@ -195,25 +195,42 @@ public class Frame extends javax.swing.JFrame {
     private void jtDataMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jtDataMousePressed
         
         int selectedRow = jtData.getSelectedRow();
-    if (selectedRow != -1) { // Verificar si se ha seleccionado una fila válida
-        // Obtener el índice de la fila seleccionada en el modelo de la vista
-        int modelRowIndex = jtData.convertRowIndexToModel(selectedRow);
+        if (selectedRow != -1) { // Verificar si se ha seleccionado una fila válida
+            // Obtener el índice de la fila seleccionada en el modelo de la vista
+            int modelRowIndex = jtData.convertRowIndexToModel(selectedRow);
 
-        // Obtener el modelo de tabla filtrado a través del TableRowSorter
-        DefaultTableModel filteredModel = (DefaultTableModel) jtData.getModel();
+            // Obtener el modelo de tabla filtrado a través del TableRowSorter
+            DefaultTableModel filteredModel = (DefaultTableModel) jtData.getModel();
 
-        // Obtener el valor de la columna "PKG direct link" en la fila seleccionada
-        Object pkgDirectLinkValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("PKG direct link"));
-        // Obtener el valor de la columna "zRIF" en la fila seleccionada
-        Object zRIFValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("zRIF"));
+            // Obtener el valor de la columna "PKG direct link" en la fila seleccionada
+            Object nameValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("Name"));
+            // Obtener el valor de la columna "PKG direct link" en la fila seleccionada
+            Object fileSizeValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("File Size"));
+            // Obtener el valor de la columna "PKG direct link" en la fila seleccionada
+            Object pkgDirectLinkValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("PKG direct link"));
+            // Obtener el valor de la columna "zRIF" en la fila seleccionada
+            Object zRIFValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("zRIF"));
+
+            // Extraer el nombre del archivo de la URL del paquete directo
+            String pkgDirectLink = pkgDirectLinkValue.toString();
+            String fileName = pkgDirectLink.substring(pkgDirectLink.lastIndexOf("/") + 1);
+
+            System.out.println("PKG direct link: " + pkgDirectLinkValue); // Imprimir el valor de la columna "PKG direct link"
+            System.out.println("zRIF: " + zRIFValue); // Imprimir el valor de la columna "zRIF"
+            System.out.println("Nombre del archivo: " + fileName);
+
+            // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
+            int option = JOptionPane.showConfirmDialog(this,
+                    "¿Desea descargar " + nameValue + ", el peso es de " + convertFileSize(fileSizeValue) + "?",
+                    "Descargar Archivo",
+                    JOptionPane.YES_NO_OPTION);
+
+            // Verificar la opción seleccionada por el usuario
+            if (option == JOptionPane.YES_OPTION) {
+                // Lógica para descargar el archivo aquí
+                downloadFileInBackground(pkgDirectLink, fileName);
+            }
         
-        // Extraer el nombre del archivo de la URL del paquete directo
-        String pkgDirectLink = pkgDirectLinkValue.toString();
-        String fileName = pkgDirectLink.substring(pkgDirectLink.lastIndexOf("/") + 1);
-             
-        System.out.println("PKG direct link: " + pkgDirectLinkValue); // Imprimir el valor de la columna "PKG direct link"
-        System.out.println("zRIF: " + zRIFValue); // Imprimir el valor de la columna "zRIF"
-        System.out.println("Nombre del archivo: " + fileName);
         }
         
     }//GEN-LAST:event_jtDataMousePressed
@@ -375,6 +392,18 @@ public class Frame extends javax.swing.JFrame {
         conn.setRequestMethod("HEAD");
         return conn.getContentLengthLong();
     }
+    
+    // Método para convertir el tamaño del archivo de bytes a MiB
+private String convertFileSize(Object fileSizeValue) {
+    if (fileSizeValue != null) {
+        long fileSize = Long.parseLong(fileSizeValue.toString());
+        double fileSizeMiB = fileSize / (1024 * 1024.0); // Convertir bytes a MiB
+        return String.format("%.1f MiB", fileSizeMiB);
+    } else {
+        return "desconocido"; // Si el valor del tamaño del archivo es nulo
+    }
+}
+
     
     /**
      * @param args the command line arguments
