@@ -5,15 +5,22 @@
 package com.squarepeace.nnppss;
 
 import com.squarepeace.nnppss.Utilities;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.RowFilter;
+import javax.swing.SwingWorker;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
@@ -28,13 +35,17 @@ public class Frame extends javax.swing.JFrame {
     /**
      * Creates new form Frame
      */
-    public Frame() {
-        initComponents();
-    }
      private DefaultTableModel originalModel; // Variable para almacenar el modelo de datos original
      
     // Declaración del TableRowSorter
     private TableRowSorter<DefaultTableModel> rowSorter;
+    
+    private final Utilities utilities; // Utilizamos una variable final para guardar la instancia de Utilities
+
+    public Frame(Utilities utilities) { // Modifica el constructor para aceptar una instancia de Utilities
+        this.utilities = utilities; // Asigna la instancia recibida a la variable de clase
+        initComponents(); // Asegúrate de llamar al constructor de la superclase si es necesario
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -52,8 +63,12 @@ public class Frame extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         jtData = new javax.swing.JTable();
         jLabel1 = new javax.swing.JLabel();
+        jpbDownload = new javax.swing.JProgressBar();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("NNPPSS");
+
+        jPanel1.setName("NNPPSS"); // NOI18N
 
         jbsearch.setText("Search:");
 
@@ -123,6 +138,8 @@ public class Frame extends javax.swing.JFrame {
                 .addContainerGap())
         );
 
+        jpbDownload.setStringPainted(true);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -130,12 +147,18 @@ public class Frame extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 3, Short.MAX_VALUE))
+            .addGroup(layout.createSequentialGroup()
+                .addGap(280, 280, 280)
+                .addComponent(jpbDownload, javax.swing.GroupLayout.PREFERRED_SIZE, 561, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jpbDownload, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         pack();
@@ -143,60 +166,9 @@ public class Frame extends javax.swing.JFrame {
 
     private void jbRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRefreshActionPerformed
         
-        // Crear una instancia de Utilities
-        Utilities utilities = new Utilities();
-
-        // Descargar el archivo TSV si es necesario
-        utilities.DownloadTSv();
-
-        // Crear un nuevo modelo de tabla usando los datos del archivo TSV
-        try {
-            originalModel = utilities.readTSV();
-        } catch (IOException e) {
-            // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
-            e.printStackTrace();
-            // Si ocurre un error al leer el archivo, salir del método
-            return;
-        }
-
-        jtData.setModel(originalModel);
-
-        // Crear el TableRowSorter si no existe
-        if (rowSorter == null) {
-            rowSorter = new TableRowSorter<>(originalModel);
-            jtData.setRowSorter(rowSorter);
-        }
-
-        // Obtener el número de columnas
-        int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
-
-        // Verificar si la columna de la región existe
-        if (regionColumnIndex != -1) {
-            // Crear un conjunto para almacenar valores únicos de la columna de la región
-            Set<String> regionSet = new HashSet<>();
-
-            // Iterar sobre las filas para obtener los valores únicos de la región
-            for (int row = 0; row < originalModel.getRowCount(); row++) {
-                // Obtener el valor de la región en la fila actual
-                String region = (String) originalModel.getValueAt(row, regionColumnIndex);
-
-                // Agregar el valor al conjunto
-                regionSet.add(region);
-            }
-
-            // Limpiar el JComboBox
-            jcbRegion.removeAllItems();
-            // Agregar la opción para mostrar todas las regiones
-            jcbRegion.addItem("Todas las regiones");
-
-            // Agregar los elementos únicos al JComboBox
-            for (String region : regionSet) {
-                jcbRegion.addItem(region);
-            }
-        } else {
-            System.out.println("La columna de la región no existe en la tabla.");
-        }
-        
+         // Descargar el archivo TSV si es necesario
+        downloadFileInBackground(utilities.URL_vita_games, utilities.TSV);
+    
     }//GEN-LAST:event_jbRefreshActionPerformed
      
     private void jtfSearchKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jtfSearchKeyPressed
@@ -238,41 +210,57 @@ public class Frame extends javax.swing.JFrame {
         }
         
     }//GEN-LAST:event_jtDataMousePressed
-
-    private static void filtrarTablaPorRegion(TableRowSorter<DefaultTableModel> rowSorter, String region) {
-        // Crear un RowFilter para filtrar por la región seleccionada
-        RowFilter<DefaultTableModel, Integer> rowFilter = new RowFilter<DefaultTableModel, Integer>() {
-            @Override
-            public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
-                // Obtener el valor de la región en la fila actual
-                String regionInRow = (String) entry.getValue(1); // Supongamos que la columna de región es la primera
-
-                // Comparar el valor de la región en la fila con la región seleccionada
-                return regionInRow.equals(region);
-            }
-        };
-
-        // Establecer el RowFilter en el TableRowSorter
-        rowSorter.setRowFilter(rowFilter);
-    }
     
-    private static void filtrarTablaPorTexto(TableRowSorter<DefaultTableModel> rowSorter, String searchText) {
-        // Crear un RowFilter para filtrar por el texto ingresado
-        RowFilter<DefaultTableModel, Integer> rowFilter = null;
+    public void fillTableAndComboBox(){
+    
+    // Crear un nuevo modelo de tabla usando los datos del archivo TSV
         try {
-            rowFilter = RowFilter.regexFilter("(?i)" + searchText); // Ignore case
-        } catch (java.util.regex.PatternSyntaxException e) {
-            return; // Si hay un error en la expresión regular, simplemente no aplicamos ningún filtro
+            originalModel = utilities.readTSV();
+        } catch (IOException e) {
+            // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
+            e.printStackTrace();
+            // Si ocurre un error al leer el archivo, salir del método
+            return;
+        }
+        //Carga el modelo a la Jtable
+        jtData.setModel(originalModel);
+
+        // Crear el TableRowSorter si no existe
+        if (rowSorter == null) {
+            rowSorter = new TableRowSorter<>(originalModel);
+            jtData.setRowSorter(rowSorter);
         }
 
-        // Obtener los filtros actuales del TableRowSorter
-        List<RowFilter<DefaultTableModel, Integer>> filters = new ArrayList<>(1);
-        if (rowFilter != null) {
-            filters.add(rowFilter);
-        }
+        // Obtener el número de columnas
+        int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
 
-        // Establecer el RowFilter en el TableRowSorter
-        rowSorter.setRowFilter(RowFilter.andFilter(filters));
+        // Verificar si la columna de la región existe
+        if (regionColumnIndex != -1) {
+            // Crear un conjunto para almacenar valores únicos de la columna de la región
+            Set<String> regionSet = new HashSet<>();
+
+            // Iterar sobre las filas para obtener los valores únicos de la región
+            for (int row = 0; row < originalModel.getRowCount(); row++) {
+                // Obtener el valor de la región en la fila actual
+                String region = (String) originalModel.getValueAt(row, regionColumnIndex);
+
+                // Agregar el valor al conjunto
+                regionSet.add(region);
+            }
+
+            // Limpiar el JComboBox
+            jcbRegion.removeAllItems();
+            // Agregar la opción para mostrar todas las regiones
+            jcbRegion.addItem("Todas las regiones");
+
+            // Agregar los elementos únicos al JComboBox
+            for (String region : regionSet) {
+                jcbRegion.addItem(region);
+            }
+        } else {
+            System.out.println("La columna de la región no existe en la tabla.");
+        }
+        
     }
     
     private void filtrarTablaPorTextoYRegion(String searchText, String region) {
@@ -313,41 +301,73 @@ public class Frame extends javax.swing.JFrame {
     return -1; // Si no se encuentra la columna, retornar -1
 }
     
+    public void downloadFileInBackground(String fileURL, String localFilePath) {
+        // Hilo de descarga para no bloquear la interfaz de usuario
+        SwingWorker<Void, Integer> worker = new SwingWorker<Void, Integer>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                // Verificar si el archivo ya existe
+                File file = new File(localFilePath);
+                if (file.exists()) {
+                    JOptionPane.showMessageDialog(Frame.this, "El archivo ya existe. No es necesario descargarlo nuevamente.");                 
+                    return null; // Salir si el archivo ya existe
+                }
+
+                try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
+                     FileOutputStream fileOutputStream = new FileOutputStream(localFilePath)) {
+                    byte dataBuffer[] = new byte[1024];
+                    int bytesRead;
+                    long fileSize = getFileSize(fileURL);
+                    long bytesDownloaded = 0;
+
+                    // Leer y escribir datos del archivo
+                    while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                        fileOutputStream.write(dataBuffer, 0, bytesRead);
+                        bytesDownloaded += bytesRead;
+
+                        // Calcular y publicar el progreso
+                        int progress = (int) (bytesDownloaded * 100 / fileSize);
+                        publish(progress);
+                    }
+                } catch (IOException e) {
+                    // Manejar la excepción
+                    e.printStackTrace(); // Imprimir la traza de la excepción para depuración
+                }
+                return null;
+            }
+
+            @Override
+            protected void process(java.util.List<Integer> chunks) {
+                // Actualizar la barra de progreso con el último valor publicado
+                int progress = chunks.get(chunks.size() - 1);
+                jpbDownload.setValue(progress);
+            }
+
+            @Override
+            protected void done() {
+                // Notificar al usuario que la descarga ha finalizado
+                JOptionPane.showMessageDialog(Frame.this, "Descarga completada.");
+                
+                fillTableAndComboBox();
+            }
+        };
+
+        // Ejecutar el SwingWorker
+        worker.execute();
+    }
+
+    // Método para obtener el tamaño del archivo remoto
+    private long getFileSize(String fileURL) throws IOException {
+        URL url = new URL(fileURL);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("HEAD");
+        return conn.getContentLengthLong();
+    }
+    
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(Frame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(Frame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(Frame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(Frame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-           
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new Frame().setVisible(true);
-            }
-        });
-    }
+    public static void main(String args[]) {}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
@@ -356,6 +376,7 @@ public class Frame extends javax.swing.JFrame {
     private javax.swing.JButton jbRefresh;
     private javax.swing.JLabel jbsearch;
     private javax.swing.JComboBox<String> jcbRegion;
+    private javax.swing.JProgressBar jpbDownload;
     private javax.swing.JTable jtData;
     private javax.swing.JTextField jtfSearch;
     // End of variables declaration//GEN-END:variables
