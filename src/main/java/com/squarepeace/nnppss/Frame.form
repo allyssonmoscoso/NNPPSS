@@ -31,6 +31,8 @@
           <Group type="102" alignment="0" attributes="0">
               <EmptySpace min="-2" pref="280" max="-2" attributes="0"/>
               <Component id="jpbDownload" min="-2" pref="561" max="-2" attributes="0"/>
+              <EmptySpace type="separate" max="-2" attributes="0"/>
+              <Component id="jbResumeAndPause" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="32767" attributes="0"/>
           </Group>
       </Group>
@@ -40,7 +42,10 @@
           <Group type="102" alignment="0" attributes="0">
               <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="jpbDownload" max="32767" attributes="0"/>
+              <Group type="103" groupAlignment="3" attributes="0">
+                  <Component id="jpbDownload" alignment="3" pref="45" max="32767" attributes="0"/>
+                  <Component id="jbResumeAndPause" alignment="3" min="-2" max="-2" attributes="0"/>
+              </Group>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
       </Group>
@@ -158,6 +163,15 @@
       <Properties>
         <Property name="stringPainted" type="boolean" value="true"/>
       </Properties>
+    </Component>
+    <Component class="javax.swing.JButton" name="jbResumeAndPause">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Pausar"/>
+        <Property name="actionCommand" type="java.lang.String" value=":p"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jbResumeAndPauseActionPerformed"/>
+      </Events>
     </Component>
   </SubComponents>
 </Form>

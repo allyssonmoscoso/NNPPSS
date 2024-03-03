@@ -46,10 +46,17 @@ public class Frame extends javax.swing.JFrame {
     private TableRowSorter<DefaultTableModel> rowSorter;
     
     private final Utilities utilities; // Utilizamos una variable final para guardar la instancia de Utilities
-
+    
+    // Variable para controlar el estado de la descarga
+    private boolean downloadPaused = false;
+    
+    // Variable para controlar si hay descargas en curso
+    private boolean downloading = false;
+    
     public Frame(Utilities utilities) { // Modifica el constructor para aceptar una instancia de Utilities
         this.utilities = utilities; // Asigna la instancia recibida a la variable de clase
         initComponents(); // Asegúrate de llamar al constructor de la superclase si es necesario
+        jbResumeAndPause.setEnabled(false); // Inicialmente deshabilitado
     }
     /**
      * This method is called from within the constructor to initialize the form.
@@ -69,6 +76,7 @@ public class Frame extends javax.swing.JFrame {
         jtData = new javax.swing.JTable();
         jLabel1 = new javax.swing.JLabel();
         jpbDownload = new javax.swing.JProgressBar();
+        jbResumeAndPause = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("NNPPSS");
@@ -145,6 +153,14 @@ public class Frame extends javax.swing.JFrame {
 
         jpbDownload.setStringPainted(true);
 
+        jbResumeAndPause.setText("Pausar");
+        jbResumeAndPause.setActionCommand(":p");
+        jbResumeAndPause.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbResumeAndPauseActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -155,6 +171,8 @@ public class Frame extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(280, 280, 280)
                 .addComponent(jpbDownload, javax.swing.GroupLayout.PREFERRED_SIZE, 561, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(jbResumeAndPause)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -162,7 +180,9 @@ public class Frame extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jpbDownload, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jpbDownload, javax.swing.GroupLayout.DEFAULT_SIZE, 45, Short.MAX_VALUE)
+                    .addComponent(jbResumeAndPause))
                 .addContainerGap())
         );
 
@@ -243,6 +263,17 @@ public class Frame extends javax.swing.JFrame {
             }
         } 
     }//GEN-LAST:event_jtDataMousePressed
+
+    private void jbResumeAndPauseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbResumeAndPauseActionPerformed
+        // Cambiar el estado de la descarga
+        downloadPaused = !downloadPaused;
+        // Actualizar el texto del botón
+        if (downloadPaused) {
+            jbResumeAndPause.setText("Reanudar");
+        } else {
+            jbResumeAndPause.setText("Pausar");
+        }
+    }//GEN-LAST:event_jbResumeAndPauseActionPerformed
     
     public void fillTableAndComboBox(){
     
@@ -334,17 +365,22 @@ public class Frame extends javax.swing.JFrame {
     return -1; // Si no se encuentra la columna, retornar -1
 }
     
-    public void downloadFileInBackground(String fileURL, String localFilePath, String fileName,String zRIF) {
+    public void downloadFileInBackground(String fileURL, String localFilePath, String fileName,String zRIF) {        
     // Hilo de descarga para no bloquear la interfaz de usuario
     SwingWorker<Void, Integer> worker = new SwingWorker<Void, Integer>() {
         @Override
         protected Void doInBackground() throws Exception {
+            // Establecer la variable de descarga en true
+            downloading = true;      
             // Verificar si el archivo ya existe
             File file = new File(localFilePath);
             if (file.exists()) {
                 JOptionPane.showMessageDialog(Frame.this, "El archivo ya existe. No es necesario descargarlo nuevamente.");                 
                 return null; // Salir si el archivo ya existe
             }
+            
+            // Habilitar el botón jbResumeAndPause
+            jbResumeAndPause.setEnabled(true);
             
             // Verificar si las carpetas db y games existen, si no, crearlas
             File dbFolder = new File("db");
@@ -355,19 +391,33 @@ public class Frame extends javax.swing.JFrame {
             if (!gamesFolder.exists()) {
                 gamesFolder.mkdir();
             }
-            
+            long bytesDownloaded = 0;
             try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
                  FileOutputStream fileOutputStream = new FileOutputStream(localFilePath)) {
+                
                 byte dataBuffer[] = new byte[1024];
                 int bytesRead;
+                
+                
+                
+                // Si el archivo ya existe, saltar al final de este
+                if (file.exists()) {
+                    bytesDownloaded = file.length();
+                    in.skip(bytesDownloaded);
+                }
+                
                 long fileSize = getFileSize(fileURL);
-                long bytesDownloaded = 0;
-
+                
                 // Leer y escribir datos del archivo
                 while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                    // Si la descarga está pausada, esperar
+                    while (downloadPaused) {
+                        Thread.sleep(1000); // Esperar 1 segundo antes de verificar de nuevo
+                    }
+                    
                     fileOutputStream.write(dataBuffer, 0, bytesRead);
                     bytesDownloaded += bytesRead;
-
+                    
                     // Calcular y publicar el progreso
                     int progress = (int) (bytesDownloaded * 100 / fileSize);
                     publish(progress);
@@ -388,6 +438,11 @@ public class Frame extends javax.swing.JFrame {
 
         @Override
         protected void done() {
+            // Establecer la variable de descarga en false cuando la descarga haya terminado
+            downloading = false;
+            
+            // Desabilitar el botón jbResumeAndPause
+            jbResumeAndPause.setEnabled(false);
             // Verificar la extensión del archivo descargado
             String extension = localFilePath.substring(localFilePath.lastIndexOf(".") + 1).toLowerCase();
             switch (extension) {
@@ -411,6 +466,7 @@ public class Frame extends javax.swing.JFrame {
                     // No hacer nada si la extensión no está definida
                     break;
             }
+            
             // Notificar al usuario que la descarga ha finalizado
             //JOptionPane.showMessageDialog(Frame.this, "Descarga completada.");
             //fillTableAndComboBox();
@@ -492,7 +548,7 @@ public static void runCommandWithLoadingMessage(String command) {
                         // Cerrar el diálogo de progreso cuando el proceso haya terminado
                         dialog.setVisible(false);
                         // Mostrar mensaje de éxito
-                        JOptionPane.showMessageDialog(null, "Listo");
+                        JOptionPane.showMessageDialog(null, "Listo para instalar!");
                     } else {
                         // Mostrar mensaje de error si el comando falla
                         JOptionPane.showMessageDialog(null, "Error al ejecutar el comando");
@@ -537,6 +593,7 @@ public static void runCommandWithLoadingMessage(String command) {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JButton jbRefresh;
+    private javax.swing.JButton jbResumeAndPause;
     private javax.swing.JLabel jbsearch;
     private javax.swing.JComboBox<String> jcbRegion;
     private javax.swing.JProgressBar jpbDownload;
