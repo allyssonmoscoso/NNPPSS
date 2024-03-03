@@ -56,3 +56,9 @@ To run the **NNPPSS** application from the JAR file, follow these steps:
 6. The application should start.
 
 If you encounter any issues during the execution of the JAR file, make sure you have met all the requirements mentioned in the previous section and that the JAR file is located in the correct directory and if issue persists, you can open an [**issue**](https://github.com/SquarePeace/NNPPSS/issues).
+
+## Thanks to
+
+[NoPayStation](https://nopaystation.com/) for Games DataBase.
+
+[lusid1](https://github.com/lusid1/pkg2zip), and [mmozeiko](https://github.com/mmozeiko/pkg2zip) for pkg2zip.
