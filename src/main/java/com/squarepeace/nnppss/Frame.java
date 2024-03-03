@@ -8,9 +8,11 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import com.squarepeace.nnppss.Utilities;
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -515,9 +517,12 @@ public static void runCommandWithLoadingMessage(String command) {
             if (!libFolder.exists()) {
                 // Si no existe, crearla
                 libFolder.mkdir();
-
-                // Mostrar mensaje solicitando al usuario que coloque pkg2zip en la carpeta lib
-                JOptionPane.showMessageDialog(null, "Please place pkg2zip in the folder 'lib'.");
+            
+                if (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
+                    // Mostrar mensaje solicitando al usuario que coloque pkg2zip en la carpeta lib
+                    JOptionPane.showMessageDialog(null, "Please place pkg2zip.exe in the folder 'lib'.");
+                }
+                
             }
 
              // Crear y mostrar el diálogo de preparación con barra de progreso
@@ -574,15 +579,49 @@ public static void runCommandWithLoadingMessage(String command) {
             command = "lib" + fileSeparator + "pkg2zip.exe -x games" + fileSeparator + PKGname + " " + zRifKey;
         } else if (System.getProperty("os.name").toLowerCase().indexOf("nix") >= 0
                 || System.getProperty("os.name").toLowerCase().indexOf("nux") >= 0
-                || System.getProperty("os.name").toLowerCase().indexOf("aix") > 0) {
-            command = "lib" + fileSeparator + "pkg2zip -x games" + fileSeparator + PKGname + " " + zRifKey;
-        } else if (System.getProperty("os.name").toLowerCase().indexOf("mac") >= 0) {
-            command = "lib" + fileSeparator + "pkg2zip -x games" + fileSeparator + PKGname + " " + zRifKey;
-        } else {
+                || System.getProperty("os.name").toLowerCase().indexOf("aix") > 0
+                || System.getProperty("os.name").toLowerCase().indexOf("mac") >= 0) {
+            
+             // Verificar si el comando está instalado
+        if (isCommandInstalled("pkg2zip")) {
+            command = "pkg2zip -x games" + fileSeparator + PKGname + " " + zRifKey;
+        } else {          
+            JOptionPane.showMessageDialog(null, "pkg2zip is not installed");
+        }
+            
+            
+        }else {
             JOptionPane.showMessageDialog(null, "Operating system not supported");
         }
         return command;
     }
+    
+    // Método para verificar si un comando está instalado
+    public static boolean isCommandInstalled(String command) {
+        boolean installed = false;
+        try {
+            // Ejecutar el comando 'which' para verificar si está instalado
+            Process process = Runtime.getRuntime().exec("which " + command);
+            // Leer la salida del proceso
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            // Leer todas las líneas de salida
+            while ((line = reader.readLine()) != null) {
+                // Si la línea no está vacía, el comando está instalado
+                if (!line.isEmpty()) {
+                    installed = true;
+                    break;
+                }
+            }
+            // Esperar a que el proceso termine
+            process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            // Capturar cualquier excepción que pueda ocurrir durante la verificación
+            e.printStackTrace();
+        }
+        return installed;
+    }
+    
     /**
      * @param args the command line arguments
      */

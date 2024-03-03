@@ -28,14 +28,14 @@ The **NNPPSS** application is a tool designed for the management and download of
 
 To be able to execute the **NNPPSS** application, the following elements are required:
 
-1. **Java Runtime Environment (JRE)**: The application is developed in Java, so it is necessary to have the JRE installed on the system. It is recommended to have at least Java 8 (Java SE 8) installed.
+1. **Java Runtime Environment (JRE)**: java 8 or higher version
 
-2. **Internet Connection**: Since the application downloads files from a remote URL, a stable internet connection is required to use all the functionalities of the application.
+2. **Internet Connection**: obviously :p
 
-3. **Operating System**: The application is compatible with operating systems that support the execution of Java applications, including Windows, macOS, and Linux or Unix Like.
+3. **OS**: NNPPSS is compatible with Windows, macOS, and Linux or Unix Like.
 
-Once these requirements are met, the **NNPPSS** application will be ready to be executed and used to manage and download files related to PlayStation Vita console video games.
-
+4. [**pkg2zip**](https://github.com/lusid1/pkg2zip) installed on Linux
+or MacOS (in the case of windows it is not required, it is already inside the zip file).
 
 ### Running the Application
 
@@ -61,4 +61,4 @@ If you encounter any issues during the execution of the JAR file, make sure you 
 
 [NoPayStation](https://nopaystation.com/) for Games DataBase.
 
-[lusid1](https://github.com/lusid1/pkg2zip), and [mmozeiko](https://github.com/mmozeiko/pkg2zip) for pkg2zip.
+[lusid1](https://github.com/lusid1/pkg2zip) and [mmozeiko](https://github.com/mmozeiko/pkg2zip) for pkg2zip.
