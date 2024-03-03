@@ -63,7 +63,7 @@ static class DownloadThread extends Thread {
     @Override
     public void run() {
         // Descargar el archivo en segundo plano
-        frame.downloadFileInBackground(url, fileName);
+        frame.downloadFileInBackground(url, fileName, null, null);
         // Marcar la descarga como exitosa si no se lanzan excepciones
         this.downloadSuccessful = true;
     }

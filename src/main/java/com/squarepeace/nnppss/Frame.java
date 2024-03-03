@@ -19,10 +19,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import javax.swing.JDialog;
 import javax.swing.JOptionPane;
+import javax.swing.JProgressBar;
 import javax.swing.JTable;
 import javax.swing.RowFilter;
 import javax.swing.SwingWorker;
+import javax.swing.WindowConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
@@ -169,7 +172,7 @@ public class Frame extends javax.swing.JFrame {
     private void jbRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRefreshActionPerformed
         
          // Descargar el archivo TSV si es necesario
-        downloadFileInBackground(utilities.URL_vita_games, utilities.TSV);
+        downloadFileInBackground(utilities.URL_vita_games, utilities.TSV, null , null);
     
     }//GEN-LAST:event_jbRefreshActionPerformed
      
@@ -205,36 +208,40 @@ public class Frame extends javax.swing.JFrame {
             DefaultTableModel filteredModel = (DefaultTableModel) jtData.getModel();
 
             // Obtener el valor de la columna "PKG direct link" en la fila seleccionada
-            Object nameValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("Name"));
-            // Obtener el valor de la columna "PKG direct link" en la fila seleccionada
-            Object fileSizeValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("File Size"));
-            // Obtener el valor de la columna "PKG direct link" en la fila seleccionada
             Object pkgDirectLinkValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("PKG direct link"));
-            // Obtener el valor de la columna "zRIF" en la fila seleccionada
-            Object zRIFValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("zRIF"));
 
-            // Extraer el nombre del archivo de la URL del paquete directo
-            String pkgDirectLink = pkgDirectLinkValue.toString();
-            String fileName = pkgDirectLink.substring(pkgDirectLink.lastIndexOf("/") + 1);
+            // Verificar si el valor de pkgDirectLinkValue es MISSING o CART ONLY
+            if (pkgDirectLinkValue.equals("MISSING")) {
+                // Mostrar mensaje de que el juego no se puede descargar porque el link de descarga no está registrado
+                JOptionPane.showMessageDialog(this, "No se puede descargar este juego porque no está registrado el link de descarga.", "Error", JOptionPane.ERROR_MESSAGE);
+            } else if (pkgDirectLinkValue.equals("CART ONLY")) {
+                // Mostrar mensaje de que el juego solo se encuentra en formato físico
+                JOptionPane.showMessageDialog(this, "Este juego solo se encuentra en formato físico.", "Información", JOptionPane.INFORMATION_MESSAGE);
+            } else if (pkgDirectLinkValue.equals("NOT REQUIRED")) {
+                // Mostrar mensaje de que el juego solo se encuentra en formato físico
+                JOptionPane.showMessageDialog(this, "NO requiere descarga", "Información", JOptionPane.INFORMATION_MESSAGE);
+            }else {
+                // El juego está disponible para descarga
+                Object nameValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("Name"));
+                Object fileSizeValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("File Size"));
+                Object zRIFValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("zRIF"));
+                String pkgDirectLink = pkgDirectLinkValue.toString();
+                String fileName = pkgDirectLink.substring(pkgDirectLink.lastIndexOf("/") + 1);
+                String zRIF = zRIFValue.toString();
 
-            System.out.println("PKG direct link: " + pkgDirectLinkValue); // Imprimir el valor de la columna "PKG direct link"
-            System.out.println("zRIF: " + zRIFValue); // Imprimir el valor de la columna "zRIF"
-            System.out.println("Nombre del archivo: " + fileName);
+                // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
+                int option = JOptionPane.showConfirmDialog(this,
+                        "¿Desea descargar " + nameValue + ", el peso es de " + convertFileSize(fileSizeValue) + "?",
+                        "Descargar Archivo",
+                        JOptionPane.YES_NO_OPTION);
 
-            // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
-            int option = JOptionPane.showConfirmDialog(this,
-                    "¿Desea descargar " + nameValue + ", el peso es de " + convertFileSize(fileSizeValue) + "?",
-                    "Descargar Archivo",
-                    JOptionPane.YES_NO_OPTION);
-
-            // Verificar la opción seleccionada por el usuario
-            if (option == JOptionPane.YES_OPTION) {
-                // Lógica para descargar el archivo aquí
-                downloadFileInBackground(pkgDirectLink, fileName);
+                // Verificar la opción seleccionada por el usuario
+                if (option == JOptionPane.YES_OPTION) {
+                    // Lógica para descargar el archivo aquí
+                    downloadFileInBackground(pkgDirectLink, fileName, fileName, zRIF);
+                }
             }
-        
-        }
-        
+        } 
     }//GEN-LAST:event_jtDataMousePressed
     
     public void fillTableAndComboBox(){
@@ -327,7 +334,7 @@ public class Frame extends javax.swing.JFrame {
     return -1; // Si no se encuentra la columna, retornar -1
 }
     
-    public void downloadFileInBackground(String fileURL, String localFilePath) {
+    public void downloadFileInBackground(String fileURL, String localFilePath, String fileName,String zRIF) {
     // Hilo de descarga para no bloquear la interfaz de usuario
     SwingWorker<Void, Integer> worker = new SwingWorker<Void, Integer>() {
         @Override
@@ -397,7 +404,8 @@ public class Frame extends javax.swing.JFrame {
                     // Mover el archivo a la carpeta "games"
                     moveFile(localFilePath, "games/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
                     JOptionPane.showMessageDialog(Frame.this, "Descarga completada del PKG.");
-                    
+                    String command = buildCommand(fileName, zRIF);
+                    runCommandWithLoadingMessage(command);
                     break;
                 default:
                     // No hacer nada si la extensión no está definida
@@ -443,8 +451,82 @@ public class Frame extends javax.swing.JFrame {
             e.printStackTrace();
         }
     }
-
     
+public static void runCommandWithLoadingMessage(String command) {
+        try {
+            // Verificar si la carpeta "lib" existe
+            File libFolder = new File("lib");
+            if (!libFolder.exists()) {
+                // Si no existe, crearla
+                libFolder.mkdir();
+
+                // Mostrar mensaje solicitando al usuario que coloque pkg2zip en la carpeta lib
+                JOptionPane.showMessageDialog(null, "Por favor, coloque el archivo pkg2zip en la carpeta 'lib'");
+            }
+
+             // Crear y mostrar el diálogo de preparación con barra de progreso
+            JProgressBar progressBar = new JProgressBar();
+            progressBar.setIndeterminate(true);
+            JDialog dialog = new JDialog();
+            dialog.setTitle("Preparando paquete");
+            dialog.add(progressBar);
+            dialog.pack();
+            dialog.setLocationRelativeTo(null);
+            dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+            dialog.setVisible(true);
+
+            // Ejecutar el comando en un hilo separado
+            Thread thread = new Thread(() -> {
+                try {
+                    // Ejecutar el comando
+                    Process process = Runtime.getRuntime().exec(command);
+
+                    // Esperar a que el proceso termine
+                    int exitCode = process.waitFor();
+
+                    
+
+                    // Verificar si el comando se ejecutó correctamente
+                    if (exitCode == 0) {
+                        
+                        // Cerrar el diálogo de progreso cuando el proceso haya terminado
+                        dialog.setVisible(false);
+                        // Mostrar mensaje de éxito
+                        JOptionPane.showMessageDialog(null, "Listo");
+                    } else {
+                        // Mostrar mensaje de error si el comando falla
+                        JOptionPane.showMessageDialog(null, "Error al ejecutar el comando");
+                    }
+                } catch (Exception e) {
+                    // Capturar cualquier excepción que pueda ocurrir durante la ejecución del comando
+                    JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
+                }
+            });
+            thread.start();
+        } catch (Exception e) {
+            // Capturar cualquier excepción que pueda ocurrir durante la ejecución del comando
+            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
+        }
+    }
+
+    public static String buildCommand(String PKGname, String zRifKey) {
+        // Obtener el separador de archivos del sistema
+        String fileSeparator = System.getProperty("file.separator");
+        // Construir la ruta del comando dependiendo del sistema operativo
+        String command = "";
+        if (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
+            command = "lib" + fileSeparator + "pkg2zip.exe -x games" + fileSeparator + PKGname + " " + zRifKey;
+        } else if (System.getProperty("os.name").toLowerCase().indexOf("nix") >= 0
+                || System.getProperty("os.name").toLowerCase().indexOf("nux") >= 0
+                || System.getProperty("os.name").toLowerCase().indexOf("aix") > 0) {
+            command = "lib" + fileSeparator + "pkg2zip -x games" + fileSeparator + PKGname + " " + zRifKey;
+        } else if (System.getProperty("os.name").toLowerCase().indexOf("mac") >= 0) {
+            command = "lib" + fileSeparator + "pkg2zip -x games" + fileSeparator + PKGname + " " + zRifKey;
+        } else {
+            JOptionPane.showMessageDialog(null, "Sistema operativo no compatible");
+        }
+        return command;
+    }
     /**
      * @param args the command line arguments
      */
