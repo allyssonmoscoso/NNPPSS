@@ -166,7 +166,7 @@
     </Component>
     <Component class="javax.swing.JButton" name="jbResumeAndPause">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Pausar"/>
+        <Property name="text" type="java.lang.String" value="Pause"/>
         <Property name="actionCommand" type="java.lang.String" value=":p"/>
       </Properties>
       <Events>

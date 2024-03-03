@@ -153,7 +153,7 @@ public class Frame extends javax.swing.JFrame {
 
         jpbDownload.setStringPainted(true);
 
-        jbResumeAndPause.setText("Pausar");
+        jbResumeAndPause.setText("Pause");
         jbResumeAndPause.setActionCommand(":p");
         jbResumeAndPause.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -233,13 +233,13 @@ public class Frame extends javax.swing.JFrame {
             // Verificar si el valor de pkgDirectLinkValue es MISSING o CART ONLY
             if (pkgDirectLinkValue.equals("MISSING")) {
                 // Mostrar mensaje de que el juego no se puede descargar porque el link de descarga no está registrado
-                JOptionPane.showMessageDialog(this, "No se puede descargar este juego porque no está registrado el link de descarga.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "You cannot download this game because the download link is not registered.", "Error", JOptionPane.ERROR_MESSAGE);
             } else if (pkgDirectLinkValue.equals("CART ONLY")) {
                 // Mostrar mensaje de que el juego solo se encuentra en formato físico
-                JOptionPane.showMessageDialog(this, "Este juego solo se encuentra en formato físico.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "This game is available in cart only.", "Información", JOptionPane.INFORMATION_MESSAGE);
             } else if (pkgDirectLinkValue.equals("NOT REQUIRED")) {
                 // Mostrar mensaje de que el juego solo se encuentra en formato físico
-                JOptionPane.showMessageDialog(this, "NO requiere descarga", "Información", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "NO download required", "Información", JOptionPane.INFORMATION_MESSAGE);
             }else {
                 // El juego está disponible para descarga
                 Object nameValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("Name"));
@@ -251,8 +251,8 @@ public class Frame extends javax.swing.JFrame {
 
                 // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
                 int option = JOptionPane.showConfirmDialog(this,
-                        "¿Desea descargar " + nameValue + ", el peso es de " + convertFileSize(fileSizeValue) + "?",
-                        "Descargar Archivo",
+                        "¿You want to download " + nameValue + ", Size is " + convertFileSize(fileSizeValue) + "?",
+                        "Download File",
                         JOptionPane.YES_NO_OPTION);
 
                 // Verificar la opción seleccionada por el usuario
@@ -269,9 +269,9 @@ public class Frame extends javax.swing.JFrame {
         downloadPaused = !downloadPaused;
         // Actualizar el texto del botón
         if (downloadPaused) {
-            jbResumeAndPause.setText("Reanudar");
+            jbResumeAndPause.setText("Resume");
         } else {
-            jbResumeAndPause.setText("Pausar");
+            jbResumeAndPause.setText("Pause");
         }
     }//GEN-LAST:event_jbResumeAndPauseActionPerformed
     
@@ -315,14 +315,14 @@ public class Frame extends javax.swing.JFrame {
             // Limpiar el JComboBox
             jcbRegion.removeAllItems();
             // Agregar la opción para mostrar todas las regiones
-            jcbRegion.addItem("Todas las regiones");
+            jcbRegion.addItem("All regions");
 
             // Agregar los elementos únicos al JComboBox
             for (String region : regionSet) {
                 jcbRegion.addItem(region);
             }
         } else {
-            System.out.println("La columna de la región no existe en la tabla.");
+            System.out.println("The region column does not exist in the table.");
         }
         
     }
@@ -336,7 +336,7 @@ public class Frame extends javax.swing.JFrame {
         rowFilterByText = RowFilter.regexFilter("(?i)" + searchText); // Ignore case
 
         // Filtrar por región seleccionada si no se selecciona "Todas las regiones"
-        if (!region.equals("Todas las regiones")) {
+        if (!region.equals("All regions")) {
             rowFilterByRegion = RowFilter.regexFilter("(?i)" + region, getColumnIndexByName("Region"));
         }
 
@@ -375,7 +375,7 @@ public class Frame extends javax.swing.JFrame {
             // Verificar si el archivo ya existe
             File file = new File(localFilePath);
             if (file.exists()) {
-                JOptionPane.showMessageDialog(Frame.this, "El archivo ya existe. No es necesario descargarlo nuevamente.");                 
+                JOptionPane.showMessageDialog(Frame.this, "The file already exists. There is no need to download it again.");                 
                 return null; // Salir si el archivo ya existe
             }
             
@@ -450,7 +450,7 @@ public class Frame extends javax.swing.JFrame {
                                         
                     // Mover el archivo a la carpeta "db"
                     moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));                   
-                    JOptionPane.showMessageDialog(Frame.this, "Base de datos cargada");
+                    JOptionPane.showMessageDialog(Frame.this, "Database loaded");
                     fillTableAndComboBox();
                     
                     break;
@@ -458,7 +458,7 @@ public class Frame extends javax.swing.JFrame {
                     
                     // Mover el archivo a la carpeta "games"
                     moveFile(localFilePath, "games/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                    JOptionPane.showMessageDialog(Frame.this, "Descarga completada del PKG.");
+                    JOptionPane.showMessageDialog(Frame.this, "PKG download completed.");
                     String command = buildCommand(fileName, zRIF);
                     runCommandWithLoadingMessage(command);
                     break;
@@ -492,7 +492,7 @@ public class Frame extends javax.swing.JFrame {
             double fileSizeMiB = fileSize / (1024 * 1024.0); // Convertir bytes a MiB
             return String.format("%.1f MiB", fileSizeMiB);
         } else {
-            return "desconocido"; // Si el valor del tamaño del archivo es nulo
+            return "unknown"; // Si el valor del tamaño del archivo es nulo
         }
     }
 
@@ -517,14 +517,14 @@ public static void runCommandWithLoadingMessage(String command) {
                 libFolder.mkdir();
 
                 // Mostrar mensaje solicitando al usuario que coloque pkg2zip en la carpeta lib
-                JOptionPane.showMessageDialog(null, "Por favor, coloque el archivo pkg2zip en la carpeta 'lib'");
+                JOptionPane.showMessageDialog(null, "Please place pkg2zip in the folder 'lib'.");
             }
 
              // Crear y mostrar el diálogo de preparación con barra de progreso
             JProgressBar progressBar = new JProgressBar();
             progressBar.setIndeterminate(true);
             JDialog dialog = new JDialog();
-            dialog.setTitle("Preparando paquete");
+            dialog.setTitle("Preparing package");
             dialog.add(progressBar);
             dialog.pack();
             dialog.setLocationRelativeTo(null);
@@ -548,10 +548,10 @@ public static void runCommandWithLoadingMessage(String command) {
                         // Cerrar el diálogo de progreso cuando el proceso haya terminado
                         dialog.setVisible(false);
                         // Mostrar mensaje de éxito
-                        JOptionPane.showMessageDialog(null, "Listo para instalar!");
+                        JOptionPane.showMessageDialog(null, "Ready to install!");
                     } else {
                         // Mostrar mensaje de error si el comando falla
-                        JOptionPane.showMessageDialog(null, "Error al ejecutar el comando");
+                        JOptionPane.showMessageDialog(null, "Error running pkg2zip");
                     }
                 } catch (Exception e) {
                     // Capturar cualquier excepción que pueda ocurrir durante la ejecución del comando
@@ -579,7 +579,7 @@ public static void runCommandWithLoadingMessage(String command) {
         } else if (System.getProperty("os.name").toLowerCase().indexOf("mac") >= 0) {
             command = "lib" + fileSeparator + "pkg2zip -x games" + fileSeparator + PKGname + " " + zRifKey;
         } else {
-            JOptionPane.showMessageDialog(null, "Sistema operativo no compatible");
+            JOptionPane.showMessageDialog(null, "Operating system not supported");
         }
         return command;
     }

@@ -37,7 +37,7 @@ public class NNPPSS {
             //frame.fillTableAndComboBox();
         } else {
             // Imprimir un mensaje de error si la descarga falló
-            JOptionPane.showMessageDialog(frame, "La descarga falló. No se pueden llenar la tabla y el combobox.");
+            JOptionPane.showMessageDialog(frame, "Download failed. Unable to populate table and combobox.");
         }
     } catch (InterruptedException e) {
         e.printStackTrace();
