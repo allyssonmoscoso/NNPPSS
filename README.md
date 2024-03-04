@@ -1,7 +1,5 @@
 # NNPPSS
 
-The **NNPPSS** application is a tool designed for the management and download of files related to PlayStation Vita. It is developed in Java and uses the Swing graphical library for the user interface.
-
 ### Main Features
 
 1. **File Download**: The application allows the download of files from a remote URL in the background, avoiding user interface blocking during the process. Downloaded files can be both databases and game files.
