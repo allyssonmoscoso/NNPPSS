@@ -5,13 +5,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableModel;
-/**
- *
- * @author allysson
- */
+
 public class Utilities{
     
-    public String URL_vita_games = "https://nopaystation.com/tsv/PSV_GAMES.tsv";
+    private final String URL_FILE = "url.txt"; // Archivo para almacenar la URL
     public String TSV = "db/PSV_GAMES.tsv";
     
     
@@ -40,5 +37,25 @@ public class Utilities{
         TSVFile.close();
 
         return model;
+    }
+    
+    
+    public String getVitaGamesURL() throws IOException {
+        File file = new File(URL_FILE);
+        
+        // Verificar si el archivo existe
+        if (file.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                return reader.readLine(); // Devolver la URL almacenada en el archivo
+            }
+        }
+        
+        return null; // Si el archivo no existe o está vacío
+    }
+
+    public void saveVitaGamesURL(String url) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(URL_FILE))) {
+            writer.write(url); // Escribir la URL en el archivo
+        }
     }
 }

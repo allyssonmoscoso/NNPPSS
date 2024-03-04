@@ -20,6 +20,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
@@ -33,10 +35,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
-/**
- *
- * @author allysson
- */
+
 public class Frame extends javax.swing.JFrame {
 
     /**
@@ -48,7 +47,7 @@ public class Frame extends javax.swing.JFrame {
     private TableRowSorter<DefaultTableModel> rowSorter;
     
     private final Utilities utilities; // Utilizamos una variable final para guardar la instancia de Utilities
-    
+        
     // Variable para controlar el estado de la descarga
     private boolean downloadPaused = false;
     
@@ -193,8 +192,15 @@ public class Frame extends javax.swing.JFrame {
 
     private void jbRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRefreshActionPerformed
         
+        String url = null;
+         try {
+             url = utilities.getVitaGamesURL();
+         } catch (IOException ex) {
+             Logger.getLogger(Frame.class.getName()).log(Level.SEVERE, null, ex);
+         }
+        
          // Descargar el archivo TSV si es necesario
-        downloadFileInBackground(utilities.URL_vita_games, utilities.TSV, null , null);
+        downloadFileInBackground(url, utilities.TSV, null , null);
     
     }//GEN-LAST:event_jbRefreshActionPerformed
      

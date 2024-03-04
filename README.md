@@ -30,7 +30,7 @@ To be able to execute the **NNPPSS** application, the following elements are req
 
 1. **Java Runtime Environment (JRE)**: java 8 or higher version
 
-2. **Internet Connection**: obviously :p
+2. **URL database**: obviously :p
 
 3. **OS**: NNPPSS is compatible with Windows, macOS, and Linux or Unix Like.
 

@@ -7,26 +7,39 @@ package com.squarepeace.nnppss;
 import java.io.IOException;
 import javax.swing.JOptionPane;
 
-/**
- *
- * @author allysson
- */
+
 public class NNPPSS {
     
     
     public static void main(String[] args) throws IOException {
         
         Utilities utilities = new Utilities();
-
+        
+        // url database
+        String url = utilities.getVitaGamesURL();
+        
         Frame frame = new Frame(utilities);
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setResizable(false);
         frame.setVisible(true);
 
+         // Si la URL es null o vacía, pedir al usuario que la ingrese
+        if (url == null || url.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Welcome to the app! You need to provide database URL.");
+            url = JOptionPane.showInputDialog(null, "Enter the tsv file URL:");
+            
+            // Guardar la URL en el archivo externo
+            if (url != null && !url.isEmpty()) {
+                utilities.saveVitaGamesURL(url);
+            } else {
+                JOptionPane.showMessageDialog(null, "URL cannot be empty. Exiting...");
+                System.exit(0);
+            }
+        }
         
         // Descargar en segundo plano
-        DownloadThread downloadThread = new DownloadThread(frame, utilities.URL_vita_games, utilities.TSV);
+        DownloadThread downloadThread = new DownloadThread(frame, url, utilities.TSV);
         downloadThread.start();
 
         try {
