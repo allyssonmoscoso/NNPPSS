@@ -1,5 +1,3 @@
-# NNPPSS
-
 ## Prerequisites/Requirements
 
 1. You will need Java, I recommend Java 17+
