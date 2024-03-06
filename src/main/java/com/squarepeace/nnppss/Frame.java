@@ -10,10 +10,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -242,10 +244,10 @@ public class Frame extends javax.swing.JFrame {
                 String pkgDirectLink = pkgDirectLinkValue.toString();
                 String fileName = pkgDirectLink.substring(pkgDirectLink.lastIndexOf("/") + 1);
                 String zRIF = zRIFValue.toString();
-
+                
                 // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
                 int option = JOptionPane.showConfirmDialog(this,
-                        "¿You want to download " + nameValue + ", Size is " + utilities.convertFileSize(fileSizeValue) + "?",
+                        "¿You want to download " + nameValue + ", Size is " + fileSizeValue + "?",
                         "Download File",
                         JOptionPane.YES_NO_OPTION);
 
@@ -269,59 +271,86 @@ public class Frame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jbResumeAndPauseActionPerformed
     
-    public void fillTableAndComboBox(){
-    
+public void fillTableAndComboBox() {
     // Crear un nuevo modelo de tabla usando los datos del archivo TSV
-        try {
-            originalModel = utilities.readTSV();
-        } catch (IOException e) {
-            // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
-            e.printStackTrace();
-            // Si ocurre un error al leer el archivo, salir del método
-            return;
-        }
-        //Carga el modelo a la Jtable
-        jtData.setModel(originalModel);
-
-        // Crear el TableRowSorter si no existe
-        if (rowSorter == null) {
-            rowSorter = new TableRowSorter<>(originalModel);
-            jtData.setRowSorter(rowSorter);
-        }
-
-        // Obtener el número de columnas
-        int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
-
-        // Verificar si la columna de la región existe
-        if (regionColumnIndex != -1) {
-            // Crear un conjunto para almacenar valores únicos de la columna de la región
-            Set<String> regionSet = new HashSet<>();
-
-            // Iterar sobre las filas para obtener los valores únicos de la región
-            for (int row = 0; row < originalModel.getRowCount(); row++) {
-                // Obtener el valor de la región en la fila actual
-                String region = (String) originalModel.getValueAt(row, regionColumnIndex);
-
-                // Agregar el valor al conjunto
-                regionSet.add(region);
-            }
-
-            // Limpiar el JComboBox
-            jcbRegion.removeAllItems();
-            // Agregar la opción para mostrar todas las regiones
-            jcbRegion.addItem("All regions");
-
-            // Agregar los elementos únicos al JComboBox
-            for (String region : regionSet) {
-                jcbRegion.addItem(region);
-            }
-        } else {
-            System.out.println("The region column does not exist in the table.");
-        }
-        
+    try {
+        originalModel = utilities.readTSV();
+    } catch (IOException e) {
+        // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
+        e.printStackTrace();
+        // Si ocurre un error al leer el archivo, salir del método
+        return;
     }
+
+    // Crear un nuevo modelo de tabla para almacenar las filas que cumplen con el criterio
+    DefaultTableModel filteredModel = new DefaultTableModel();
+
+    // Obtener los nombres de las columnas del modelo original
+    Vector<String> columnIdentifiers = new Vector<>();
+    for (int i = 0; i < originalModel.getColumnCount(); i++) {
+        columnIdentifiers.add(originalModel.getColumnName(i));
+    }
+    // Establecer los nombres de las columnas en el modelo filtrado
+    filteredModel.setColumnIdentifiers(columnIdentifiers);
+
+    // Iterar sobre las filas del modelo original
+    for (int i = 0; i < originalModel.getRowCount(); i++) {
+        Object fileSizeValue = originalModel.getValueAt(i, getColumnIndexByName("File Size"));
+        // Verificar si el valor de "File Size" no está vacío, es distinto de null y mayor que 0
+        if (fileSizeValue != null && !fileSizeValue.toString().isEmpty() && Long.parseLong(fileSizeValue.toString()) > 0) {
+            // Obtener los datos de la fila actual como un array de objetos
+            Object[] rowData = new Object[originalModel.getColumnCount()];
+            for (int j = 0; j < originalModel.getColumnCount(); j++) {
+                rowData[j] = originalModel.getValueAt(i, j);
+            }
+            // Convertir el tamaño del archivo en la fila actual
+            rowData[getColumnIndexByName("File Size")] = utilities.convertFileSize(fileSizeValue);
+            // Agregar la fila al modelo filtrado
+            filteredModel.addRow(rowData);
+        }
+    }
+
+    // Asignar el nuevo modelo filtrado a la tabla
+    jtData.setModel(filteredModel);
+
+    // Crear el TableRowSorter si no existe
+    if (rowSorter == null) {
+        rowSorter = new TableRowSorter<>(filteredModel);
+        jtData.setRowSorter(rowSorter);
+    }
+
+    // Obtener el número de columnas
+    int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
+
+    // Verificar si la columna de la región existe
+    if (regionColumnIndex != -1) {
+        // Crear un conjunto para almacenar valores únicos de la columna de la región
+        Set<String> regionSet = new HashSet<>();
+
+        // Iterar sobre las filas para obtener los valores únicos de la región
+        for (int row = 0; row < filteredModel.getRowCount(); row++) {
+            // Obtener el valor de la región en la fila actual
+            String region = (String) filteredModel.getValueAt(row, regionColumnIndex);
+
+            // Agregar el valor al conjunto
+            regionSet.add(region);
+        }
+
+        // Limpiar el JComboBox
+        jcbRegion.removeAllItems();
+        // Agregar la opción para mostrar todas las regiones
+        jcbRegion.addItem("All regions");
+
+        // Agregar los elementos únicos al JComboBox
+        for (String region : regionSet) {
+            jcbRegion.addItem(region);
+        }
+    } else {
+        System.out.println("The region column does not exist in the table.");
+    }
+}
     
-    private void filtrarTablaPorTextoYRegion(String searchText, String region) {
+private void filtrarTablaPorTextoYRegion(String searchText, String region) {
     // Crear un RowFilter para filtrar por el texto ingresado y la región seleccionada
     RowFilter<DefaultTableModel, Integer> rowFilterByText = null;
     RowFilter<DefaultTableModel, Integer> rowFilterByRegion = null;
@@ -386,8 +415,8 @@ public class Frame extends javax.swing.JFrame {
                 gamesFolder.mkdir();
             }
             long bytesDownloaded = 0;
-            try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
-                 FileOutputStream fileOutputStream = new FileOutputStream(localFilePath)) {
+            try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());                              
+                    FileOutputStream fileOutputStream = new FileOutputStream(localFilePath)) {
                 
                 byte dataBuffer[] = new byte[1024];
                 int bytesRead;
@@ -470,7 +499,7 @@ public class Frame extends javax.swing.JFrame {
     // Ejecutar el SwingWorker
     worker.execute();
 }
-
+    
     /**
      * @param args the command line arguments
      */
