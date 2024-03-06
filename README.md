@@ -1,3 +1,8 @@
+# NNPPSS
+
+A tool designed for the management and download of files related to PlayStation Vita. It is developed in Java and uses the Swing graphical library for the user interface.
+NNPPSS is compatible with Windows, macOS, and Linux or Unix Based Operating System.
+
 ## Prerequisites/Requirements
 
 1. You will need Java, I recommend Java 17+
@@ -10,6 +15,7 @@
 2. Compile with Maven `mvn compile`
 3. Package with Mavem `mvn package`
 Jar File should now be in `/target/NNPPSS-x.x.jar`
+
 Run Jar File using `java -jar NPPSS-x.x.jar`
 
 ## Main Features
