@@ -6,6 +6,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Scanner;
 import javax.swing.table.DefaultTableModel;
 
 public class Utilities {
@@ -198,4 +200,28 @@ public class Utilities {
             JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
         }
     }
+    
+     public static String getUrlForConsole(String console) {
+        try {
+            File file = new File("url.txt");
+            Scanner scanner = new Scanner(file);
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                int index = line.indexOf(":");
+                if (index != -1) {
+                    String consoleFromFile = line.substring(0, index).trim(); // Obtener la parte antes del ":"
+                    // Transformar "TSV_VITA" a "VITA" y "TSV_PSP" a "PSP"
+                    consoleFromFile = consoleFromFile.substring(4).trim(); // Eliminar los primeros 4 caracteres
+                    if (consoleFromFile.equals(console)) { // Verificar si coincide con la consola solicitada
+                        return line.substring(index + 1).trim(); // Obtener la parte después del ":"
+                    }
+                }
+            }
+            scanner.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
 }

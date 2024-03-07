@@ -61,7 +61,11 @@
         <DimensionLayout dim="0">
           <Group type="103" groupAlignment="0" attributes="0">
               <Group type="102" alignment="1" attributes="0">
-                  <EmptySpace min="-2" pref="234" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="45" max="-2" attributes="0"/>
+                  <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace type="separate" max="-2" attributes="0"/>
+                  <Component id="jcbConsole" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace type="separate" max="-2" attributes="0"/>
                   <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
                   <EmptySpace type="unrelated" max="-2" attributes="0"/>
                   <Component id="jcbRegion" min="-2" max="-2" attributes="0"/>
@@ -89,6 +93,8 @@
                       <Component id="jtfSearch" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="jbRefresh" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="jLabel1" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Component id="jcbConsole" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Component id="jLabel2" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace min="-2" pref="26" max="-2" attributes="0"/>
                   <Component id="jScrollPane1" pref="552" max="32767" attributes="0"/>
@@ -155,6 +161,24 @@
         <Component class="javax.swing.JLabel" name="jLabel1">
           <Properties>
             <Property name="text" type="java.lang.String" value="Region: "/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JComboBox" name="jcbConsole">
+          <Properties>
+            <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+              <StringArray count="0"/>
+            </Property>
+          </Properties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jcbConsoleActionPerformed"/>
+          </Events>
+          <AuxValues>
+            <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
+          </AuxValues>
+        </Component>
+        <Component class="javax.swing.JLabel" name="jLabel2">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Console"/>
           </Properties>
         </Component>
       </SubComponents>

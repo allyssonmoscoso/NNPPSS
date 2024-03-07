@@ -7,6 +7,7 @@ package com.squarepeace.nnppss;
 import com.squarepeace.nnppss.Utilities;
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
@@ -14,6 +15,7 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.Vector;
 import java.util.logging.Level;
@@ -64,6 +66,8 @@ public class Frame extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         jtData = new javax.swing.JTable();
         jLabel1 = new javax.swing.JLabel();
+        jcbConsole = new javax.swing.JComboBox<>();
+        jLabel2 = new javax.swing.JLabel();
         jpbDownload = new javax.swing.JProgressBar();
         jbResumeAndPause = new javax.swing.JButton();
 
@@ -105,12 +109,24 @@ public class Frame extends javax.swing.JFrame {
 
         jLabel1.setText("Region: ");
 
+        jcbConsole.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jcbConsoleActionPerformed(evt);
+            }
+        });
+
+        jLabel2.setText("Console");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGap(234, 234, 234)
+                .addGap(45, 45, 45)
+                .addComponent(jLabel2)
+                .addGap(18, 18, 18)
+                .addComponent(jcbConsole, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jcbRegion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -134,7 +150,9 @@ public class Frame extends javax.swing.JFrame {
                     .addComponent(jbsearch)
                     .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jbRefresh)
-                    .addComponent(jLabel1))
+                    .addComponent(jLabel1)
+                    .addComponent(jcbConsole, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2))
                 .addGap(26, 26, 26)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 552, Short.MAX_VALUE)
                 .addContainerGap())
@@ -270,6 +288,12 @@ public class Frame extends javax.swing.JFrame {
             jbResumeAndPause.setText("Pause");
         }
     }//GEN-LAST:event_jbResumeAndPauseActionPerformed
+
+    private void jcbConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jcbConsoleActionPerformed
+         // Imprimir el URL correspondiente al valor seleccionado
+        String selectedConsole = (String) jcbConsole.getSelectedItem();
+        System.out.println(utilities.getUrlForConsole(selectedConsole));
+    }//GEN-LAST:event_jcbConsoleActionPerformed
     
 public void fillTableAndComboBox() {
     // Crear un nuevo modelo de tabla usando los datos del archivo TSV
@@ -345,6 +369,13 @@ public void fillTableAndComboBox() {
         for (String region : regionSet) {
             jcbRegion.addItem(region);
         }
+        
+        // Obtener los datos y rellenar el JComboBox
+        ArrayList<String> consoleOptions = fillComboBoxConsole();
+        for (String option : consoleOptions) {
+            jcbConsole.addItem(option);
+        }
+        
     } else {
         System.out.println("The region column does not exist in the table.");
     }
@@ -500,6 +531,28 @@ private void filtrarTablaPorTextoYRegion(String searchText, String region) {
     worker.execute();
 }
     
+    public static ArrayList<String> fillComboBoxConsole() {
+        ArrayList<String> consoleOptions = new ArrayList<>();
+        try {
+            File file = new File("url.txt");
+            Scanner scanner = new Scanner(file);
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                int index = line.indexOf(":");
+                if (index != -1) { // Verificar si se encontró un ":"
+                    String console = line.substring(0, index); // Obtener la parte antes del ":"
+                    // Transformar "TSV_VITA" a "VITA" y "TSV_PSP" a "PSP"
+                    console = console.substring(4).trim(); // Eliminar los primeros 4 caracteres
+                    consoleOptions.add(console); // Agregar el resultado al ArrayList
+                }
+            }
+            scanner.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return consoleOptions;
+    }
+    
     /**
      * @param args the command line arguments
      */
@@ -507,11 +560,13 @@ private void filtrarTablaPorTextoYRegion(String searchText, String region) {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JButton jbRefresh;
     private javax.swing.JButton jbResumeAndPause;
     private javax.swing.JLabel jbsearch;
+    private javax.swing.JComboBox<String> jcbConsole;
     private javax.swing.JComboBox<String> jcbRegion;
     private javax.swing.JProgressBar jpbDownload;
     private javax.swing.JTable jtData;
