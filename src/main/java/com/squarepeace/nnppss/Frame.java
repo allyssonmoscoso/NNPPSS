@@ -68,6 +68,7 @@ public class Frame extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jcbConsole = new javax.swing.JComboBox<>();
         jLabel2 = new javax.swing.JLabel();
+        jbSetting = new javax.swing.JButton();
         jpbDownload = new javax.swing.JProgressBar();
         jbResumeAndPause = new javax.swing.JButton();
 
@@ -117,6 +118,13 @@ public class Frame extends javax.swing.JFrame {
 
         jLabel2.setText("Console");
 
+        jbSetting.setText("Setting");
+        jbSetting.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbSettingActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -136,7 +144,9 @@ public class Frame extends javax.swing.JFrame {
                 .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(31, 31, 31)
                 .addComponent(jbRefresh)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jbSetting)
+                .addContainerGap())
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 1231, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
@@ -152,7 +162,8 @@ public class Frame extends javax.swing.JFrame {
                     .addComponent(jbRefresh)
                     .addComponent(jLabel1)
                     .addComponent(jcbConsole, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel2))
+                    .addComponent(jLabel2)
+                    .addComponent(jbSetting))
                 .addGap(26, 26, 26)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 552, Short.MAX_VALUE)
                 .addContainerGap())
@@ -294,6 +305,18 @@ public class Frame extends javax.swing.JFrame {
         String selectedConsole = (String) jcbConsole.getSelectedItem();
         System.out.println(utilities.getUrlForConsole(selectedConsole));
     }//GEN-LAST:event_jcbConsoleActionPerformed
+
+    private void jbSettingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbSettingActionPerformed
+        Config config = new Config();
+        config.setLocationRelativeTo(null);
+        config.setResizable(false);
+        config.setVisible(true);
+
+        //metodo para cargar los valores de las url en los campos de texto desde el archivo config.properties
+            config.loadValues();
+        
+
+    }//GEN-LAST:event_jbSettingActionPerformed
     
 public void fillTableAndComboBox() {
     // Crear un nuevo modelo de tabla usando los datos del archivo TSV
@@ -565,6 +588,7 @@ private void filtrarTablaPorTextoYRegion(String searchText, String region) {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JButton jbRefresh;
     private javax.swing.JButton jbResumeAndPause;
+    private javax.swing.JButton jbSetting;
     private javax.swing.JLabel jbsearch;
     private javax.swing.JComboBox<String> jcbConsole;
     private javax.swing.JComboBox<String> jcbRegion;

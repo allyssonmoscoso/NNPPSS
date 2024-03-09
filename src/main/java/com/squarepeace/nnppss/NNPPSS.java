@@ -24,6 +24,8 @@ public class NNPPSS {
         frame.setResizable(false);
         frame.setVisible(true);
 
+/* 
+
          // Si la URL es null o vacía, pedir al usuario que la ingrese
         if (url == null || url.isEmpty()) {
             JOptionPane.showMessageDialog(null, "Welcome to the app! You need to provide database URL.");
@@ -56,7 +58,7 @@ public class NNPPSS {
         e.printStackTrace();
     }
         
-        
+     */   
     }
 
     // Clase interna para la descarga en segundo plano
