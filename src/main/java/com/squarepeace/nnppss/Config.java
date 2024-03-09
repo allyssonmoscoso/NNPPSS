@@ -43,6 +43,7 @@ public class Config extends javax.swing.JFrame {
         jtfUrlPsp = new javax.swing.JTextField();
         jbSave = new javax.swing.JButton();
         jbClear = new javax.swing.JButton();
+        jbClose = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -64,6 +65,13 @@ public class Config extends javax.swing.JFrame {
             }
         });
 
+        jbClose.setText("Close");
+        jbClose.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbCloseActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -82,6 +90,8 @@ public class Config extends javax.swing.JFrame {
                             .addComponent(jtfUrlPsp, javax.swing.GroupLayout.PREFERRED_SIZE, 294, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(44, 44, 44)
+                        .addComponent(jbClose)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jbSave)
                         .addGap(20, 20, 20))))
@@ -100,7 +110,8 @@ public class Config extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 33, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jbSave)
-                    .addComponent(jbClear))
+                    .addComponent(jbClear)
+                    .addComponent(jbClose))
                 .addGap(23, 23, 23))
         );
 
@@ -151,6 +162,11 @@ public class Config extends javax.swing.JFrame {
         
     }//GEN-LAST:event_jbSaveActionPerformed
 
+    private void jbCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbCloseActionPerformed
+        //cierra la ventana
+        this.dispose();
+    }//GEN-LAST:event_jbCloseActionPerformed
+
     public void loadValues() {
         //metodo que carga las url guardadas en el archivo config.properties
         FileReader reader;
@@ -174,7 +190,7 @@ public class Config extends javax.swing.JFrame {
             e.printStackTrace();
         }  
     }
-
+    
     /**
      * @param args the command line arguments
      */
@@ -215,6 +231,7 @@ public class Config extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JButton jbClear;
+    private javax.swing.JButton jbClose;
     private javax.swing.JButton jbSave;
     private javax.swing.JTextField jtfUrlPsp;
     private javax.swing.JTextField jtfUrlPsvita;
