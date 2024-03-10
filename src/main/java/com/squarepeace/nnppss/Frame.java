@@ -209,18 +209,9 @@ public class Frame extends javax.swing.JFrame {
 
     private void jbRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbRefreshActionPerformed
         
-        String url = null;
-         try {
-             url = utilities.getVitaGamesURL();
-         } catch (IOException ex) {
-             Logger.getLogger(Frame.class.getName()).log(Level.SEVERE, null, ex);
-         }
-        
-         // Descargar el archivo TSV si es necesario
-        downloadFileInBackground(url, utilities.TSV_VITA, null , null);
-    
+        fillTableAndComboBoxVita();
     }//GEN-LAST:event_jbRefreshActionPerformed
-     
+
     private void jtfSearchKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jtfSearchKeyPressed
         String searchText = jtfSearch.getText().trim();
         filtrarTablaPorTextoYRegion(searchText, (String) jcbRegion.getSelectedItem()); 
@@ -529,9 +520,9 @@ private void filtrarTablaPorTextoYRegion(String searchText, String region) {
                         case "db/PSV_GAMES.tsv":
 
                         // Mover el archivo a la carpeta "db"
-                    utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));                   
-                    JOptionPane.showMessageDialog(Frame.this, "Database loaded");
-                    fillTableAndComboBoxVita();
+                        utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));                   
+                        JOptionPane.showMessageDialog(Frame.this, "Database loaded");
+                        fillTableAndComboBoxVita();
 
                             break;
                         case "db/PSP_GAMES.tsv":
