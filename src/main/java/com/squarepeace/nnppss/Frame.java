@@ -217,7 +217,7 @@ public class Frame extends javax.swing.JFrame {
          }
         
          // Descargar el archivo TSV si es necesario
-        downloadFileInBackground(url, utilities.TSV, null , null);
+        downloadFileInBackground(url, utilities.TSV_VITA, null , null);
     
     }//GEN-LAST:event_jbRefreshActionPerformed
      
@@ -303,7 +303,7 @@ public class Frame extends javax.swing.JFrame {
     private void jcbConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jcbConsoleActionPerformed
          // Imprimir el URL correspondiente al valor seleccionado
         String selectedConsole = (String) jcbConsole.getSelectedItem();
-        System.out.println(utilities.getUrlForConsole(selectedConsole));
+        System.out.println(utilities.getProperty(selectedConsole + ".url"));
     }//GEN-LAST:event_jcbConsoleActionPerformed
 
     private void jbSettingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbSettingActionPerformed
@@ -318,10 +318,10 @@ public class Frame extends javax.swing.JFrame {
 
     }//GEN-LAST:event_jbSettingActionPerformed
     
-public void fillTableAndComboBox() {
+public void fillTableAndComboBoxVita() {
     // Crear un nuevo modelo de tabla usando los datos del archivo TSV
     try {
-        originalModel = utilities.readTSV();
+        originalModel = utilities.readTSV(utilities.TSV_VITA);
     } catch (IOException e) {
         // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
         e.printStackTrace();
@@ -524,12 +524,24 @@ private void filtrarTablaPorTextoYRegion(String searchText, String region) {
             String extension = localFilePath.substring(localFilePath.lastIndexOf(".") + 1).toLowerCase();
             switch (extension) {
                 case "tsv":
-                                        
-                    // Mover el archivo a la carpeta "db"
+                    
+                    switch (localFilePath) {
+                        case "db/PSV_GAMES.tsv":
+
+                        // Mover el archivo a la carpeta "db"
                     utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));                   
                     JOptionPane.showMessageDialog(Frame.this, "Database loaded");
-                    fillTableAndComboBox();
-                    
+                    fillTableAndComboBoxVita();
+
+                            break;
+                        case "db/PSP_GAMES.tsv":
+                        utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));                   
+                        JOptionPane.showMessageDialog(Frame.this, "Database loaded");
+                        //fillTableAndComboBoxPSP();
+                            break;
+                        default:
+                            break;
+                    }                  
                     break;
                 case "pkg":
                     
@@ -554,27 +566,27 @@ private void filtrarTablaPorTextoYRegion(String searchText, String region) {
     worker.execute();
 }
     
-    public static ArrayList<String> fillComboBoxConsole() {
+    // Método para llenar el JComboBox con las opciones psp.url y psvita.url disponibles en el archivo config.properties
+    public ArrayList<String> fillComboBoxConsole() {
         ArrayList<String> consoleOptions = new ArrayList<>();
         try {
-            File file = new File("url.txt");
-            Scanner scanner = new Scanner(file);
+            // Leer las opciones de consola del archivo config.properties
+            Scanner scanner = new Scanner(new File("config.properties"));
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
-                int index = line.indexOf(":");
-                if (index != -1) { // Verificar si se encontró un ":"
-                    String console = line.substring(0, index); // Obtener la parte antes del ":"
-                    // Transformar "TSV_VITA" a "VITA" y "TSV_PSP" a "PSP"
-                    console = console.substring(4).trim(); // Eliminar los primeros 4 caracteres
-                    consoleOptions.add(console); // Agregar el resultado al ArrayList
+                if (line.startsWith("psp.url") || line.startsWith("psvita.url")) {
+                    String[] parts = line.split(".url=");
+                    consoleOptions.add(parts[0]);
                 }
             }
-            scanner.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
         return consoleOptions;
     }
+
+
+
     
     /**
      * @param args the command line arguments

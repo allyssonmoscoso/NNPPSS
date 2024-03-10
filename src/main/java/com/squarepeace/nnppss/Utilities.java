@@ -9,13 +9,17 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Scanner;
 import javax.swing.table.DefaultTableModel;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
 
 public class Utilities {
 
     private final String URL_FILE = "url.txt"; // Archivo para almacenar la URL
-    public String TSV = "db/PSV_GAMES.tsv";
+    public String TSV_VITA = "db/PSV_GAMES.tsv";
+    public String TSV_PSP = "db/PSP_GAMES.tsv";
 
-    public DefaultTableModel readTSV() throws FileNotFoundException, IOException {
+    public DefaultTableModel readTSV(String TSV) throws FileNotFoundException, IOException {
         DefaultTableModel model = new DefaultTableModel();
 
         // Leer el archivo TSV
@@ -201,27 +205,46 @@ public class Utilities {
         }
     }
     
-     public static String getUrlForConsole(String console) {
-        try {
-            File file = new File("url.txt");
-            Scanner scanner = new Scanner(file);
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                int index = line.indexOf(":");
-                if (index != -1) {
-                    String consoleFromFile = line.substring(0, index).trim(); // Obtener la parte antes del ":"
-                    // Transformar "TSV_VITA" a "VITA" y "TSV_PSP" a "PSP"
-                    consoleFromFile = consoleFromFile.substring(4).trim(); // Eliminar los primeros 4 caracteres
-                    if (consoleFromFile.equals(console)) { // Verificar si coincide con la consola solicitada
-                        return line.substring(index + 1).trim(); // Obtener la parte después del ":"
-                    }
+    
+        // ...
+
+        
+
+        public String getPSPUrl() {
+            return getProperty("psp.url");
+        }
+
+        public String getPSVitaUrl() {
+            return getProperty("psvita.url");
+        }
+
+        //Metodo para obtener las propiedades del archivo config.properties
+        public String getProperty(String property) {
+            try {
+                Properties p = new Properties();
+                p.load(new FileInputStream("config.properties"));
+                return p.getProperty(property);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+        
+            
+            //Metodo para crear el config.properties si no existe y agregarle las propiedades
+            public void createConfigFile() {
+                try {
+                    File file = new File("config.properties");
+            if (!file.exists()) {
+                file.createNewFile();
+                try (FileWriter writer = new FileWriter(file)) {
+                    writer.write("psp.url=\n");
+                    writer.write("psvita.url=\n");
                 }
             }
-            scanner.close();
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        return null;
-    }
-    
+    }    
+
 }
