@@ -76,13 +76,20 @@ public class Utilities {
         }
     }
 
-    public static String buildCommand(String PKGname, String zRifKey) {
+    public static String buildCommand(String PKGname, String zRifKey, String Console) {
         // Obtener el separador de archivos del sistema
         String fileSeparator = System.getProperty("file.separator");
         // Construir la ruta del comando dependiendo del sistema operativo
         String command = "";
         if (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
-            command = "lib" + fileSeparator + "pkg2zip.exe -x games" + fileSeparator + PKGname + " " + zRifKey;
+
+            if (Console.equals("Psvita")) {
+                command = "lib" + fileSeparator + "pkg2zip.exe -x games" + fileSeparator + PKGname + " " + zRifKey;
+            }else if (Console.equals("Psp")) {
+                command = "lib" + fileSeparator + "pkg2zip.exe games" + fileSeparator + PKGname;
+            }
+
+            
         } else if (System.getProperty("os.name").toLowerCase().indexOf("nix") >= 0
                 || System.getProperty("os.name").toLowerCase().indexOf("nux") >= 0
                 || System.getProperty("os.name").toLowerCase().indexOf("aix") > 0
@@ -90,7 +97,14 @@ public class Utilities {
 
             // Verificar si el comando está instalado
             if (isCommandInstalled("pkg2zip")) {
-                command = "pkg2zip -x games" + fileSeparator + PKGname + " " + zRifKey;
+
+                if (Console.equals("Psvita")) {
+                    command = "pkg2zip -x games" + fileSeparator + PKGname + " " + zRifKey;
+                }else if (Console.equals("Psp")) {
+                    command = "pkg2zip games" + fileSeparator + PKGname;
+                }
+
+                
             } else {
                 JOptionPane.showMessageDialog(null, "pkg2zip is not installed");
             }

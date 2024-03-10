@@ -116,7 +116,7 @@ public class Frame extends javax.swing.JFrame {
             }
         });
 
-        jLabel2.setText("Console");
+        jLabel2.setText("Console:");
 
         jbSetting.setText("Setting");
         jbSetting.addActionListener(new java.awt.event.ActionListener() {
@@ -245,6 +245,7 @@ public class Frame extends javax.swing.JFrame {
 
             // Obtener el valor de la columna "PKG direct link" en la fila seleccionada
             Object pkgDirectLinkValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("PKG direct link"));
+            Object TypeValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("Type"));
 
             // Verificar si el valor de pkgDirectLinkValue es MISSING o CART ONLY
             if (pkgDirectLinkValue.equals("MISSING")) {
@@ -256,6 +257,28 @@ public class Frame extends javax.swing.JFrame {
             } else if (pkgDirectLinkValue.equals("NOT REQUIRED")) {
                 // Mostrar mensaje de que el juego solo se encuentra en formato físico
                 JOptionPane.showMessageDialog(this, "NO download required", "Información", JOptionPane.INFORMATION_MESSAGE);
+            }else if (TypeValue.equals("PSP") || TypeValue.equals("PC Engine") || TypeValue.equals("Normal") || TypeValue.equals("NeoGeo") || TypeValue.equals("Minis") || TypeValue.equals("Go")) {
+                {
+                    // El juego está disponible para descarga
+                    Object nameValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("Name"));
+                    Object fileSizeValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("File Size"));
+
+                    String pkgDirectLink = pkgDirectLinkValue.toString();
+                    String fileName = pkgDirectLink.substring(pkgDirectLink.lastIndexOf("/") + 1);
+
+                    
+                    // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
+                    int option = JOptionPane.showConfirmDialog(this,
+                            "¿You want to download " + nameValue + ", Size is " + fileSizeValue + "?",
+                            "Download File",
+                            JOptionPane.YES_NO_OPTION);
+    
+                    // Verificar la opción seleccionada por el usuario
+                    if (option == JOptionPane.YES_OPTION) {
+                        // Lógica para descargar el archivo aquí
+                        downloadFileInBackground(pkgDirectLink, fileName, fileName, null, "Psp");
+                    }
+                }
             }else {
                 // El juego está disponible para descarga
                 Object nameValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("Name"));
@@ -274,7 +297,7 @@ public class Frame extends javax.swing.JFrame {
                 // Verificar la opción seleccionada por el usuario
                 if (option == JOptionPane.YES_OPTION) {
                     // Lógica para descargar el archivo aquí
-                    downloadFileInBackground(pkgDirectLink, fileName, fileName, zRIF);
+                    downloadFileInBackground(pkgDirectLink, fileName, fileName, zRIF, "Psvita");
                 }
             }
         } 
@@ -294,7 +317,14 @@ public class Frame extends javax.swing.JFrame {
     private void jcbConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jcbConsoleActionPerformed
          // Imprimir el URL correspondiente al valor seleccionado
         String selectedConsole = (String) jcbConsole.getSelectedItem();
-        System.out.println(utilities.getProperty(selectedConsole + ".url"));
+        System.out.println(utilities.getProperty(selectedConsole + ".url"));   
+        if (selectedConsole.equals("psvita")) {
+            jcbConsole.removeAllItems();
+            fillTableAndComboBoxVita();
+        } else if (selectedConsole.equals("psp")){
+            jcbConsole.removeAllItems();
+            fillTableAndComboBoxPsp();
+        }
     }//GEN-LAST:event_jcbConsoleActionPerformed
 
     private void jbSettingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbSettingActionPerformed
@@ -310,6 +340,8 @@ public class Frame extends javax.swing.JFrame {
     }//GEN-LAST:event_jbSettingActionPerformed
     
 public void fillTableAndComboBoxVita() {
+
+    filljcbConsole();
     // Crear un nuevo modelo de tabla usando los datos del archivo TSV
     try {
         originalModel = utilities.readTSV(utilities.TSV_VITA);
@@ -384,16 +416,133 @@ public void fillTableAndComboBoxVita() {
             jcbRegion.addItem(region);
         }
         
-        // Obtener los datos y rellenar el JComboBox
-        ArrayList<String> consoleOptions = fillComboBoxConsole();
-        for (String option : consoleOptions) {
-            jcbConsole.addItem(option);
+    } else {
+        System.out.println("The region column does not exist in the table.");
+    }
+}
+
+public void fillTableAndComboBoxPsp() {
+    filljcbConsole();
+    // Crear un nuevo modelo de tabla usando los datos del archivo TSV
+    try {
+        originalModel = utilities.readTSV(utilities.TSV_PSP);
+    } catch (IOException e) {
+        // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
+        e.printStackTrace();
+        // Si ocurre un error al leer el archivo, salir del método
+        return;
+    }
+
+    // Crear un nuevo modelo de tabla para almacenar las filas que cumplen con el criterio
+    DefaultTableModel filteredModel = new DefaultTableModel();
+
+    // Obtener los nombres de las columnas del modelo original
+    Vector<String> columnIdentifiers = new Vector<>();
+    for (int i = 0; i < originalModel.getColumnCount(); i++) {
+        columnIdentifiers.add(originalModel.getColumnName(i));
+    }
+    // Establecer los nombres de las columnas en el modelo filtrado
+    filteredModel.setColumnIdentifiers(columnIdentifiers);
+
+    // Iterar sobre las filas del modelo original
+    for (int i = 0; i < originalModel.getRowCount(); i++) {
+        Object fileSizeValue = originalModel.getValueAt(i, getColumnIndexByName("File Size"));
+        // Verificar si el valor de "File Size" no está vacío, es distinto de null y mayor que 0
+        if (fileSizeValue != null && !fileSizeValue.toString().isEmpty() && Long.parseLong(fileSizeValue.toString()) > 0) {
+            // Obtener los datos de la fila actual como un array de objetos
+            Object[] rowData = new Object[originalModel.getColumnCount()];
+            for (int j = 0; j < originalModel.getColumnCount(); j++) {
+                rowData[j] = originalModel.getValueAt(i, j);
+            }
+            // Convertir el tamaño del archivo en la fila actual
+            rowData[getColumnIndexByName("File Size")] = utilities.convertFileSize(fileSizeValue);
+            // Agregar la fila al modelo filtrado
+            filteredModel.addRow(rowData);
+        }
+    }
+
+    // Asignar el nuevo modelo filtrado a la tabla
+    jtData.setModel(filteredModel);
+
+    // Crear el TableRowSorter si no existe
+    if (rowSorter == null) {
+        rowSorter = new TableRowSorter<>(filteredModel);
+        jtData.setRowSorter(rowSorter);
+    }
+
+    // Obtener el número de columnas
+    int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
+
+    // Verificar si la columna de la región existe
+    if (regionColumnIndex != -1) {
+        // Crear un conjunto para almacenar valores únicos de la columna de la región
+        Set<String> regionSet = new HashSet<>();
+
+        // Iterar sobre las filas para obtener los valores únicos de la región
+        for (int row = 0; row < filteredModel.getRowCount(); row++) {
+            // Obtener el valor de la región en la fila actual
+            String region = (String) filteredModel.getValueAt(row, regionColumnIndex);
+
+            // Agregar el valor al conjunto
+            regionSet.add(region);
+        }
+
+        // Limpiar el JComboBox
+        jcbRegion.removeAllItems();
+        // Agregar la opción para mostrar todas las regiones
+        jcbRegion.addItem("All regions");
+
+        // Agregar los elementos únicos al JComboBox
+        for (String region : regionSet) {
+            jcbRegion.addItem(region);
         }
         
     } else {
         System.out.println("The region column does not exist in the table.");
     }
+
+    // Obtener el número de columnas
+    int TypeColumnIndex = jtData.getColumn("Type").getModelIndex();
+
+    // Verificar si la columna de la región existe
+    if (TypeColumnIndex != -1) {
+        // Crear un conjunto para almacenar valores únicos de la columna de la región
+        Set<String> TypeSet = new HashSet<>();
+
+        // Iterar sobre las filas para obtener los valores únicos de la región
+        for (int row = 0; row < filteredModel.getRowCount(); row++) {
+            // Obtener el valor de la región en la fila actual
+            String Type = (String) filteredModel.getValueAt(row, TypeColumnIndex);
+
+            // Agregar el valor al conjunto
+            TypeSet.add(Type);
+        }
+
+        // Limpiar el JComboBox
+        jcbConsole.removeAllItems();
+        // Agregar la opción para mostrar todas las Consolas
+        jcbConsole.addItem("All Consoles");
+
+        // Agregar los elementos únicos al JComboBox
+        for (String Type : TypeSet) {
+            jcbConsole.addItem(Type);
+        }
+        
+    }else {
+        System.out.println("The Type column does not exist in the table.");
+    }
+
 }
+
+    public void filljcbConsole(){
+
+        // Obtener los datos y rellenar el JComboBox
+        ArrayList<String> consoleOptions = fillComboBoxConsole();
+        for (String option : consoleOptions) {
+            jcbConsole.addItem(option);
+        }
+
+    }
     
 private void filtrarTablaPorTextoYRegion(String searchText, String region) {
     // Crear un RowFilter para filtrar por el texto ingresado y la región seleccionada
@@ -433,7 +582,7 @@ private void filtrarTablaPorTextoYRegion(String searchText, String region) {
     return -1; // Si no se encuentra la columna, retornar -1
 }
     
-    public void downloadFileInBackground(String fileURL, String localFilePath, String fileName,String zRIF) {        
+    public void downloadFileInBackground(String fileURL, String localFilePath, String fileName,String zRIF, String Console) {        
     // Hilo de descarga para no bloquear la interfaz de usuario
     SwingWorker<Void, Integer> worker = new SwingWorker<Void, Integer>() {
         @Override
@@ -539,7 +688,7 @@ private void filtrarTablaPorTextoYRegion(String searchText, String region) {
                     // Mover el archivo a la carpeta "games"
                     utilities.moveFile(localFilePath, "games/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
                     JOptionPane.showMessageDialog(Frame.this, "PKG download completed.");
-                    String command = utilities.buildCommand(fileName, zRIF);
+                    String command = utilities.buildCommand(fileName, zRIF, Console);
                     utilities.runCommandWithLoadingMessage(command);
                     break;
                 default:
