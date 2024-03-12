@@ -381,12 +381,10 @@ public class Frame extends javax.swing.JFrame {
     public void fillTableAndComboBox(String console) {
         // Crear un nuevo modelo de tabla usando los datos del archivo TSV
         try {
-
             if (console.equals("Psp")) {
                 originalModel = utilities.readTSV(utilities.TSV_PSP);
             } else if (console.equals("Psvita")) {
                 originalModel = utilities.readTSV(utilities.TSV_VITA);
-
             }
         } catch (IOException e) {
             // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
@@ -395,8 +393,7 @@ public class Frame extends javax.swing.JFrame {
             return;
         }
 
-        // Crear un nuevo modelo de tabla para almacenar las filas que cumplen con el
-        // criterio
+        // Crear un nuevo modelo de tabla para almacenar las filas que cumplen con el criterio
         DefaultTableModel filteredModel = new DefaultTableModel();
 
         // Obtener los nombres de las columnas del modelo original
@@ -410,8 +407,7 @@ public class Frame extends javax.swing.JFrame {
         // Iterar sobre las filas del modelo original
         for (int i = 0; i < originalModel.getRowCount(); i++) {
             Object fileSizeValue = originalModel.getValueAt(i, getColumnIndexByName("File Size"));
-            // Verificar si el valor de "File Size" no está vacío, es distinto de null y
-            // mayor que 0
+            // Verificar si el valor de "File Size" no está vacío, es distinto de null y mayor que 0
             if (fileSizeValue != null && !fileSizeValue.toString().isEmpty()
                     && Long.parseLong(fileSizeValue.toString()) > 0) {
                 // Obtener los datos de la fila actual como un array de objetos
@@ -639,26 +635,6 @@ public class Frame extends javax.swing.JFrame {
 
         // Ejecutar el SwingWorker
         worker.execute();
-    }
-
-    // Método para llenar el JComboBox con las opciones psp.url y psvita.url
-    // disponibles en el archivo config.properties
-    public ArrayList<String> fillComboBoxConsole() {
-        ArrayList<String> consoleOptions = new ArrayList<>();
-        try {
-            // Leer las opciones de consola del archivo config.properties
-            Scanner scanner = new Scanner(new File("config.properties"));
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                if (line.startsWith("psp.url") || line.startsWith("psvita.url")) {
-                    String[] parts = line.split(".url=");
-                    consoleOptions.add(parts[0]);
-                }
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        return consoleOptions;
     }
 
     /**
