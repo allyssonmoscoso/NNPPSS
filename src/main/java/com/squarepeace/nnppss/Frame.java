@@ -426,10 +426,8 @@ public class Frame extends javax.swing.JFrame {
         jtData.setModel(filteredModel);
 
         // Crear el TableRowSorter si no existe
-        if (rowSorter == null) {
-            rowSorter = new TableRowSorter<>(filteredModel);
-            jtData.setRowSorter(rowSorter);
-        }
+        rowSorter = new TableRowSorter<>(filteredModel);
+        jtData.setRowSorter(rowSorter);
 
         // Obtener el número de columnas
         int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
