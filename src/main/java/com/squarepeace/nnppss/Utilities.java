@@ -229,7 +229,7 @@ public class Utilities {
             public void createConfigFile() {
                 try {
                     File file = new File("config.properties");
-            if (!file.exists()) {
+            if (!file.exists() || file.length() == 0) {
                 file.createNewFile();
                 try (FileWriter writer = new FileWriter(file)) {
                     writer.write("psp.url=\n");

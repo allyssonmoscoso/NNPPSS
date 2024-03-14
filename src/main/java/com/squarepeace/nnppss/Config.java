@@ -46,6 +46,7 @@ public class Config extends javax.swing.JFrame {
         jbClose = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Configuration");
 
         jLabel1.setText("PSVITA URL:");
 
@@ -147,7 +148,8 @@ public class Config extends javax.swing.JFrame {
             prop.setProperty("psvita.url", jtfUrlPsvita.getText());
             prop.setProperty("psp.url", jtfUrlPsp.getText());
             prop.store(output, null);
-            JOptionPane.showMessageDialog(null, "URL saved successfully!");
+            JOptionPane.showMessageDialog(null, "URLs saved successfully");
+            
         } catch (IOException io) {
             io.printStackTrace();      
         } finally {
@@ -163,7 +165,7 @@ public class Config extends javax.swing.JFrame {
     }//GEN-LAST:event_jbSaveActionPerformed
 
     private void jbCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbCloseActionPerformed
-        //cierra la ventana
+        //cierra la ventana        
         this.dispose();
     }//GEN-LAST:event_jbCloseActionPerformed
 
