@@ -5,6 +5,9 @@
 package com.squarepeace.nnppss;
 
 import com.squarepeace.nnppss.Utilities;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,13 +23,17 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.swing.JButton;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.RowFilter;
 import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
-public class Frame extends javax.swing.JFrame {
+public class Frame extends javax.swing.JFrame implements ActionListener {
 
     /**
      * Creates new form Frame
@@ -44,6 +51,8 @@ public class Frame extends javax.swing.JFrame {
     // Variable para controlar si hay descargas en curso
     private boolean downloading = false;
 
+    Vector<String> DownloadList = new Vector<>();
+
     public Frame(Utilities utilities) { // Modifica el constructor para aceptar una instancia de Utilities
         this.utilities = utilities; // Asigna la instancia recibida a la variable de clase
         initComponents(); // Asegúrate de llamar al constructor de la superclase si es necesario
@@ -59,7 +68,7 @@ public class Frame extends javax.swing.JFrame {
      */
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated
-    // Code">//GEN-BEGIN:initComponents
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         bgConsoles = new javax.swing.ButtonGroup();
@@ -75,6 +84,7 @@ public class Frame extends javax.swing.JFrame {
         jbSetting = new javax.swing.JButton();
         jrbPsvita = new javax.swing.JRadioButton();
         jrbPsp = new javax.swing.JRadioButton();
+        jbDownloadList = new javax.swing.JButton();
         jpbDownload = new javax.swing.JProgressBar();
         jbResumeAndPause = new javax.swing.JButton();
 
@@ -96,7 +106,6 @@ public class Frame extends javax.swing.JFrame {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 jtfSearchKeyPressed(evt);
             }
-
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 jtfSearchKeyReleased(evt);
             }
@@ -142,58 +151,62 @@ public class Frame extends javax.swing.JFrame {
             }
         });
 
+        jbDownloadList.setText("Download list");
+        jbDownloadList.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbDownloadListActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
-                jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                .addGap(45, 45, 45)
-                                .addComponent(jLabel2)
-                                .addGap(18, 18, 18)
-                                .addComponent(jrbPsvita)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jrbPsp)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED,
-                                        javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jLabel1)
-                                .addGap(18, 18, 18)
-                                .addComponent(jcbRegion, javax.swing.GroupLayout.PREFERRED_SIZE,
-                                        javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(jbsearch)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 162,
-                                        javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(31, 31, 31)
-                                .addComponent(jbRefresh)
-                                .addGap(18, 18, 18)
-                                .addComponent(jbSetting)
-                                .addContainerGap())
-                        .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 1231,
-                                        javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(0, 0, Short.MAX_VALUE)));
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addGap(57, 57, 57)
+                .addComponent(jLabel2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jrbPsvita)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jrbPsp)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jbDownloadList, javax.swing.GroupLayout.PREFERRED_SIZE, 166, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(40, 40, 40)
+                .addComponent(jLabel1)
+                .addGap(18, 18, 18)
+                .addComponent(jcbRegion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(jbsearch)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(31, 31, 31)
+                .addComponent(jbRefresh)
+                .addGap(18, 18, 18)
+                .addComponent(jbSetting)
+                .addContainerGap())
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 1231, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
+        );
         jPanel1Layout.setVerticalGroup(
-                jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(19, 19, 19)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                        .addComponent(jcbRegion, javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addComponent(jbsearch)
-                                        .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE,
-                                                javax.swing.GroupLayout.DEFAULT_SIZE,
-                                                javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addComponent(jbRefresh)
-                                        .addComponent(jLabel1)
-                                        .addComponent(jLabel2)
-                                        .addComponent(jbSetting)
-                                        .addComponent(jrbPsvita)
-                                        .addComponent(jrbPsp))
-                                .addGap(26, 26, 26)
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 552, Short.MAX_VALUE)
-                                .addContainerGap()));
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(19, 19, 19)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jcbRegion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jbsearch)
+                    .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jbRefresh)
+                    .addComponent(jLabel1)
+                    .addComponent(jLabel2)
+                    .addComponent(jbSetting)
+                    .addComponent(jrbPsvita)
+                    .addComponent(jrbPsp)
+                    .addComponent(jbDownloadList))
+                .addGap(26, 26, 26)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 552, Short.MAX_VALUE)
+                .addContainerGap())
+        );
 
         jpbDownload.setStringPainted(true);
 
@@ -208,36 +221,102 @@ public class Frame extends javax.swing.JFrame {
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
-                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE,
-                                        javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(0, 3, Short.MAX_VALUE))
-                        .addGroup(layout.createSequentialGroup()
-                                .addGap(280, 280, 280)
-                                .addComponent(jpbDownload, javax.swing.GroupLayout.PREFERRED_SIZE, 561,
-                                        javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(jbResumeAndPause)
-                                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 3, Short.MAX_VALUE))
+            .addGroup(layout.createSequentialGroup()
+                .addGap(280, 280, 280)
+                .addComponent(jpbDownload, javax.swing.GroupLayout.PREFERRED_SIZE, 561, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(jbResumeAndPause)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
         layout.setVerticalGroup(
-                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE,
-                                        javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                        .addComponent(jpbDownload, javax.swing.GroupLayout.DEFAULT_SIZE, 45,
-                                                Short.MAX_VALUE)
-                                        .addComponent(jbResumeAndPause))
-                                .addContainerGap()));
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jpbDownload, javax.swing.GroupLayout.DEFAULT_SIZE, 45, Short.MAX_VALUE)
+                    .addComponent(jbResumeAndPause))
+                .addContainerGap())
+        );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+        private void jbDownloadListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbDownloadListActionPerformed
+
+            JTable table = new JTable();
+            
+            //fill the table with the download list
+            DefaultTableModel model = (DefaultTableModel) table.getModel();
+            model.addColumn("File URL");
+            model.addColumn("Local File Path");
+            model.addColumn("File Name");
+            model.addColumn("zRIF");
+            model.addColumn("Console");
+
+            for (int i = 0; i < DownloadList.size(); i += 5) {
+                model.addRow(new Object[] { DownloadList.get(i), DownloadList.get(i + 1), DownloadList.get(i + 2),
+                        DownloadList.get(i + 3), DownloadList.get(i + 4) });
+            }
+            
+            // table inside to joptionpane
+            JButton downloadButton = new JButton("Download");
+            downloadButton.addActionListener(this);
+            JOptionPane.showMessageDialog(null, new Object[] { new JScrollPane(table), downloadButton }, "Download List", JOptionPane.PLAIN_MESSAGE);
+            
+    }//GEN-LAST:event_jbDownloadListActionPerformed
+
+    public void actionPerformed(ActionEvent e) {
+        if (e.getActionCommand().equals("Download")) {
+            
+            if (DownloadList.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "The download list is empty.");
+                return;
+            }else{
+
+                if (downloading) {
+                    JOptionPane.showMessageDialog(this, "There are downloads in progress. Please wait until they are completed.");
+                    return;
+                    
+                }else{
+    
+                // download the list of games in the download list
+                for (int i = 0; i < DownloadList.size(); i += 5) {
+                    List<String> fileURLs = new ArrayList<>();
+                    List<String> localFilePaths = new ArrayList<>();
+                    List<String> fileNames = new ArrayList<>();
+                    List<String> zRIFs = new ArrayList<>();
+                    List<String> consoles = new ArrayList<>();
+    
+                    fileURLs.add(DownloadList.get(i));
+                    localFilePaths.add(DownloadList.get(i + 1));
+                    fileNames.add(DownloadList.get(i + 2));
+                    zRIFs.add(DownloadList.get(i + 3));
+                    consoles.add(DownloadList.get(i + 4));
+    
+                    downloadFilesInBackground(fileURLs, localFilePaths, fileNames, zRIFs, consoles);
+                }
+                
+                // Clear the download list
+                DownloadList.clear();
+                }
+
+            }     
+        }
+}
+
     private void jbRefreshActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbRefreshActionPerformed
 
+        if (jrbPsp.isSelected()) {
+            fillTableAndComboBox("Psp");
+        } else if (jrbPsvita.isSelected()) {
         fillTableAndComboBox("Psvita");
+        }
+        
     }// GEN-LAST:event_jbRefreshActionPerformed
 
     private void jtfSearchKeyPressed(java.awt.event.KeyEvent evt) {// GEN-FIRST:event_jtfSearchKeyPressed
@@ -300,14 +379,23 @@ public class Frame extends javax.swing.JFrame {
 
                     // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
                     int option = JOptionPane.showConfirmDialog(this,
-                            "¿You want to download " + nameValue + ", Size is " + fileSizeValue + "?",
-                            "Download File",
+                            "¿You want to add  " + nameValue + ", Size is " + fileSizeValue + "?",
+                            "Download List",
                             JOptionPane.YES_NO_OPTION);
 
                     // Verificar la opción seleccionada por el usuario
                     if (option == JOptionPane.YES_OPTION) {
                         // Lógica para descargar el archivo aquí
-                        downloadFileInBackground(pkgDirectLink, fileName, fileName, null, "Psp");
+                        //downloadFileInBackground(pkgDirectLink , fileName, fileName, null, "Psp");
+
+                        //insert pkgDirectLink , fileName, fileName, null, "Psp" on DownloadList
+                        DownloadList.add(pkgDirectLink);
+                        DownloadList.add(fileName);
+                        DownloadList.add(fileName);
+                        DownloadList.add(null);
+                        DownloadList.add("Psp");
+                        
+                        System.out.println(DownloadList); // Mensaje de depuración
                     }
                 }
             } else if (jrbPsvita.isSelected()) {
@@ -321,14 +409,23 @@ public class Frame extends javax.swing.JFrame {
 
                 // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
                 int option = JOptionPane.showConfirmDialog(this,
-                        "¿You want to download " + nameValue + ", Size is " + fileSizeValue + "?",
-                        "Download File",
-                        JOptionPane.YES_NO_OPTION);
+                            "¿You want to add  " + nameValue + ", Size is " + fileSizeValue + "?",
+                            "Download List",
+                            JOptionPane.YES_NO_OPTION);
 
                 // Verificar la opción seleccionada por el usuario
                 if (option == JOptionPane.YES_OPTION) {
                     // Lógica para descargar el archivo aquí
-                    downloadFileInBackground(pkgDirectLink, fileName, fileName, zRIF, "Psvita");
+                    //downloadFileInBackground(pkgDirectLink, fileName, fileName, zRIF, "Psvita");
+
+                    //insert pkgDirectLink , fileName, fileName, zRIF, "Psvita" on DownloadList
+                    DownloadList.add(pkgDirectLink);
+                    DownloadList.add(fileName);
+                    DownloadList.add(fileName);
+                    DownloadList.add(zRIF);
+                    DownloadList.add("Psvita");
+                    
+                    System.out.println(DownloadList); // Mensaje de depuración
                 }
             }
         }
@@ -508,24 +605,13 @@ public class Frame extends javax.swing.JFrame {
         return -1; // Si no se encuentra la columna, retornar -1
     }
 
-    public void downloadFileInBackground(String fileURL, String localFilePath, String fileName, String zRIF,
-            String Console) {
+    public void downloadFilesInBackground(List<String> fileURLs, List<String> localFilePaths, List<String> fileNames, List<String> zRIFs, List<String> consoles) {
         // Hilo de descarga para no bloquear la interfaz de usuario
         SwingWorker<Void, Integer> worker = new SwingWorker<Void, Integer>() {
             @Override
             protected Void doInBackground() throws Exception {
                 // Establecer la variable de descarga en true
                 downloading = true;
-                // Verificar si el archivo ya existe
-                File file = new File(localFilePath);
-                if (file.exists()) {
-                    JOptionPane.showMessageDialog(Frame.this,
-                            "The file already exists. There is no need to download it again.");
-                    return null; // Salir si el archivo ya existe
-                }
-
-                // Habilitar el botón jbResumeAndPause
-                jbResumeAndPause.setEnabled(true);
 
                 // Verificar si las carpetas db y games existen, si no, crearlas
                 File dbFolder = new File("db");
@@ -536,38 +622,58 @@ public class Frame extends javax.swing.JFrame {
                 if (!gamesFolder.exists()) {
                     gamesFolder.mkdir();
                 }
-                long bytesDownloaded = 0;
-                try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
-                        FileOutputStream fileOutputStream = new FileOutputStream(localFilePath)) {
 
-                    byte dataBuffer[] = new byte[1024];
-                    int bytesRead;
+                for (int i = 0; i < fileURLs.size(); i++) {
+                    String fileURL = fileURLs.get(i);
+                    String localFilePath = localFilePaths.get(i);
+                    String fileName = fileNames.get(i);
+                    String zRIF = zRIFs.get(i);
+                    String console = consoles.get(i);
 
-                    // Si el archivo ya existe, saltar al final de este
+                    // Verificar si el archivo ya existe
+                    File file = new File(localFilePath);
                     if (file.exists()) {
-                        bytesDownloaded = file.length();
-                        in.skip(bytesDownloaded);
+                        JOptionPane.showMessageDialog(Frame.this,
+                                "The file already exists. There is no need to download it again.");
+                        continue; // Pasar al siguiente archivo si el archivo ya existe
                     }
 
-                    long fileSize = utilities.getFileSize(fileURL);
+                    // Habilitar el botón jbResumeAndPause
+                    jbResumeAndPause.setEnabled(true);
 
-                    // Leer y escribir datos del archivo
-                    while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                        // Si la descarga está pausada, esperar
-                        while (downloadPaused) {
-                            Thread.sleep(1000); // Esperar 1 segundo antes de verificar de nuevo
+                    long bytesDownloaded = 0;
+                    try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
+                            FileOutputStream fileOutputStream = new FileOutputStream(localFilePath)) {
+
+                        byte dataBuffer[] = new byte[1024];
+                        int bytesRead;
+
+                        // Si el archivo ya existe, saltar al final de este
+                        if (file.exists()) {
+                            bytesDownloaded = file.length();
+                            in.skip(bytesDownloaded);
                         }
 
-                        fileOutputStream.write(dataBuffer, 0, bytesRead);
-                        bytesDownloaded += bytesRead;
+                        long fileSize = utilities.getFileSize(fileURL);
 
-                        // Calcular y publicar el progreso
-                        int progress = (int) (bytesDownloaded * 100 / fileSize);
-                        publish(progress);
+                        // Leer y escribir datos del archivo
+                        while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                            // Si la descarga está pausada, esperar
+                            while (downloadPaused) {
+                                Thread.sleep(1000); // Esperar 1 segundo antes de verificar de nuevo
+                            }
+
+                            fileOutputStream.write(dataBuffer, 0, bytesRead);
+                            bytesDownloaded += bytesRead;
+
+                            // Calcular y publicar el progreso
+                            int progress = (int) (bytesDownloaded * 100 / fileSize);
+                            publish(progress);
+                        }
+                    } catch (IOException e) {
+                        // Manejar la excepción
+                        e.printStackTrace(); // Imprimir la traza de la excepción para depuración
                     }
-                } catch (IOException e) {
-                    // Manejar la excepción
-                    e.printStackTrace(); // Imprimir la traza de la excepción para depuración
                 }
                 return null;
             }
@@ -586,48 +692,52 @@ public class Frame extends javax.swing.JFrame {
 
                 // Desabilitar el botón jbResumeAndPause
                 jbResumeAndPause.setEnabled(false);
-                // Verificar la extensión del archivo descargado
-                String extension = localFilePath.substring(localFilePath.lastIndexOf(".") + 1).toLowerCase();
-                switch (extension) {
-                    case "tsv":
-
-                        switch (localFilePath) {
-                            case "db/PSV_GAMES.tsv":
-
-                                // Mover el archivo a la carpeta "db"
-                                utilities.moveFile(localFilePath,
-                                        "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                                JOptionPane.showMessageDialog(Frame.this, "Database loaded");
-                                fillTableAndComboBox("Psvita");
-
-                                break;
-                            case "db/PSP_GAMES.tsv":
-                                utilities.moveFile(localFilePath,
-                                        "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                                JOptionPane.showMessageDialog(Frame.this, "Database loaded");
-                                // fillTableAndComboBoxPSP();
-                                break;
-                            default:
-                                break;
-                        }
-                        break;
-                    case "pkg":
-
-                        // Mover el archivo a la carpeta "games"
-                        utilities.moveFile(localFilePath,
-                                "games/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                        JOptionPane.showMessageDialog(Frame.this, "PKG download completed.");
-                        String command = utilities.buildCommand(fileName, zRIF, Console);
-                        utilities.runCommandWithLoadingMessage(command);
-                        break;
-                    default:
-                        // No hacer nada si la extensión no está definida
-                        break;
-                }
 
                 // Notificar al usuario que la descarga ha finalizado
-                // JOptionPane.showMessageDialog(Frame.this, "Descarga completada.");
-                // fillTableAndComboBox();
+                JOptionPane.showMessageDialog(Frame.this, "Download completed.");
+
+                // Realizar las acciones necesarias para cada archivo descargado
+                for (int i = 0; i < fileURLs.size(); i++) {
+                    String localFilePath = localFilePaths.get(i);
+                    String fileName = fileNames.get(i);
+                    String zRIF = zRIFs.get(i);
+                    String console = consoles.get(i);
+
+                    // Verificar la extensión del archivo descargado
+                    String extension = localFilePath.substring(localFilePath.lastIndexOf(".") + 1).toLowerCase();
+                    switch (extension) {
+                        case "tsv":
+                            switch (localFilePath) {
+                                case "db/PSV_GAMES.tsv":
+                                    // Mover el archivo a la carpeta "db"
+                                    utilities.moveFile(localFilePath,
+                                            "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                                    JOptionPane.showMessageDialog(Frame.this, "Database loaded");
+                                    fillTableAndComboBox("Psvita");
+                                    break;
+                                case "db/PSP_GAMES.tsv":
+                                    utilities.moveFile(localFilePath,
+                                            "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                                    JOptionPane.showMessageDialog(Frame.this, "Database loaded");
+                                    // fillTableAndComboBoxPSP();
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        case "pkg":
+                            // Mover el archivo a la carpeta "games"
+                            utilities.moveFile(localFilePath,
+                                    "games/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                            JOptionPane.showMessageDialog(Frame.this, "PKG download completed.");
+                            String command = utilities.buildCommand(fileName, zRIF, console);
+                            utilities.runCommandWithLoadingMessage(command);
+                            break;
+                        default:
+                            // No hacer nada si la extensión no está definida
+                            break;
+                    }
+                }
             }
         };
 
@@ -647,6 +757,7 @@ public class Frame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JButton jbDownloadList;
     private javax.swing.JButton jbRefresh;
     private javax.swing.JButton jbResumeAndPause;
     private javax.swing.JButton jbSetting;

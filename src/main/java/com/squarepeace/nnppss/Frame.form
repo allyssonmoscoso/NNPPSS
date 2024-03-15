@@ -65,13 +65,15 @@
         <DimensionLayout dim="0">
           <Group type="103" groupAlignment="0" attributes="0">
               <Group type="102" alignment="1" attributes="0">
-                  <EmptySpace min="-2" pref="45" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="57" max="-2" attributes="0"/>
                   <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
-                  <EmptySpace type="separate" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
                   <Component id="jrbPsvita" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
                   <Component id="jrbPsp" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="32767" attributes="0"/>
+                  <Component id="jbDownloadList" min="-2" pref="166" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="40" max="-2" attributes="0"/>
                   <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
                   <EmptySpace type="separate" max="-2" attributes="0"/>
                   <Component id="jcbRegion" min="-2" max="-2" attributes="0"/>
@@ -105,6 +107,7 @@
                       <Component id="jbSetting" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="jrbPsvita" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="jrbPsp" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Component id="jbDownloadList" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace min="-2" pref="26" max="-2" attributes="0"/>
                   <Component id="jScrollPane1" pref="552" max="32767" attributes="0"/>
@@ -206,6 +209,14 @@
           </Properties>
           <Events>
             <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jrbPspActionPerformed"/>
+          </Events>
+        </Component>
+        <Component class="javax.swing.JButton" name="jbDownloadList">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Download list"/>
+          </Properties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jbDownloadListActionPerformed"/>
           </Events>
         </Component>
       </SubComponents>
