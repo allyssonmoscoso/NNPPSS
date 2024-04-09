@@ -17,6 +17,7 @@ public class Utilities {
 
     public String TSV_VITA = "db/PSV_GAMES.tsv";
     public String TSV_PSP = "db/PSP_GAMES.tsv";
+    public String TSV_PSX = "db/PSX_GAMES.tsv";
 
     public DefaultTableModel readTSV(String TSV) throws FileNotFoundException, IOException {
         DefaultTableModel model = new DefaultTableModel();
@@ -87,6 +88,8 @@ public class Utilities {
                 command = "lib" + fileSeparator + "pkg2zip.exe -x games" + fileSeparator + PKGname + " " + zRifKey;
             }else if (Console.equals("Psp")) {
                 command = "lib" + fileSeparator + "pkg2zip.exe games" + fileSeparator + PKGname;
+            }else if (Console.equals("Psx")) {
+                command = "lib" + fileSeparator + "pkg2zip.exe games" + fileSeparator + PKGname;
             }
 
             
@@ -101,6 +104,8 @@ public class Utilities {
                 if (Console.equals("Psvita")) {
                     command = "pkg2zip -x games" + fileSeparator + PKGname + " " + zRifKey;
                 }else if (Console.equals("Psp")) {
+                    command = "pkg2zip games" + fileSeparator + PKGname;
+                }else if (Console.equals("Psx")) {
                     command = "pkg2zip games" + fileSeparator + PKGname;
                 }
 
@@ -212,6 +217,10 @@ public class Utilities {
             return getProperty("psvita.url");
         }
 
+        public String getPsxUrl() {
+            return getProperty("psx.url");
+        }
+
         //Metodo para obtener las propiedades del archivo config.properties
         public String getProperty(String property) {
             try {
@@ -234,6 +243,7 @@ public class Utilities {
                 try (FileWriter writer = new FileWriter(file)) {
                     writer.write("psp.url=\n");
                     writer.write("psvita.url=\n");
+                    writer.write("psx.url=\n");
                 }
             }
         } catch (IOException e) {

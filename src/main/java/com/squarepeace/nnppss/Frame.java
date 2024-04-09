@@ -58,7 +58,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         initComponents(); // Asegúrate de llamar al constructor de la superclase si es necesario
         jbResumeAndPause.setEnabled(false); // Inicialmente deshabilitado
         // jrdPsvita como seleccionado por defecto
-        jrbPsvita.setSelected(true);
+        //jrbPsvita.setSelected(true);
     }
 
     /**
@@ -85,6 +85,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         jrbPsvita = new javax.swing.JRadioButton();
         jrbPsp = new javax.swing.JRadioButton();
         jbDownloadList = new javax.swing.JButton();
+        jrbPsx = new javax.swing.JRadioButton();
         jpbDownload = new javax.swing.JProgressBar();
         jbResumeAndPause = new javax.swing.JButton();
 
@@ -158,17 +159,27 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             }
         });
 
+        bgConsoles.add(jrbPsx);
+        jrbPsx.setText("Psx");
+        jrbPsx.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jrbPsxActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGap(57, 57, 57)
+                .addGap(15, 15, 15)
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jrbPsvita)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jrbPsp)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jrbPsx)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jbDownloadList, javax.swing.GroupLayout.PREFERRED_SIZE, 166, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(40, 40, 40)
@@ -185,7 +196,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 .addComponent(jbSetting)
                 .addContainerGap())
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 1231, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 1179, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -202,7 +213,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                     .addComponent(jbSetting)
                     .addComponent(jrbPsvita)
                     .addComponent(jrbPsp)
-                    .addComponent(jbDownloadList))
+                    .addComponent(jbDownloadList)
+                    .addComponent(jrbPsx))
                 .addGap(26, 26, 26)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 552, Short.MAX_VALUE)
                 .addContainerGap())
@@ -224,7 +236,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 3, Short.MAX_VALUE))
+                .addGap(0, 0, Short.MAX_VALUE))
             .addGroup(layout.createSequentialGroup()
                 .addGap(280, 280, 280)
                 .addComponent(jpbDownload, javax.swing.GroupLayout.PREFERRED_SIZE, 561, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -269,6 +281,14 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             JOptionPane.showMessageDialog(null, new Object[] { new JScrollPane(table), downloadButton }, "Download List", JOptionPane.PLAIN_MESSAGE);
             
     }//GEN-LAST:event_jbDownloadListActionPerformed
+
+    private void jrbPsxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jrbPsxActionPerformed
+        fillTable();
+    }//GEN-LAST:event_jrbPsxActionPerformed
+
+    private void jrbPsvitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jrbPsvitaActionPerformed
+        fillTable();
+    }//GEN-LAST:event_jrbPsvitaActionPerformed
 
     public void actionPerformed(ActionEvent e) {
         if (e.getActionCommand().equals("Download")) {
@@ -315,7 +335,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             fillTableAndComboBox("Psp");
         } else if (jrbPsvita.isSelected()) {
         fillTableAndComboBox("Psvita");
-        }
+        } else if (jrbPsx.isSelected()) {
+            fillTableAndComboBox("Psx");
+            }
         
     }// GEN-LAST:event_jbRefreshActionPerformed
 
@@ -389,6 +411,13 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                         //downloadFileInBackground(pkgDirectLink , fileName, fileName, null, "Psp");
 
                         //insert pkgDirectLink , fileName, fileName, null, "Psp" on DownloadList
+
+                        //if already exist in the download list then do not add it again
+                        if (DownloadList.contains(pkgDirectLink)) {
+                            JOptionPane.showMessageDialog(this, "The game is already in the download list.");
+                            return;
+                        }
+
                         DownloadList.add(pkgDirectLink);
                         DownloadList.add(fileName);
                         DownloadList.add(fileName);
@@ -418,6 +447,12 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                     // Lógica para descargar el archivo aquí
                     //downloadFileInBackground(pkgDirectLink, fileName, fileName, zRIF, "Psvita");
 
+                    //if already exist in the download list then do not add it again
+                    if (DownloadList.contains(pkgDirectLink)) {
+                        JOptionPane.showMessageDialog(this, "The game is already in the download list.");
+                        return;
+                    }
+
                     //insert pkgDirectLink , fileName, fileName, zRIF, "Psvita" on DownloadList
                     DownloadList.add(pkgDirectLink);
                     DownloadList.add(fileName);
@@ -426,6 +461,42 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                     DownloadList.add("Psvita");
                     
                     System.out.println(DownloadList); // Mensaje de depuración
+                }
+            } else if (jrbPsx.isSelected()) {
+                {
+                    Object nameValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("Name"));
+                    Object fileSizeValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("File Size"));
+
+                    String pkgDirectLink = pkgDirectLinkValue.toString();
+                    String fileName = pkgDirectLink.substring(pkgDirectLink.lastIndexOf("/") + 1);
+
+                    // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
+                    int option = JOptionPane.showConfirmDialog(this,
+                            "¿You want to add  " + nameValue + ", Size is " + fileSizeValue + "?",
+                            "Download List",
+                            JOptionPane.YES_NO_OPTION);
+
+                    // Verificar la opción seleccionada por el usuario
+                    if (option == JOptionPane.YES_OPTION) {
+                        // Lógica para descargar el archivo aquí
+                        //downloadFileInBackground(pkgDirectLink , fileName, fileName, null, "Psp");
+
+                        //insert pkgDirectLink , fileName, fileName, null, "Psp" on DownloadList
+
+                        //if already exist in the download list then do not add it again
+                        if (DownloadList.contains(pkgDirectLink)) {
+                            JOptionPane.showMessageDialog(this, "The game is already in the download list.");
+                            return;
+                        }
+
+                        DownloadList.add(pkgDirectLink);
+                        DownloadList.add(fileName);
+                        DownloadList.add(fileName);
+                        DownloadList.add(null);
+                        DownloadList.add("Psx");
+                        
+                        System.out.println(DownloadList); // Mensaje de depuración
+                    }
                 }
             }
         }
@@ -454,10 +525,6 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
 
     }// GEN-LAST:event_jbSettingActionPerformed
 
-    private void jrbPsvitaActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jrbPsvitaActionPerformed
-        fillTable();
-    }// GEN-LAST:event_jrbPsvitaActionPerformed
-
     private void jrbPspActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jrbPspActionPerformed
         fillTable();
     }// GEN-LAST:event_jrbPspActionPerformed
@@ -472,6 +539,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             fillTableAndComboBox("Psp");
         } else if (jrbPsvita.isSelected()) {
             fillTableAndComboBox("Psvita");
+        } else if (jrbPsx.isSelected()) {
+            fillTableAndComboBox("Psx");
         }
     }
 
@@ -480,8 +549,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         try {
             if (console.equals("Psp")) {
                 originalModel = utilities.readTSV(utilities.TSV_PSP);
-            } else if (console.equals("Psvita")) {
+            }else if (console.equals("Psvita")) {
                 originalModel = utilities.readTSV(utilities.TSV_VITA);
+            }else if (console.equals("Psx")) {
+                originalModel = utilities.readTSV(utilities.TSV_PSX);
             }
         } catch (IOException e) {
             // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
@@ -633,8 +704,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                     // Verificar si el archivo ya existe
                     File file = new File(localFilePath);
                     if (file.exists()) {
-                        JOptionPane.showMessageDialog(Frame.this,
-                                "The file already exists. There is no need to download it again.");
+                                System.err.println("The file already exists. There is no need to download it again.");
                         continue; // Pasar al siguiente archivo si el archivo ya existe
                     }
 
@@ -712,14 +782,19 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                                     // Mover el archivo a la carpeta "db"
                                     utilities.moveFile(localFilePath,
                                             "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                                    JOptionPane.showMessageDialog(Frame.this, "Database loaded");
-                                    fillTableAndComboBox("Psvita");
+                                    System.err.println("Psvita Database loaded");
+
                                     break;
                                 case "db/PSP_GAMES.tsv":
                                     utilities.moveFile(localFilePath,
                                             "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                                    JOptionPane.showMessageDialog(Frame.this, "Database loaded");
-                                    // fillTableAndComboBoxPSP();
+                                            System.err.println("Psp vita Database loaded");
+
+                                    case "db/PSX_GAMES.tsv":
+                                    utilities.moveFile(localFilePath,
+                                            "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                                            System.err.println("Psx Database loaded");
+
                                     break;
                                 default:
                                     break;
@@ -766,6 +841,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private javax.swing.JProgressBar jpbDownload;
     private javax.swing.JRadioButton jrbPsp;
     private javax.swing.JRadioButton jrbPsvita;
+    private javax.swing.JRadioButton jrbPsx;
     private javax.swing.JTable jtData;
     private javax.swing.JTextField jtfSearch;
     // End of variables declaration//GEN-END:variables

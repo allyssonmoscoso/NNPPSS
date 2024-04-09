@@ -26,8 +26,10 @@ public class UtilitiesTests {
         utilities.createConfigFile();
         String pspUrl = utilities.getPSPUrl();
         String psvitaUrl = utilities.getPSVitaUrl();
+        String psxUrl = utilities.getPsxUrl();
         assertTrue(!pspUrl.isEmpty());
         assertTrue(!psvitaUrl.isEmpty());
+        assertTrue(!psxUrl.isEmpty());
     }
 
     //test for getProperty method in Utilities class
@@ -37,8 +39,10 @@ public class UtilitiesTests {
         utilities.createConfigFile();
         String pspUrl = utilities.getProperty("psp.url");
         String psvitaUrl = utilities.getProperty("psvita.url");
+        String psxUrl = utilities.getProperty("psx.url");
         assertTrue(pspUrl.endsWith(".tsv"));
         assertTrue(psvitaUrl.endsWith(".tsv"));
+        assertTrue(psxUrl.endsWith(".tsv"));
     }    
 
     //test for readTSV method in Utilities class
@@ -47,15 +51,19 @@ public class UtilitiesTests {
         Utilities utilities = new Utilities();
         assertTrue(utilities.readTSV(utilities.TSV_PSP).getRowCount() > 0);
         assertTrue(utilities.readTSV(utilities.TSV_VITA).getRowCount() > 0);
+        assertTrue(utilities.readTSV(utilities.TSV_PSX).getRowCount() > 0);
     }
 
     //test exist db files (db/PSP_GAMES and db/PSV_GAMES) on directory
     @Test
     public void testExistDBFiles() {
-        File pspFile = new File("db/PSP_GAMES.tsv");
-        File psvitaFile = new File("db/PSV_GAMES.tsv");
+        Utilities utilities = new Utilities();
+        File pspFile = new File(utilities.TSV_PSP);
+        File psvitaFile = new File(utilities.TSV_VITA);
+        File psxFile = new File(utilities.TSV_PSX);
         assertTrue(pspFile.exists());
         assertTrue(psvitaFile.exists());
+        assertTrue(psxFile.exists());
     }
     
     //test for moveFile method in Utilities class

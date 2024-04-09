@@ -44,6 +44,8 @@ public class Config extends javax.swing.JFrame {
         jbSave = new javax.swing.JButton();
         jbClear = new javax.swing.JButton();
         jbClose = new javax.swing.JButton();
+        jLabel3 = new javax.swing.JLabel();
+        jtfUrlPsx = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Configuration");
@@ -73,6 +75,8 @@ public class Config extends javax.swing.JFrame {
             }
         });
 
+        jLabel3.setText("PSX URL:");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -80,22 +84,24 @@ public class Config extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jLabel3)
                     .addComponent(jbClear)
                     .addComponent(jLabel2)
                     .addComponent(jLabel1))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(44, 44, 44)
+                        .addComponent(jbClose)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 80, Short.MAX_VALUE)
+                        .addComponent(jbSave)
+                        .addGap(20, 20, 20))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(jtfUrlPsvita)
-                            .addComponent(jtfUrlPsp, javax.swing.GroupLayout.PREFERRED_SIZE, 294, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(44, 44, 44)
-                        .addComponent(jbClose)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jbSave)
-                        .addGap(20, 20, 20))))
+                            .addComponent(jtfUrlPsp, javax.swing.GroupLayout.DEFAULT_SIZE, 294, Short.MAX_VALUE)
+                            .addComponent(jtfUrlPsx))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -108,7 +114,11 @@ public class Config extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
                     .addComponent(jtfUrlPsp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 33, Short.MAX_VALUE)
+                .addGap(24, 24, 24)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(jtfUrlPsx, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jbSave)
                     .addComponent(jbClear)
@@ -147,6 +157,7 @@ public class Config extends javax.swing.JFrame {
             output = new FileOutputStream("config.properties");
             prop.setProperty("psvita.url", jtfUrlPsvita.getText());
             prop.setProperty("psp.url", jtfUrlPsp.getText());
+            prop.setProperty("psx.url", jtfUrlPsx.getText());
             prop.store(output, null);
             JOptionPane.showMessageDialog(null, "URLs saved successfully");
             
@@ -178,6 +189,7 @@ public class Config extends javax.swing.JFrame {
             p.load(reader);  
             String psvitaUrl = p.getProperty("psvita.url");
             String pspUrl = p.getProperty("psp.url");
+            String psxUrl = p.getProperty("psx.url");
 
             if (psvitaUrl != null && !psvitaUrl.isEmpty()) {
                 jtfUrlPsvita.setText(psvitaUrl);
@@ -185,6 +197,10 @@ public class Config extends javax.swing.JFrame {
 
             if (pspUrl != null && !pspUrl.isEmpty()) {
                 jtfUrlPsp.setText(pspUrl);
+            }
+
+            if (psxUrl != null && !psxUrl.isEmpty()) {
+                jtfUrlPsx.setText(psxUrl);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -231,12 +247,14 @@ public class Config extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JButton jbClear;
     private javax.swing.JButton jbClose;
     private javax.swing.JButton jbSave;
     private javax.swing.JTextField jtfUrlPsp;
     private javax.swing.JTextField jtfUrlPsvita;
+    private javax.swing.JTextField jtfUrlPsx;
     // End of variables declaration//GEN-END:variables
     
 }

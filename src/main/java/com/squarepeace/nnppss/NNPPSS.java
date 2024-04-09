@@ -37,19 +37,20 @@ public class NNPPSS {
             p.load(reader);
             String psvitaUrl = p.getProperty("psvita.url");
             String pspUrl = p.getProperty("psp.url");
-
+            String psxUrl = p.getProperty("psx.url");
 
 
 
 
             // si las urls estan vacias, se abre la ventana de configuracion
-            if (psvitaUrl.isEmpty() && pspUrl.isEmpty()) {
+            if (psvitaUrl.isEmpty() && pspUrl.isEmpty() && psxUrl.isEmpty()) {
                 configFrame.pack();
                 configFrame.setLocationRelativeTo(null);
                 configFrame.setResizable(false);
                 configFrame.setVisible(true);
                 configFrame.loadValues();
-            } else {
+                return;
+            } 
                 frame.pack();
                 frame.setLocationRelativeTo(null);
                 frame.setResizable(false);
@@ -76,8 +77,8 @@ public class NNPPSS {
                     //frame.downloadFilesInBackground(fileURLs, localFilePaths, n , null, null);
                     
                     DownloadThread downloadThread = new DownloadThread(frame, fileURLs, localFilePaths, fileNames, zRIFs, consoles);
-                    downloadThread.start();
                     DownloadList.clear();
+                    downloadThread.start();
                     try {
                         downloadThread.join();
                         // Verificar si la descarga se completó con éxito antes de llenar la tabla y el combobox
@@ -120,8 +121,9 @@ public class NNPPSS {
                     //frame.downloadFilesInBackground(fileURLs, localFilePaths, n , null, null);
                     
                     DownloadThread downloadThread = new DownloadThread(frame, fileURLs, localFilePaths, fileNames, zRIFs, consoles);
-                    downloadThread.start();
                     DownloadList.clear();
+                    downloadThread.start();
+                    
                     
                     try {
                         downloadThread.join();
@@ -139,7 +141,49 @@ public class NNPPSS {
                 }
 
                 }
-            }
+
+                if (!psxUrl.isEmpty()) {
+                    
+
+                    DownloadList.add(psxUrl);
+                DownloadList.add(utilities.TSV_PSX);
+                DownloadList.add(utilities.TSV_PSX.substring(3));
+                DownloadList.add("dfadsfsdsf");
+                DownloadList.add("fsdfdfdfd");
+                // download the list of games in the download list
+                for (int i = 0; i < DownloadList.size(); i += 5) {
+                    
+
+                    fileURLs.add(DownloadList.get(i));
+                    localFilePaths.add(DownloadList.get(i + 1));
+                    fileNames.add(DownloadList.get(i + 2));
+                    zRIFs.add(DownloadList.get(i + 3));
+                    consoles.add(DownloadList.get(i + 4));
+
+                    //frame.downloadFilesInBackground(fileURLs, localFilePaths, n , null, null);
+                    
+                    DownloadThread downloadThread = new DownloadThread(frame, fileURLs, localFilePaths, fileNames, zRIFs, consoles);
+                    DownloadList.clear();
+                    downloadThread.start();
+                    
+                    try {
+                        downloadThread.join();
+                        // Verificar si la descarga se completó con éxito antes de llenar la tabla y el combobox
+                        if (downloadThread.isDownloadSuccessful()) {
+                            // Llenar la tabla y el combobox después de la descarga
+                            // frame.fillTableAndComboBox();
+                        } else {
+                            // Imprimir un mensaje de error si la descarga falló
+                            JOptionPane.showMessageDialog(frame, "Download failed. Unable to populate table and combobox.");
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                }
+
+            
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {
