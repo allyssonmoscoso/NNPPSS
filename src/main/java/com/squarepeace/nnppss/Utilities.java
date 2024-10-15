@@ -9,9 +9,14 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Scanner;
 import javax.swing.table.DefaultTableModel;
-import java.io.FileInputStream;
-import java.io.IOException;
+
 import java.util.Properties;
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 
 public class Utilities {
 
@@ -119,29 +124,55 @@ public class Utilities {
         }
         return command;
     }
-
     // Método para verificar si un comando está instalado  
     public static boolean isCommandInstalled(String command) {
         boolean installed = false;
-        try {
-            // Ejecutar el comando 'which' para verificar si está instalado
-            Process process = Runtime.getRuntime().exec("which " + command);
-            // Leer la salida del proceso
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            // Leer todas las líneas de salida
-            while ((line = reader.readLine()) != null) {
-                // Si la línea no está vacía, el comando está instalado
-                if (!line.isEmpty()) {
-                    installed = true;
-                    break;
+        
+        if (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
+            try {
+                // Ejecutar el comando 'where' para verificar si está instalado en Windows
+                Process process = Runtime.getRuntime().exec("where " + command);
+                // Leer la salida del proceso
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line;
+                // Leer todas las líneas de salida
+                while ((line = reader.readLine()) != null) {
+                    // Si la línea no está vacía, el comando está instalado
+                    if (!line.isEmpty()) {
+                        installed = true;
+                        break;
+                    }
                 }
+                // Esperar a que el proceso termine
+                process.waitFor();
+            } catch (IOException | InterruptedException e) {
+                // Capturar cualquier excepción que pueda ocurrir durante la verificación
+                e.printStackTrace();
             }
-            // Esperar a que el proceso termine
-            process.waitFor();
-        } catch (IOException | InterruptedException e) {
-            // Capturar cualquier excepción que pueda ocurrir durante la verificación
-            e.printStackTrace();
+        } else if (System.getProperty("os.name").toLowerCase().indexOf("nix") >= 0
+                || System.getProperty("os.name").toLowerCase().indexOf("nux") >= 0
+                || System.getProperty("os.name").toLowerCase().indexOf("aix") > 0
+                || System.getProperty("os.name").toLowerCase().indexOf("mac") >= 0) {
+            try {
+                // Ejecutar el comando 'which' para verificar si está instalado
+                Process process = Runtime.getRuntime().exec("which " + command);
+                // Leer la salida del proceso
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line;
+                // Leer todas las líneas de salida
+                while ((line = reader.readLine()) != null) {
+                    // Si la línea no está vacía, el comando está instalado
+                    if (!line.isEmpty()) {
+                        installed = true;
+                        break;
+                    }
+                }
+                // Esperar a que el proceso termine
+                process.waitFor();
+            } catch (IOException | InterruptedException e) {
+                // Capturar cualquier excepción que pueda ocurrir durante la verificación
+                e.printStackTrace();
+            }
         }
         return installed;
     }
@@ -250,5 +281,61 @@ public class Utilities {
             e.printStackTrace();
         }
     }    
+
+    void getUrlsFromPage(){
+
+    // Obtener los urls de la página web https://nopaystation.com usando soup  
+    try {
+        // Conectar a la página web
+        Connection connection = Jsoup.connect("https://nopaystation.com");
+        Document document = connection.get();
+
+        // Obtener todos los elementos 'a' de la página
+        Elements elements = document.select("a");
+
+        // Crear una lista para almacenar los urls
+        ArrayList<String> urls = new ArrayList<>();
+        // Iterar sobre los elementos 'a'
+        for (Element element : elements) {
+            // Obtener el atributo 'href' de cada elemento 'a'
+            String url = element.attr("href");
+            // Verificar si el url contiene 'http' y no está en la lista
+            if (url.contains("tsv") && !urls.contains(url)) {
+                // Añadir el url a la lista
+                urls.add(url);
+            }
+        }
+
+        // Imprimir los urls
+        // for (String url : urls) {
+        //    System.out.println(url);
+        //}
+        
+         //remove urls containing "pending" the list
+        urls.removeIf(url -> url.contains("pending"));
+        //add the urls to the config file adding https://nopaystation.com/ to the beginning of the url  
+        try {
+            File file = new File("config.properties");
+            Properties p = new Properties();
+            p.load(new FileInputStream(file));
+            for (String url : urls) {
+            if (url.contains("PSP_GAMES")) {
+                p.setProperty("psp.url", "https://nopaystation.com" + url);
+            } else if (url.contains("PSV_GAMES")) {
+                p.setProperty("psvita.url", "https://nopaystation.com" + url);
+            } else if (url.contains("PSX_GAMES")) {
+                p.setProperty("psx.url", "https://nopaystation.com" + url);
+            }
+            }
+            p.store(new FileOutputStream(file), null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    } catch (IOException e) {
+        e.printStackTrace();
+
+    }
+}
 
 }

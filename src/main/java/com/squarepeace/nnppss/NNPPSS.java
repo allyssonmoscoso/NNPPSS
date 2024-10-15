@@ -32,6 +32,7 @@ public class NNPPSS {
 
         FileReader reader;
         try {
+            utilities.getUrlsFromPage();
             reader = new FileReader("config.properties");
             Properties p = new Properties();
             p.load(reader);
