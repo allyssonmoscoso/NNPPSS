@@ -269,10 +269,12 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             model.addColumn("File Name");
             model.addColumn("zRIF");
             model.addColumn("Console");
+            model.addColumn("Name");
+            model.addColumn("Size");
 
-            for (int i = 0; i < DownloadList.size(); i += 5) {
+            for (int i = 0; i < DownloadList.size(); i += 7) {
                 model.addRow(new Object[] { DownloadList.get(i), DownloadList.get(i + 1), DownloadList.get(i + 2),
-                        DownloadList.get(i + 3), DownloadList.get(i + 4) });
+                        DownloadList.get(i + 3), DownloadList.get(i + 4), DownloadList.get(i + 5), DownloadList.get(i + 6) });
             }
             
             // Add a button to remove selected rows
@@ -283,7 +285,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                     int[] selectedRows = table.getSelectedRows();
                     for (int i = selectedRows.length - 1; i >= 0; i--) {
                         int modelRow = table.convertRowIndexToModel(selectedRows[i]);
-                        for (int j = 0; j < 5; j++) {
+                        for (int j = 0; j < 7; j++) {
                             DownloadList.remove(model.getValueAt(modelRow, j));
                         }
                         model.removeRow(modelRow);
@@ -327,13 +329,17 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                     List<String> fileNames = new ArrayList<>();
                     List<String> zRIFs = new ArrayList<>();
                     List<String> consoles = new ArrayList<>();
-    
+                    List<String> Names = new ArrayList<>();
+                    List<String> Sizes = new ArrayList<>();
+
                     fileURLs.add(DownloadList.get(i));
                     localFilePaths.add(DownloadList.get(i + 1));
                     fileNames.add(DownloadList.get(i + 2));
                     zRIFs.add(DownloadList.get(i + 3));
                     consoles.add(DownloadList.get(i + 4));
-    
+                    Names.add(DownloadList.get(i + 5));
+                    Sizes.add(DownloadList.get(i + 6));
+
                     downloadFilesInBackground(fileURLs, localFilePaths, fileNames, zRIFs, consoles);
                 }
                 
@@ -439,6 +445,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                         DownloadList.add(fileName);
                         DownloadList.add(null);
                         DownloadList.add("Psp");
+                        DownloadList.add(nameValue.toString());
+                        DownloadList.add(fileSizeValue.toString());
                         
                         System.out.println(DownloadList); // Mensaje de depuración
                     }
@@ -475,6 +483,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                     DownloadList.add(fileName);
                     DownloadList.add(zRIF);
                     DownloadList.add("Psvita");
+                    DownloadList.add(nameValue.toString());
+                    DownloadList.add(fileSizeValue.toString());
                     
                     System.out.println(DownloadList); // Mensaje de depuración
                 }
@@ -510,6 +520,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                         DownloadList.add(fileName);
                         DownloadList.add(null);
                         DownloadList.add("Psx");
+                        DownloadList.add(nameValue.toString());
+                        DownloadList.add(fileSizeValue.toString());
                         
                         System.out.println(DownloadList); // Mensaje de depuración
                     }
