@@ -262,7 +262,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
 
             JTable table = new JTable();
             
-            //fill the table with the download list
+            // Fill the table with the download list
             DefaultTableModel model = (DefaultTableModel) table.getModel();
             model.addColumn("File URL");
             model.addColumn("Local File Path");
@@ -275,10 +275,26 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                         DownloadList.get(i + 3), DownloadList.get(i + 4) });
             }
             
-            // table inside to joptionpane
+            // Add a button to remove selected rows
+            JButton removeButton = new JButton("Remove Selected");
+            removeButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    int[] selectedRows = table.getSelectedRows();
+                    for (int i = selectedRows.length - 1; i >= 0; i--) {
+                        int modelRow = table.convertRowIndexToModel(selectedRows[i]);
+                        for (int j = 0; j < 5; j++) {
+                            DownloadList.remove(model.getValueAt(modelRow, j));
+                        }
+                        model.removeRow(modelRow);
+                    }
+                }
+            });
+
+            // Table inside JOptionPane
             JButton downloadButton = new JButton("Download");
             downloadButton.addActionListener(this);
-            JOptionPane.showMessageDialog(null, new Object[] { new JScrollPane(table), downloadButton }, "Download List", JOptionPane.PLAIN_MESSAGE);
+            JOptionPane.showMessageDialog(null, new Object[] { new JScrollPane(table), downloadButton, removeButton }, "Download List", JOptionPane.PLAIN_MESSAGE);
             
     }//GEN-LAST:event_jbDownloadListActionPerformed
 
