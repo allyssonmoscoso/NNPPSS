@@ -792,7 +792,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 jbResumeAndPause.setEnabled(false);
 
                 // Notificar al usuario que la descarga ha finalizado
-                JOptionPane.showMessageDialog(Frame.this, "Download completed.");
+                //JOptionPane.showMessageDialog(Frame.this, "Download completed.");
 
                 // Realizar las acciones necesarias para cada archivo descargado
                 for (int i = 0; i < fileURLs.size(); i++) {
