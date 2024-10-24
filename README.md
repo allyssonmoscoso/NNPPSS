@@ -5,9 +5,9 @@ NNPPSS is compatible with Windows, macOS, and Linux or Unix Based Operating Syst
 
 ## Prerequisites/Requirements
 
-1. You will need Java, I recommend Java 17+
+1. You will need Java, I recommend Java 8+
 2. If you are building from source, maven is required.
-3. For non-NT (windows) based systems, you will need pkg2zip 
+3. For non-NT (windows) based systems, you will need [pkg2zip](https://github.com/mmozeiko/pkg2zip)
 
 ## Installation
 
