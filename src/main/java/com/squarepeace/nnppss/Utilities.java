@@ -1,16 +1,27 @@
 package com.squarepeace.nnppss;
 
-import javax.swing.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Scanner;
+import java.util.Properties;
+
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
+import javax.swing.JProgressBar;
+import javax.swing.WindowConstants;
 import javax.swing.table.DefaultTableModel;
 
-import java.util.Properties;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -275,6 +286,7 @@ public class Utilities {
                     writer.write("psp.url=\n");
                     writer.write("psvita.url=\n");
                     writer.write("psx.url=\n");
+                    writer.write("simultaneousDownloads=1\n");
                 }
             }
         } catch (IOException e) {

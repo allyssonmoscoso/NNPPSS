@@ -46,6 +46,8 @@ public class Config extends javax.swing.JFrame {
         jbClose = new javax.swing.JButton();
         jLabel3 = new javax.swing.JLabel();
         jtfUrlPsx = new javax.swing.JTextField();
+        jLabel4 = new javax.swing.JLabel();
+        jSpinner_simultaneous_downloads = new javax.swing.JSpinner();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Configuration");
@@ -77,31 +79,42 @@ public class Config extends javax.swing.JFrame {
 
         jLabel3.setText("PSX URL:");
 
+        jLabel4.setText("simultaneous downloads:");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
+                .addGap(74, 74, 74)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jLabel3)
                     .addComponent(jbClear)
-                    .addComponent(jLabel2)
-                    .addComponent(jLabel1))
+                    .addComponent(jLabel1)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel3)
+                            .addComponent(jLabel2))
+                        .addGap(8, 8, 8)))
+                .addGap(12, 12, 12)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(44, 44, 44)
                         .addComponent(jbClose)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 80, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 110, Short.MAX_VALUE)
                         .addComponent(jbSave)
                         .addGap(20, 20, 20))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jtfUrlPsvita)
-                            .addComponent(jtfUrlPsp, javax.swing.GroupLayout.DEFAULT_SIZE, 294, Short.MAX_VALUE)
-                            .addComponent(jtfUrlPsx))
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(jtfUrlPsvita, javax.swing.GroupLayout.DEFAULT_SIZE, 294, Short.MAX_VALUE)
+                                .addComponent(jtfUrlPsx))
+                            .addComponent(jtfUrlPsp, javax.swing.GroupLayout.PREFERRED_SIZE, 294, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -110,15 +123,19 @@ public class Config extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel1)
                     .addComponent(jtfUrlPsvita, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(29, 29, 29)
+                .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
                     .addComponent(jtfUrlPsp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(24, 24, 24)
+                .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
                     .addComponent(jtfUrlPsx, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 19, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jbSave)
                     .addComponent(jbClear)
@@ -158,8 +175,9 @@ public class Config extends javax.swing.JFrame {
             prop.setProperty("psvita.url", jtfUrlPsvita.getText());
             prop.setProperty("psp.url", jtfUrlPsp.getText());
             prop.setProperty("psx.url", jtfUrlPsx.getText());
+            prop.setProperty("simultaneousDownloads", jSpinner_simultaneous_downloads.getValue().toString());
             prop.store(output, null);
-            JOptionPane.showMessageDialog(null, "URLs saved successfully");
+            JOptionPane.showMessageDialog(null, "Configuration saved successfully");
             
         } catch (IOException io) {
             io.printStackTrace();      
@@ -190,6 +208,8 @@ public class Config extends javax.swing.JFrame {
             String psvitaUrl = p.getProperty("psvita.url");
             String pspUrl = p.getProperty("psp.url");
             String psxUrl = p.getProperty("psx.url");
+            String simultaneousDownloads = p.getProperty("simultaneousDownloads");
+            jSpinner_simultaneous_downloads.setValue(Integer.valueOf(simultaneousDownloads));
 
             if (psvitaUrl != null && !psvitaUrl.isEmpty()) {
                 jtfUrlPsvita.setText(psvitaUrl);
@@ -201,6 +221,13 @@ public class Config extends javax.swing.JFrame {
 
             if (psxUrl != null && !psxUrl.isEmpty()) {
                 jtfUrlPsx.setText(psxUrl);
+            }
+            if (simultaneousDownloads != null && !simultaneousDownloads.isEmpty()) {
+                if (simultaneousDownloads.matches("[0-9]+") && Integer.parseInt(simultaneousDownloads) > 0) {
+                    jSpinner_simultaneous_downloads.setValue(Integer.valueOf(simultaneousDownloads));
+                } else {
+                    jSpinner_simultaneous_downloads.setValue(1);
+                }
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -248,7 +275,9 @@ public class Config extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JSpinner jSpinner_simultaneous_downloads;
     private javax.swing.JButton jbClear;
     private javax.swing.JButton jbClose;
     private javax.swing.JButton jbSave;
