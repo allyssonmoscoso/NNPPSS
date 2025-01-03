@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -87,6 +88,10 @@ public class Utilities {
     public void moveFile(String sourceFilePath, String destinationFilePath) {
         File sourceFile = new File(sourceFilePath);
         File destinationFile = new File(destinationFilePath);
+        if (!sourceFile.exists()) {
+            System.err.println("Source file does not exist: " + sourceFilePath);
+            return;
+        }
         try {
             Files.move(sourceFile.toPath(), destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
@@ -323,7 +328,7 @@ public class Utilities {
         // Imprimir los urls
         // for (String url : urls) {
         //    System.out.println(url);
-        //}
+        // }
         
          //remove urls containing "pending" the list
         urls.removeIf(url -> url.contains("pending"));
@@ -358,6 +363,25 @@ public static void setFrameIcon(JFrame frame, String iconPath) {
             frame.setIconImage(new ImageIcon(iconURL).getImage());
         } else {
             System.err.println("Icon resource not found: " + iconPath);
+        }
+    }
+
+    public void downloadFile(String fileURL, String destinationFilePath) throws IOException {
+        File destinationFile = new File(destinationFilePath);
+        File parentDir = destinationFile.getParentFile();
+        if (!parentDir.exists()) {
+            parentDir.mkdirs(); // Crear el directorio si no existe
+        }
+        URL url = new URL(fileURL);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        try (InputStream inputStream = connection.getInputStream();
+             FileOutputStream outputStream = new FileOutputStream(destinationFilePath)) {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
         }
     }
 

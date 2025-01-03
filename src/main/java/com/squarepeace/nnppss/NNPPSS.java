@@ -4,6 +4,7 @@
 
 package com.squarepeace.nnppss;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -68,6 +69,19 @@ public class NNPPSS {
 
     private static void processDownload(String url, String tsv, Frame frame) {
         if (!url.isEmpty()) {
+            File tsvFile = new File(tsv);
+            if (!tsvFile.exists()) {
+                try {
+                    Utilities utilities = new Utilities();
+                    utilities.downloadFile(url, tsv);
+                    System.out.println(tsv + " downloaded");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    JOptionPane.showMessageDialog(frame, "Failed to download " + tsv);
+                    return;
+                }
+            }
+
             DownloadList.add(url);
             DownloadList.add(tsv);
             DownloadList.add(tsv.substring(3));
