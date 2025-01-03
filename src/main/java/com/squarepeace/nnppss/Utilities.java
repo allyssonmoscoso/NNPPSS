@@ -16,7 +16,9 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Properties;
 
+import javax.swing.ImageIcon;
 import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.WindowConstants;
@@ -349,5 +351,14 @@ public class Utilities {
 
     }
 }
+
+public static void setFrameIcon(JFrame frame, String iconPath) {
+        URL iconURL = frame.getClass().getResource(iconPath);
+        if (iconURL != null) {
+            frame.setIconImage(new ImageIcon(iconURL).getImage());
+        } else {
+            System.err.println("Icon resource not found: " + iconPath);
+        }
+    }
 
 }

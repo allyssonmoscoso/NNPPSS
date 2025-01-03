@@ -64,6 +64,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         jbResumeAndPause.setEnabled(false); // Inicialmente deshabilitado
         // jrdPsvita como seleccionado por defecto
         //jrbPsvita.setSelected(true);
+
+        utilities.setFrameIcon(this, "/n.png");
     }
 
     /**

@@ -20,11 +20,13 @@ import javax.swing.JOptionPane;
  */
 public class Config extends javax.swing.JFrame {
 
+    Utilities utilities = new Utilities();
     /**
      * Creates new form Config
      */
     public Config() {
         initComponents();
+        utilities.setFrameIcon(this, "/n.png");
     }
 
     /**
