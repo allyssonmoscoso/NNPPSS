@@ -75,7 +75,13 @@ public class NNPPSS {
             DownloadList.add("fsdfdfdfd");
 
             for (int i = 0; i < DownloadList.size(); i += 5) {
-                fileURLs.add(DownloadList.get(i));
+                String fileUrl = DownloadList.get(i);
+                if (processedFiles.contains(fileUrl)) {
+                    continue; // Skip already processed files
+                }
+                processedFiles.add(fileUrl);
+
+                fileURLs.add(fileUrl);
                 localFilePaths.add(DownloadList.get(i + 1));
                 fileNames.add(DownloadList.get(i + 2));
                 zRIFs.add(DownloadList.get(i + 3));

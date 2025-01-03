@@ -323,7 +323,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 }else{
     
                 // download the list of games in the download list
-                for (int i = 0; i < DownloadList.size(); i += 5) {
+                for (int i = 0; i < DownloadList.size(); i += 7) {
                     List<String> fileURLs = new ArrayList<>();
                     List<String> localFilePaths = new ArrayList<>();
                     List<String> fileNames = new ArrayList<>();
