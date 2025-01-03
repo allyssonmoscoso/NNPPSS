@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Properties;
 
+import javax.swing.BorderFactory;
 import javax.swing.JOptionPane;
 
 /**
@@ -53,6 +54,7 @@ public class Config extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Configuration");
+        setUndecorated(true);
 
         jLabel1.setText("PSVITA URL:");
 
