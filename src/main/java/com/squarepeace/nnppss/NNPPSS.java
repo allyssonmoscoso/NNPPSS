@@ -128,7 +128,7 @@ public class NNPPSS {
 
         @Override
         public void run() {
-            frame.downloadFilesInBackground(url, localFilePaths, fileName, zRIFs, consoles);
+            frame.downloadFilesInBackground(url, localFilePaths, fileName, zRIFs, consoles, null);
             this.downloadSuccessful = true;
         }
 

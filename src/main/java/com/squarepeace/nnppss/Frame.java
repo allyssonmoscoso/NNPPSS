@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -350,7 +353,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                     Names.add(DownloadList.get(i + 5));
                     Sizes.add(DownloadList.get(i + 6));
 
-                    downloadFilesInBackground(fileURLs, localFilePaths, fileNames, zRIFs, consoles);
+                    downloadFilesInBackground(fileURLs, localFilePaths, fileNames, zRIFs, consoles, Names);
                 }
                 
                 // Clear the download list
@@ -714,15 +717,15 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         return -1; // Si no se encuentra la columna, retornar -1
     }
 
-    public void downloadFilesInBackground(List<String> fileURLs, List<String> localFilePaths, List<String> fileNames, List<String> zRIFs, List<String> consoles) {
-        // Hilo de descarga para no bloquear la interfaz de usuario
-        SwingWorker<Void, Integer> worker = new SwingWorker<Void, Integer>() {
+    public void downloadFilesInBackground(List<String> fileURLs, List<String> localFilePaths, List<String> fileNames, List<String> zRIFs, List<String> consoles, List<String> Names) {
+        int simultaneousDownloads = 1; // Set the number of simultaneous downloads
+        ExecutorService executor = Executors.newFixedThreadPool(simultaneousDownloads);
+
+        SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
             @Override
             protected Void doInBackground() throws Exception {
-                // Establecer la variable de descarga en true
                 downloading = true;
 
-                // Verificar si las carpetas db y games existen, si no, crearlas
                 File dbFolder = new File("db");
                 File gamesFolder = new File("games");
                 if (!dbFolder.exists()) {
@@ -733,128 +736,117 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 }
 
                 for (int i = 0; i < fileURLs.size(); i++) {
-                    String fileURL = fileURLs.get(i);
-                    String localFilePath = localFilePaths.get(i);
-                    String fileName = fileNames.get(i);
-                    String zRIF = zRIFs.get(i);
-                    String console = consoles.get(i);
+                    final int index = i;
+                    executor.submit(() -> {
+                        String fileURL = fileURLs.get(index);
+                        String localFilePath = localFilePaths.get(index);
+                        String fileName = fileNames.get(index);
+                        String zRIF = zRIFs.get(index);
+                        String console = consoles.get(index);
+                        String Name = Names.get(index);
 
-                    // Verificar si el archivo ya existe
-                    File file = new File(localFilePath);
-                    if (file.exists()) {
-                                System.err.println("The file already exists. There is no need to download it again.");
-                        continue; // Pasar al siguiente archivo si el archivo ya existe
-                    }
+                        File file = new File(localFilePath);
+                        if (file.exists()) {
+                            System.err.println("The file already exists. There is no need to download it again.");
+                            return;
+                        }
 
-                    // Habilitar el botón jbResumeAndPause
-                    jbResumeAndPause.setEnabled(true);
+                        jbResumeAndPause.setEnabled(true);
 
-                    long bytesDownloaded = 0;
-                    try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
+                        long bytesDownloaded = 0;
+                        try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
                             FileOutputStream fileOutputStream = new FileOutputStream(localFilePath)) {
 
-                        byte dataBuffer[] = new byte[1024];
-                        int bytesRead;
+                            byte dataBuffer[] = new byte[1024];
+                            int bytesRead;
 
-                        // Si el archivo ya existe, saltar al final de este
-                        if (file.exists()) {
-                            bytesDownloaded = file.length();
-                            in.skip(bytesDownloaded);
-                        }
-
-                        long fileSize = utilities.getFileSize(fileURL);
-
-                        // Leer y escribir datos del archivo
-                        while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                            // Si la descarga está pausada, esperar
-                            while (downloadPaused) {
-                                Thread.sleep(1000); // Esperar 1 segundo antes de verificar de nuevo
+                            if (file.exists()) {
+                                bytesDownloaded = file.length();
+                                in.skip(bytesDownloaded);
                             }
 
-                            fileOutputStream.write(dataBuffer, 0, bytesRead);
-                            bytesDownloaded += bytesRead;
+                            long fileSize = utilities.getFileSize(fileURL);
 
-                            // Calcular y publicar el progreso
-                            int progress = (int) (bytesDownloaded * 100 / fileSize);
-                            publish(progress);
+                            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                                while (downloadPaused) {
+                                    try {
+                                        Thread.sleep(1000);
+                                    } catch(InterruptedException e) {
+                                        System.out.println("got interrupted!");
+                                    }
+
+                                }
+
+                                fileOutputStream.write(dataBuffer, 0, bytesRead);
+                                bytesDownloaded += bytesRead;
+
+                                int progress = (int) (bytesDownloaded * 100 / fileSize);
+                                publish(Name + ":" + progress);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
-                    } catch (IOException e) {
-                        // Manejar la excepción
-                        e.printStackTrace(); // Imprimir la traza de la excepción para depuración
-                    }
+                    });
                 }
+
+                executor.shutdown();
+                executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
                 return null;
             }
 
             @Override
-            protected void process(java.util.List<Integer> chunks) {
-                // Actualizar la barra de progreso con el último valor publicado
-                int progress = chunks.get(chunks.size() - 1);
+            protected void process(java.util.List<String> chunks) {
+                String[] lastChunk = chunks.get(chunks.size() - 1).split(":");
+                String fileName = lastChunk[0];
+                int progress = Integer.parseInt(lastChunk[1]);
+                jpbDownload.setString(fileName);
                 jpbDownload.setValue(progress);
             }
 
             @Override
             protected void done() {
-                // Establecer la variable de descarga en false cuando la descarga haya terminado
                 downloading = false;
-
-                // Desabilitar el botón jbResumeAndPause
                 jbResumeAndPause.setEnabled(false);
 
-                // Notificar al usuario que la descarga ha finalizado
-                //JOptionPane.showMessageDialog(Frame.this, "Download completed.");
-
-                // Realizar las acciones necesarias para cada archivo descargado
                 for (int i = 0; i < fileURLs.size(); i++) {
                     String localFilePath = localFilePaths.get(i);
                     String fileName = fileNames.get(i);
                     String zRIF = zRIFs.get(i);
                     String console = consoles.get(i);
 
-                    // Verificar la extensión del archivo descargado
                     String extension = localFilePath.substring(localFilePath.lastIndexOf(".") + 1).toLowerCase();
                     switch (extension) {
                         case "tsv":
                             switch (localFilePath) {
                                 case "db/PSV_GAMES.tsv":
-                                    // Mover el archivo a la carpeta "db"
-                                    utilities.moveFile(localFilePath,
-                                            "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                                    utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
                                     System.err.println("Psvita Database loaded");
-
                                     break;
                                 case "db/PSP_GAMES.tsv":
-                                    utilities.moveFile(localFilePath,
-                                            "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                                            System.err.println("Psp vita Database loaded");
-
-                                    case "db/PSX_GAMES.tsv":
-                                    utilities.moveFile(localFilePath,
-                                            "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                                            System.err.println("Psx Database loaded");
-
+                                    utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                                    System.err.println("Psp Database loaded");
+                                    break;
+                                case "db/PSX_GAMES.tsv":
+                                    utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                                    System.err.println("Psx Database loaded");
                                     break;
                                 default:
                                     break;
                             }
                             break;
                         case "pkg":
-                            // Mover el archivo a la carpeta "games"
-                            utilities.moveFile(localFilePath,
-                                    "games/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                            System.out.println("PKG download completed");
+                            utilities.moveFile(localFilePath, "games/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                            System.out.println("PKG download completed.");
                             String command = utilities.buildCommand(fileName, zRIF, console);
                             utilities.runCommandWithLoadingMessage(command);
                             break;
                         default:
-                            // No hacer nada si la extensión no está definida
                             break;
                     }
                 }
             }
         };
 
-        // Ejecutar el SwingWorker
         worker.execute();
     }
 
