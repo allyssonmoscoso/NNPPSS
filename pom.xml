@@ -2,15 +2,15 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.squarepeace</groupId>
     <artifactId>NNPPSS</artifactId>
-    <version>0.0.6</version>
+    <version>0.0.7</version>
     <packaging>jar</packaging>
     
     <!-- Other configurations -->
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <exec.mainClass>com.squarepeace.nnppss.NNPPSS</exec.mainClass>
     </properties>
     <dependencies>

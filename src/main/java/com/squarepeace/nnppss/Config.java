@@ -164,6 +164,7 @@ public class Config extends javax.swing.JFrame {
         //limpia los campos de texto
         jtfUrlPsvita.setText("");
         jtfUrlPsp.setText("");
+        jtfUrlPsx.setText("");
     }//GEN-LAST:event_jbClearActionPerformed
 
     private void jbSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbSaveActionPerformed
@@ -228,6 +229,8 @@ public class Config extends javax.swing.JFrame {
                 } else {
                     jSpinner_simultaneous_downloads.setValue(1);
                 }
+            } else {
+                jSpinner_simultaneous_downloads.setValue(1);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
