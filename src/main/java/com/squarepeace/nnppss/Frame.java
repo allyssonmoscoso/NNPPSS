@@ -16,6 +16,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -766,6 +767,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                             }
 
                             long fileSize = utilities.getFileSize(fileURL);
+                            DecimalFormat df = new DecimalFormat("#.##");
 
                             while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
                                 while (downloadPaused) {
@@ -781,7 +783,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                                 bytesDownloaded += bytesRead;
 
                                 int progress = (int) (bytesDownloaded * 100 / fileSize);
-                                publish(Name + ":" + progress);
+                                String progressText = Name + " " + df.format(bytesDownloaded / (1024.0 * 1024.0)) + "MB of " + df.format(fileSize / (1024.0 * 1024.0)) + "MB";
+                                publish(progressText + "::" + progress);
                             }
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -796,10 +799,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
 
             @Override
             protected void process(java.util.List<String> chunks) {
-                String[] lastChunk = chunks.get(chunks.size() - 1).split(":");
-                String fileName = lastChunk[0];
+                String[] lastChunk = chunks.get(chunks.size() - 1).split("::");
+                String progressText = lastChunk[0];
                 int progress = Integer.parseInt(lastChunk[1]);
-                jpbDownload.setString(fileName);
+                jpbDownload.setString(progressText);
                 jpbDownload.setValue(progress);
             }
 
