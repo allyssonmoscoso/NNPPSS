@@ -228,8 +228,8 @@ public class Utilities {
 
                         // Cerrar el diálogo de progreso cuando el proceso haya terminado
                         dialog.setVisible(false);
-                        // Mostrar mensaje de éxito
-                        JOptionPane.showMessageDialog(null, "Ready to install!");
+                        // Mostrar mensaje de éxito si el comando se ejecuta correctamente
+                        System.out.println("Ready to install!");
                     } else {
                         // Mostrar mensaje de error si el comando falla
                         JOptionPane.showMessageDialog(null, "Error running pkg2zip");

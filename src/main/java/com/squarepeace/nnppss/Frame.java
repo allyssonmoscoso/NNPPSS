@@ -9,6 +9,7 @@ import com.squarepeace.nnppss.Utilities;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedInputStream;
+import java.io.Console;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -293,10 +294,19 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 }
             });
 
+            JButton clearButton = new JButton("Clear List");
+            clearButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    DownloadList.clear();
+                    model.setRowCount(0);
+                }
+            });
+
             // Table inside JOptionPane
             JButton downloadButton = new JButton("Download");
             downloadButton.addActionListener(this);
-            JOptionPane.showMessageDialog(null, new Object[] { new JScrollPane(table), downloadButton, removeButton }, "Download List", JOptionPane.PLAIN_MESSAGE);
+            JOptionPane.showMessageDialog(null, new Object[] { new JScrollPane(table), downloadButton, removeButton, clearButton }, "Download List", JOptionPane.PLAIN_MESSAGE);
             
     }//GEN-LAST:event_jbDownloadListActionPerformed
 
@@ -832,7 +842,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                             // Mover el archivo a la carpeta "games"
                             utilities.moveFile(localFilePath,
                                     "games/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                            JOptionPane.showMessageDialog(Frame.this, "PKG download completed.");
+                            System.out.println("PKG download completed");
                             String command = utilities.buildCommand(fileName, zRIF, console);
                             utilities.runCommandWithLoadingMessage(command);
                             break;
