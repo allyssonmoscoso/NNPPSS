@@ -721,12 +721,12 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 downloading = true;
 
                 File dbFolder = new File("db");
-                File gamesFolder = new File("games");
+                File TempFolder = new File("Temp");
                 if (!dbFolder.exists()) {
                     dbFolder.mkdir();
                 }
-                if (!gamesFolder.exists()) {
-                    gamesFolder.mkdir();
+                if (!TempFolder.exists()) {
+                    TempFolder.mkdir();
                 }
 
                 for (int i = 0; i < fileURLs.size(); i++) {
@@ -831,7 +831,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                             }
                             break;
                         case "pkg":
-                            utilities.moveFile(localFilePath, "games/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                            utilities.moveFile(localFilePath, "Temp/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
                             System.out.println("PKG download completed.");
                             String command = utilities.buildCommand(fileName, zRIF, console);
                             utilities.runCommandWithLoadingMessage(command);
