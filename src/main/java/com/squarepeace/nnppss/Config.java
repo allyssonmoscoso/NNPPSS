@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.util.Properties;
 
 import javax.swing.BorderFactory;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
 /**
@@ -51,6 +52,12 @@ public class Config extends javax.swing.JFrame {
         jtfUrlPsx = new javax.swing.JTextField();
         jLabel4 = new javax.swing.JLabel();
         jSpinner_simultaneous_downloads = new javax.swing.JSpinner();
+        jLabel5 = new javax.swing.JLabel();
+        jtfDownloadPath = new javax.swing.JTextField();
+        jbSelectDownloadPath = new javax.swing.JButton();
+        jLabel6 = new javax.swing.JLabel();
+        jtfPkgDecToolPath = new javax.swing.JTextField();
+        jbSelectPkgDecToolPath = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Configuration");
@@ -67,7 +74,7 @@ public class Config extends javax.swing.JFrame {
             }
         });
 
-        jbClear.setText("Clear");
+        jbClear.setText("Clear All");
         jbClear.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jbClearActionPerformed(evt);
@@ -85,40 +92,74 @@ public class Config extends javax.swing.JFrame {
 
         jLabel4.setText("simultaneous downloads:");
 
+        jLabel5.setText("Download Path:");
+
+        jbSelectDownloadPath.setText("Select Path");
+        jbSelectDownloadPath.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbSelectDownloadPathActionPerformed(evt);
+            }
+        });
+
+        jLabel6.setText("Pkg_dec tool:");
+
+        jbSelectPkgDecToolPath.setText("Select Path");
+        jbSelectPkgDecToolPath.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbSelectPkgDecToolPathActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(74, 74, 74)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jbClear)
-                    .addComponent(jLabel1)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel3)
-                            .addComponent(jLabel2))
-                        .addGap(8, 8, 8)))
-                .addGap(12, 12, 12)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(44, 44, 44)
+                        .addGap(55, 55, 55)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jbClear)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel6)
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                                .addComponent(jLabel3)
+                                                .addComponent(jLabel2))
+                                            .addComponent(jLabel1))
+                                        .addComponent(jLabel5)))
+                                .addGap(27, 27, 27))))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 166, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(69, 69, 69)
                         .addComponent(jbClose)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 110, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jbSave)
                         .addGap(20, 20, 20))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(jtfUrlPsvita, javax.swing.GroupLayout.DEFAULT_SIZE, 294, Short.MAX_VALUE)
-                                .addComponent(jtfUrlPsx))
-                            .addComponent(jtfUrlPsp, javax.swing.GroupLayout.PREFERRED_SIZE, 294, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+                                .addComponent(jtfUrlPsvita, javax.swing.GroupLayout.DEFAULT_SIZE, 298, Short.MAX_VALUE)
+                                .addComponent(jtfUrlPsx)
+                                .addComponent(jtfUrlPsp)
+                                .addGroup(jPanel1Layout.createSequentialGroup()
+                                    .addComponent(jtfDownloadPath, javax.swing.GroupLayout.PREFERRED_SIZE, 193, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                    .addComponent(jbSelectDownloadPath)))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jtfPkgDecToolPath, javax.swing.GroupLayout.PREFERRED_SIZE, 193, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(jbSelectPkgDecToolPath)))
+                        .addContainerGap(12, Short.MAX_VALUE))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -137,9 +178,19 @@ public class Config extends javax.swing.JFrame {
                     .addComponent(jtfUrlPsx, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jtfDownloadPath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel5)
+                    .addComponent(jbSelectDownloadPath))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel6)
+                    .addComponent(jtfPkgDecToolPath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jbSelectPkgDecToolPath))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 17, Short.MAX_VALUE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
                     .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 19, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jbSave)
                     .addComponent(jbClear)
@@ -169,6 +220,9 @@ public class Config extends javax.swing.JFrame {
         jtfUrlPsvita.setText("");
         jtfUrlPsp.setText("");
         jtfUrlPsx.setText("");
+        jtfDownloadPath.setText("");
+        jtfPkgDecToolPath.setText("");
+        jSpinner_simultaneous_downloads.setValue(1);
     }//GEN-LAST:event_jbClearActionPerformed
 
     private void jbSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbSaveActionPerformed
@@ -181,6 +235,8 @@ public class Config extends javax.swing.JFrame {
             prop.setProperty("psp.url", jtfUrlPsp.getText());
             prop.setProperty("psx.url", jtfUrlPsx.getText());
             prop.setProperty("simultaneousDownloads", jSpinner_simultaneous_downloads.getValue().toString());
+            prop.setProperty("downloadPath", jtfDownloadPath.getText());
+            prop.setProperty("pkgDecToolPath", jtfPkgDecToolPath.getText());
             prop.store(output, null);
             JOptionPane.showMessageDialog(null, "Configuration saved successfully");
             
@@ -203,6 +259,22 @@ public class Config extends javax.swing.JFrame {
         this.dispose();
     }//GEN-LAST:event_jbCloseActionPerformed
 
+    private void jbSelectDownloadPathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbSelectDownloadPathActionPerformed
+       //metodo que abre un JFileChooser para seleccionar la carpeta de descarga
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.showOpenDialog(null);
+        jtfDownloadPath.setText(chooser.getSelectedFile().getAbsolutePath());
+    }//GEN-LAST:event_jbSelectDownloadPathActionPerformed
+
+    private void jbSelectPkgDecToolPathActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbSelectPkgDecToolPathActionPerformed
+       //metodo que abre un JFileChooser para seleccionar la carpeta donde se encuentra pkg_dec
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        chooser.showOpenDialog(null);
+        jtfPkgDecToolPath.setText(chooser.getSelectedFile().getAbsolutePath());
+    }//GEN-LAST:event_jbSelectPkgDecToolPathActionPerformed
+
     public void loadValues() {
         //metodo que carga las url guardadas en el archivo config.properties
         FileReader reader;
@@ -215,6 +287,8 @@ public class Config extends javax.swing.JFrame {
             String psxUrl = p.getProperty("psx.url");
             String simultaneousDownloads = p.getProperty("simultaneousDownloads");
             jSpinner_simultaneous_downloads.setValue(Integer.valueOf(simultaneousDownloads));
+            String downloadPath = p.getProperty("downloadPath");
+            String pkgDecToolPath = p.getProperty("pkgDecToolPath");
 
             if (psvitaUrl != null && !psvitaUrl.isEmpty()) {
                 jtfUrlPsvita.setText(psvitaUrl);
@@ -235,6 +309,12 @@ public class Config extends javax.swing.JFrame {
                 }
             } else {
                 jSpinner_simultaneous_downloads.setValue(1);
+            }
+            if (downloadPath != null && !downloadPath.isEmpty()) {
+                jtfDownloadPath.setText(downloadPath);
+            }
+            if (pkgDecToolPath != null && !pkgDecToolPath.isEmpty()) {
+                jtfPkgDecToolPath.setText(pkgDecToolPath);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -283,11 +363,17 @@ public class Config extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JSpinner jSpinner_simultaneous_downloads;
     private javax.swing.JButton jbClear;
     private javax.swing.JButton jbClose;
     private javax.swing.JButton jbSave;
+    private javax.swing.JButton jbSelectDownloadPath;
+    private javax.swing.JButton jbSelectPkgDecToolPath;
+    private javax.swing.JTextField jtfDownloadPath;
+    private javax.swing.JTextField jtfPkgDecToolPath;
     private javax.swing.JTextField jtfUrlPsp;
     private javax.swing.JTextField jtfUrlPsvita;
     private javax.swing.JTextField jtfUrlPsx;

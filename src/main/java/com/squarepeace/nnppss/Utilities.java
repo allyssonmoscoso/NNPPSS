@@ -108,11 +108,11 @@ public class Utilities {
         if (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
 
             if (Console.equals("Psvita")) {
-                command = "lib" + fileSeparator + "pkg2zip.exe -x games" + fileSeparator + PKGname + " " + zRifKey;
+                command =  getPkgDecToolPath() + " -x games" + fileSeparator + PKGname + " " + zRifKey;
             }else if (Console.equals("Psp")) {
-                command = "lib" + fileSeparator + "pkg2zip.exe games" + fileSeparator + PKGname;
+                command = getPkgDecToolPath() + " games" + fileSeparator + PKGname;
             }else if (Console.equals("Psx")) {
-                command = "lib" + fileSeparator + "pkg2zip.exe games" + fileSeparator + PKGname;
+                command = getPkgDecToolPath() +" games" + fileSeparator + PKGname;
             }
 
             
@@ -196,60 +196,55 @@ public class Utilities {
     }
 
     public static void runCommandWithLoadingMessage(String command) {
-        try {
-            // Verificar si la carpeta "lib" existe
-            File libFolder = new File("lib");
-            if (!libFolder.exists()) {
-                // Si no existe, crearla
-                libFolder.mkdir();
+        
+        if(getPkgDecToolPath().equals("")){
+            JOptionPane.showMessageDialog(null, "Please set the path to pkg2zip in the config file.");
+        
+        }else{
 
-                if (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
-                    // Mostrar mensaje solicitando al usuario que coloque pkg2zip en la carpeta lib
-                    JOptionPane.showMessageDialog(null, "Please place pkg2zip.exe in the folder 'lib'.");
-                }
-
+            try {
+                    // Crear y mostrar el diálogo de preparación con barra de progreso
+                JProgressBar progressBar = new JProgressBar();
+                progressBar.setIndeterminate(true);
+                JDialog dialog = new JDialog();
+                dialog.setTitle("Preparing package");
+                dialog.add(progressBar);
+                dialog.pack();
+                dialog.setLocationRelativeTo(null);
+                dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                dialog.setVisible(true);
+    
+                // Ejecutar el comando en un hilo separado
+                Thread thread = new Thread(() -> {
+                    try {
+                        // Ejecutar el comando
+                        Process process = Runtime.getRuntime().exec(command);
+    
+                        // Esperar a que el proceso termine
+                        int exitCode = process.waitFor();
+    
+                        // Verificar si el comando se ejecutó correctamente
+                        if (exitCode == 0) {
+    
+                            // Cerrar el diálogo de progreso cuando el proceso haya terminado
+                            dialog.setVisible(false);
+                            // Mostrar mensaje de éxito si el comando se ejecuta correctamente
+                            System.out.println("Ready to install!");
+                        } else {
+                            // Mostrar mensaje de error si el comando falla
+                            JOptionPane.showMessageDialog(null, "Error running pkg2zip");
+                        }
+                    } catch (Exception e) {
+                        // Capturar cualquier excepción que pueda ocurrir durante la ejecución del comando
+                        JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
+                    }
+                });
+                thread.start();
+            } catch (Exception e) {
+                // Capturar cualquier excepción que pueda ocurrir durante la ejecución del comando
+                JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
             }
 
-            // Crear y mostrar el diálogo de preparación con barra de progreso
-            JProgressBar progressBar = new JProgressBar();
-            progressBar.setIndeterminate(true);
-            JDialog dialog = new JDialog();
-            dialog.setTitle("Preparing package");
-            dialog.add(progressBar);
-            dialog.pack();
-            dialog.setLocationRelativeTo(null);
-            dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-            dialog.setVisible(true);
-
-            // Ejecutar el comando en un hilo separado
-            Thread thread = new Thread(() -> {
-                try {
-                    // Ejecutar el comando
-                    Process process = Runtime.getRuntime().exec(command);
-
-                    // Esperar a que el proceso termine
-                    int exitCode = process.waitFor();
-
-                    // Verificar si el comando se ejecutó correctamente
-                    if (exitCode == 0) {
-
-                        // Cerrar el diálogo de progreso cuando el proceso haya terminado
-                        dialog.setVisible(false);
-                        // Mostrar mensaje de éxito si el comando se ejecuta correctamente
-                        System.out.println("Ready to install!");
-                    } else {
-                        // Mostrar mensaje de error si el comando falla
-                        JOptionPane.showMessageDialog(null, "Error running pkg2zip");
-                    }
-                } catch (Exception e) {
-                    // Capturar cualquier excepción que pueda ocurrir durante la ejecución del comando
-                    JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
-                }
-            });
-            thread.start();
-        } catch (Exception e) {
-            // Capturar cualquier excepción que pueda ocurrir durante la ejecución del comando
-            JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
         }
     }
     
@@ -270,8 +265,15 @@ public class Utilities {
             return getProperty("psx.url");
         }
 
+        public String getDownloadPath() {
+            return getProperty("downloadPath");
+        }
+
+        static public String getPkgDecToolPath() {
+            return getProperty("pkgDecToolPath");
+        }
         //Metodo para obtener las propiedades del archivo config.properties
-        public String getProperty(String property) {
+        static public String getProperty(String property) {
             try {
                 Properties p = new Properties();
                 p.load(new FileInputStream("config.properties"));
@@ -294,6 +296,8 @@ public class Utilities {
                     writer.write("psvita.url=\n");
                     writer.write("psx.url=\n");
                     writer.write("simultaneousDownloads=1\n");
+                    writer.write("downloadPath=\n");
+                    writer.write("pkgDecToolPath=\n");
                 }
             }
         } catch (IOException e) {
