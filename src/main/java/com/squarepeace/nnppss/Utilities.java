@@ -224,8 +224,11 @@ public class Utilities {
                 // Ejecutar el comando en un hilo separado
                 Thread thread = new Thread(() -> {
                     try {
+
+                        ProcessBuilder pb = new ProcessBuilder(command);
+                        pb.directory(new File(DownloadPath));
                         // Ejecutar el comando
-                        Process process = Runtime.getRuntime().exec(command);
+                        Process process = pb.start();
     
                         // Esperar a que el proceso termine
                         int exitCode = process.waitFor();
