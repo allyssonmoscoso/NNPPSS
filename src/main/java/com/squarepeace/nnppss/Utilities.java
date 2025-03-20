@@ -34,9 +34,12 @@ import org.jsoup.select.Elements;
 
 public class Utilities {
 
-    public String TSV_VITA = "db/PSV_GAMES.tsv";
-    public String TSV_PSP = "db/PSP_GAMES.tsv";
-    public String TSV_PSX = "db/PSX_GAMES.tsv";
+    //use donwloadPath from config.properties
+    public String downloadPath = getProperty("downloadPath");
+
+    public String TSV_VITA = downloadPath + "/PSV_GAMES.tsv";
+    public String TSV_PSP =downloadPath + "/PSP_GAMES.tsv";
+    public String TSV_PSX =downloadPath + "/PSX_GAMES.tsv";
 
     public DefaultTableModel readTSV(String TSV) throws FileNotFoundException, IOException {
         DefaultTableModel model = new DefaultTableModel();
@@ -100,6 +103,9 @@ public class Utilities {
         }
     }
 
+    static String DownloadPath = getProperty("downloadPath");
+
+    // Método para construir el comando para extraer un archivo PKG
     public static String buildCommand(String PKGname, String zRifKey, String Console) {
         // Obtener el separador de archivos del sistema
         String fileSeparator = System.getProperty("file.separator");
@@ -108,11 +114,12 @@ public class Utilities {
         if (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0) {
 
             if (Console.equals("Psvita")) {
-                command =  getPkgDecToolPath() + " -x games" + fileSeparator + PKGname + " " + zRifKey;
+                command =  getPkgDecToolPath() + " -x " + "Temp/" + fileSeparator  + PKGname + " " + zRifKey;
+                System.out.println("Comando desde Utilities: "+command);
             }else if (Console.equals("Psp")) {
-                command = getPkgDecToolPath() + " games" + fileSeparator + PKGname;
+                command = getPkgDecToolPath() + ""  + PKGname;
             }else if (Console.equals("Psx")) {
-                command = getPkgDecToolPath() +" games" + fileSeparator + PKGname;
+                command = getPkgDecToolPath() + "" + PKGname;
             }
 
             
@@ -125,11 +132,11 @@ public class Utilities {
             if (isCommandInstalled("pkg2zip")) {
 
                 if (Console.equals("Psvita")) {
-                    command = "pkg2zip -x games" + fileSeparator + PKGname + " " + zRifKey;
+                    command = "pkg2zip -x Temp" + fileSeparator + PKGname + " " + zRifKey;
                 }else if (Console.equals("Psp")) {
-                    command = "pkg2zip games" + fileSeparator + PKGname;
+                    command = "pkg2zip Temp" + fileSeparator + PKGname;
                 }else if (Console.equals("Psx")) {
-                    command = "pkg2zip games" + fileSeparator + PKGname;
+                    command = "pkg2zip Temp" + fileSeparator + PKGname;
                 }
 
                 

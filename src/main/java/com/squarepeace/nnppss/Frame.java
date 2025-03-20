@@ -20,6 +20,7 @@ import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
@@ -720,11 +721,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             protected Void doInBackground() throws Exception {
                 downloading = true;
 
-                File dbFolder = new File("db");
                 File TempFolder = new File("Temp");
-                if (!dbFolder.exists()) {
-                    dbFolder.mkdir();
-                }
+                
                 if (!TempFolder.exists()) {
                     TempFolder.mkdir();
                 }
@@ -749,7 +747,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
 
                         long bytesDownloaded = 0;
                         try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
-                            FileOutputStream fileOutputStream = new FileOutputStream(localFilePath)) {
+                            FileOutputStream fileOutputStream = new FileOutputStream( "Temp/" + localFilePath)) {
 
                             byte dataBuffer[] = new byte[1024];
                             int bytesRead;
@@ -814,16 +812,16 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                     switch (extension) {
                         case "tsv":
                             switch (localFilePath) {
-                                case "db/PSV_GAMES.tsv":
-                                    utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                                case "PSV_GAMES.tsv":
+                                    utilities.moveFile(localFilePath, "" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
                                     System.err.println("Psvita Database loaded");
                                     break;
-                                case "db/PSP_GAMES.tsv":
-                                    utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                                case "PSP_GAMES.tsv":
+                                    utilities.moveFile(localFilePath, "" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
                                     System.err.println("Psp Database loaded");
                                     break;
-                                case "db/PSX_GAMES.tsv":
-                                    utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
+                                case "PSX_GAMES.tsv":
+                                    utilities.moveFile(localFilePath, "" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
                                     System.err.println("Psx Database loaded");
                                     break;
                                 default:
@@ -831,10 +829,13 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                             }
                             break;
                         case "pkg":
-                            utilities.moveFile(localFilePath, "Temp/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                            System.out.println("PKG download completed.");
+                            //String DownloadPath = Utilities.getProperty("downloadPath");
+                            //utilities.moveFile("Temp/" + localFilePath,  DownloadPath.substring(localFilePath.lastIndexOf("/") + 1));
+                            //System.out.println("Origen: " + "Temp/" + localFilePath +  " Destino: "+ DownloadPath.substring(localFilePath.lastIndexOf("/") + 1));
+                            //System.out.println("PKG download completed.");
                             String command = utilities.buildCommand(fileName, zRIF, console);
                             utilities.runCommandWithLoadingMessage(command);
+                            System.out.println("Comando desde Frame:" + command);
                             break;
                         default:
                             break;
