@@ -279,6 +279,11 @@ public class Utilities {
         static public String getPkgDecToolPath() {
             return getProperty("pkgDecToolPath");
         }
+
+        public String getDeletePkgFile() {
+            return getProperty("deletePkgFile");
+        }
+
         //Metodo para obtener las propiedades del archivo config.properties
         static public String getProperty(String property) {
             try {
@@ -305,6 +310,7 @@ public class Utilities {
                     writer.write("simultaneousDownloads=1\n");
                     writer.write("downloadPath=\n");
                     writer.write("pkgDecToolPath=\n");
+                    writer.write("deletePkgFile=\n");
                 }
             }
         } catch (IOException e) {

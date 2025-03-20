@@ -58,6 +58,8 @@ public class Config extends javax.swing.JFrame {
         jLabel6 = new javax.swing.JLabel();
         jtfPkgDecToolPath = new javax.swing.JTextField();
         jbSelectPkgDecToolPath = new javax.swing.JButton();
+        jLabel7 = new javax.swing.JLabel();
+        jcbDeletePkgFile = new javax.swing.JCheckBox();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Configuration");
@@ -110,35 +112,29 @@ public class Config extends javax.swing.JFrame {
             }
         });
 
+        jLabel7.setText("Delete Pkg Files after successful unpack:");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGap(55, 55, 55)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jbClear)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(55, 55, 55)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jbClear)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel6)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel6)
                                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                                .addComponent(jLabel3)
-                                                .addComponent(jLabel2))
-                                            .addComponent(jLabel1))
-                                        .addComponent(jLabel5)))
-                                .addGap(27, 27, 27))))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 166, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(jLabel3)
+                                        .addComponent(jLabel2))
+                                    .addComponent(jLabel1))
+                                .addComponent(jLabel5)))
+                        .addGap(27, 27, 27)))
+                .addGap(12, 12, 12)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(69, 69, 69)
                         .addComponent(jbClose)
@@ -159,7 +155,19 @@ public class Config extends javax.swing.JFrame {
                                 .addComponent(jtfPkgDecToolPath, javax.swing.GroupLayout.PREFERRED_SIZE, 193, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addComponent(jbSelectPkgDecToolPath)))
-                        .addContainerGap(12, Short.MAX_VALUE))))
+                        .addContainerGap(19, Short.MAX_VALUE))))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(46, 46, 46)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel7)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jcbDeletePkgFile))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 166, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -186,11 +194,15 @@ public class Config extends javax.swing.JFrame {
                     .addComponent(jLabel6)
                     .addComponent(jtfPkgDecToolPath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jbSelectPkgDecToolPath))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 17, Short.MAX_VALUE)
+                .addGap(28, 28, 28)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
                     .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
+                .addGap(26, 26, 26)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel7)
+                    .addComponent(jcbDeletePkgFile))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jbSave)
                     .addComponent(jbClear)
@@ -223,6 +235,7 @@ public class Config extends javax.swing.JFrame {
         jtfDownloadPath.setText("");
         jtfPkgDecToolPath.setText("");
         jSpinner_simultaneous_downloads.setValue(1);
+        jcbDeletePkgFile.setSelected(false);
     }//GEN-LAST:event_jbClearActionPerformed
 
     private void jbSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbSaveActionPerformed
@@ -237,6 +250,7 @@ public class Config extends javax.swing.JFrame {
             prop.setProperty("simultaneousDownloads", jSpinner_simultaneous_downloads.getValue().toString());
             prop.setProperty("downloadPath", jtfDownloadPath.getText());
             prop.setProperty("pkgDecToolPath", jtfPkgDecToolPath.getText());
+            prop.setProperty("deletePkgFile", String.valueOf(jcbDeletePkgFile.isSelected()));
             prop.store(output, null);
             JOptionPane.showMessageDialog(null, "Configuration saved successfully");
             
@@ -289,6 +303,8 @@ public class Config extends javax.swing.JFrame {
             jSpinner_simultaneous_downloads.setValue(Integer.valueOf(simultaneousDownloads));
             String downloadPath = p.getProperty("downloadPath");
             String pkgDecToolPath = p.getProperty("pkgDecToolPath");
+            String deletePkgFile = p.getProperty("deletePkgFile");
+            jcbDeletePkgFile.setSelected(Boolean.parseBoolean(deletePkgFile));
 
             if (psvitaUrl != null && !psvitaUrl.isEmpty()) {
                 jtfUrlPsvita.setText(psvitaUrl);
@@ -365,6 +381,7 @@ public class Config extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JSpinner jSpinner_simultaneous_downloads;
     private javax.swing.JButton jbClear;
@@ -372,6 +389,7 @@ public class Config extends javax.swing.JFrame {
     private javax.swing.JButton jbSave;
     private javax.swing.JButton jbSelectDownloadPath;
     private javax.swing.JButton jbSelectPkgDecToolPath;
+    private javax.swing.JCheckBox jcbDeletePkgFile;
     private javax.swing.JTextField jtfDownloadPath;
     private javax.swing.JTextField jtfPkgDecToolPath;
     private javax.swing.JTextField jtfUrlPsp;
