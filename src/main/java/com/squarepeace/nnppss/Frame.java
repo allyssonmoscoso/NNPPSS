@@ -559,8 +559,14 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                     public void onComplete(File file) {
                         SwingUtilities.invokeLater(() -> {
                             markDownloadCompleted(game);
-                            if (game.getzRif() != null && !game.getzRif().isEmpty()) {
-                                packageService.extractPackage(fileName, game.getzRif(), game.getConsole());
+                            // PSVita needs zRif for extraction, PSP/PSX don't
+                            if (game.getConsole() == Console.PSVITA) {
+                                if (game.getzRif() != null && !game.getzRif().isEmpty()) {
+                                    packageService.extractPackage(fileName, game.getzRif(), game.getConsole());
+                                }
+                            } else {
+                                // PSP and PSX always extract (no zRif needed)
+                                packageService.extractPackage(fileName, null, game.getConsole());
                             }
                         });
                     }
