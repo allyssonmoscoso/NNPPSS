@@ -13,26 +13,24 @@ import com.squarepeace.nnppss.service.PackageService;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.KeyEvent;
-import javax.swing.Timer;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
-import java.util.Vector;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.RowFilter;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
@@ -50,6 +48,18 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private boolean downloading = false;
 
     private List<Game> downloadList = new ArrayList<>();
+
+    private final Map<String, javax.swing.JProgressBar> progressBarsByUrl = new LinkedHashMap<>();
+    private JPanel downloadsPanel;
+    private JScrollPane downloadsScroll;
+    private int activeDownloadCount = 0;
+    // Tracking for speed calculation per download
+    private final Map<String, Long> lastBytesByUrl = new LinkedHashMap<>();
+    private final Map<String, Long> lastTimeByUrl = new LinkedHashMap<>();
+    // Smoothing + throttle maps
+    private final Map<String, Double> smoothedSpeedMibByUrl = new LinkedHashMap<>();
+    private final Map<String, Long> lastUiUpdateMsByUrl = new LinkedHashMap<>();
+    private final Map<String, Integer> lastProgressPercentByUrl = new LinkedHashMap<>();
 
     public Frame(ConfigManager configManager, GameRepository gameRepository, DownloadService downloadService, PackageService packageService) {
         this.configManager = configManager;
@@ -100,8 +110,11 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         jrbPsp = new javax.swing.JRadioButton();
         jbDownloadList = new javax.swing.JButton();
         jrbPsx = new javax.swing.JRadioButton();
-        jpbDownload = new javax.swing.JProgressBar();
         jbResumeAndPause = new javax.swing.JButton();
+        downloadsPanel = new JPanel();
+        downloadsPanel.setLayout(new javax.swing.BoxLayout(downloadsPanel, javax.swing.BoxLayout.Y_AXIS));
+        downloadsScroll = new JScrollPane(downloadsPanel);
+        downloadsScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("NNPPSS");
@@ -117,14 +130,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             }
         });
 
-        jtfSearch.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                jtfSearchKeyPressed(evt);
-            }
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                jtfSearchKeyReleased(evt);
-            }
-        });
+        // KeyListener removed; using debounced DocumentListener above for filtering.
 
         jcbRegion.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
@@ -234,8 +240,6 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 .addContainerGap())
         );
 
-        jpbDownload.setStringPainted(true);
-
         jbResumeAndPause.setText("Pause");
         jbResumeAndPause.setActionCommand(":p");
         jbResumeAndPause.addActionListener(new java.awt.event.ActionListener() {
@@ -252,20 +256,22 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
             .addGroup(layout.createSequentialGroup()
-                .addGap(280, 280, 280)
-                .addComponent(jpbDownload, javax.swing.GroupLayout.PREFERRED_SIZE, 561, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(40, 40, 40)
+                .addComponent(downloadsScroll, javax.swing.GroupLayout.PREFERRED_SIZE, 1000, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jbResumeAndPause)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(40, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jpbDownload, javax.swing.GroupLayout.DEFAULT_SIZE, 45, Short.MAX_VALUE)
-                    .addComponent(jbResumeAndPause))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(downloadsScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jbResumeAndPause)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
 
@@ -368,6 +374,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             jbResumeAndPause.setText("Pause");
         }
         downloadService.setPaused(downloadPaused);
+        refreshPauseVisuals();
     }// GEN-LAST:event_jbResumeAndPauseActionPerformed
 
     private void jbSettingActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbSettingActionPerformed
@@ -534,6 +541,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         downloading = true;
         jbResumeAndPause.setEnabled(true);
 
+        resetDownloadUI(downloadList);
+
         final int concurrency = Math.max(1, configManager.getSimultaneousDownloads());
         ExecutorService executor = Executors.newFixedThreadPool(concurrency);
 
@@ -541,42 +550,24 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             executor.submit(() -> {
                 String fileName = game.getFileName();
                 String destPath = "games/" + fileName;
-
                 downloadService.downloadFile(game.getPkgUrl(), destPath, new DownloadService.DownloadListener() {
                     @Override
                     public void onProgress(long bytesDownloaded, long totalBytes) {
-                        SwingUtilities.invokeLater(() -> {
-                            if (totalBytes <= 0) {
-                                jpbDownload.setIndeterminate(true);
-                                jpbDownload.setString(game.getTitle() + ": " + bytesDownloaded + " bytes");
-                            } else {
-                                jpbDownload.setIndeterminate(false);
-                                int progress = (int) ((bytesDownloaded * 100) / totalBytes);
-                                jpbDownload.setValue(progress);
-                                jpbDownload.setString(game.getTitle() + ": " + progress + "%");
-                            }
-                        });
+                        SwingUtilities.invokeLater(() -> updateDownloadProgress(game, bytesDownloaded, totalBytes));
                     }
-
                     @Override
                     public void onComplete(File file) {
                         SwingUtilities.invokeLater(() -> {
-                            jpbDownload.setIndeterminate(false);
-                            jpbDownload.setValue(100);
-                            jpbDownload.setString(game.getTitle() + " Completed");
+                            markDownloadCompleted(game);
+                            if (game.getzRif() != null && !game.getzRif().isEmpty()) {
+                                packageService.extractPackage(fileName, game.getzRif(), game.getConsole());
+                            }
                         });
-
-                        if (game.getzRif() != null && !game.getzRif().isEmpty()) {
-                            packageService.extractPackage(fileName, game.getzRif(), game.getConsole());
-                        }
                     }
-
                     @Override
                     public void onError(Exception e) {
                         e.printStackTrace();
-                        SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(Frame.this, "Error downloading " + game.getTitle());
-                        });
+                        SwingUtilities.invokeLater(() -> markDownloadError(game));
                     }
                 });
             });
@@ -589,14 +580,144 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            downloading = false;
-            SwingUtilities.invokeLater(() -> {
-                jbResumeAndPause.setEnabled(false);
-                jpbDownload.setIndeterminate(false);
-                jpbDownload.setString("All downloads completed");
-                downloadList.clear();
-            });
+            // Final UI cleanup happens as each bar completes.
         }).start();
+    }
+
+    private void resetDownloadUI(List<Game> games) {
+        SwingUtilities.invokeLater(() -> {
+            downloadsPanel.removeAll();
+            progressBarsByUrl.clear();
+            lastBytesByUrl.clear();
+            lastTimeByUrl.clear();
+            smoothedSpeedMibByUrl.clear();
+            lastUiUpdateMsByUrl.clear();
+            lastProgressPercentByUrl.clear();
+            activeDownloadCount = games.size();
+            for (Game g : games) {
+                javax.swing.JProgressBar bar = new javax.swing.JProgressBar();
+                bar.setStringPainted(true);
+                bar.setIndeterminate(true);
+                bar.setString(g.getTitle() + " – Starting… – " + g.getConsole());
+                progressBarsByUrl.put(g.getPkgUrl(), bar);
+                lastBytesByUrl.put(g.getPkgUrl(), 0L);
+                lastTimeByUrl.put(g.getPkgUrl(), System.currentTimeMillis());
+                lastUiUpdateMsByUrl.put(g.getPkgUrl(), 0L);
+                lastProgressPercentByUrl.put(g.getPkgUrl(), -1);
+                downloadsPanel.add(bar);
+            }
+            downloadsPanel.revalidate();
+            downloadsPanel.repaint();
+            jbResumeAndPause.setEnabled(true);
+            refreshPauseVisuals();
+        });
+    }
+
+    private void updateDownloadProgress(Game game, long bytesDownloaded, long totalBytes) {
+        javax.swing.JProgressBar bar = progressBarsByUrl.get(game.getPkgUrl());
+        if (bar == null) return;
+        long now = System.currentTimeMillis();
+        long lastTime = lastTimeByUrl.getOrDefault(game.getPkgUrl(), now);
+        long lastBytes = lastBytesByUrl.getOrDefault(game.getPkgUrl(), 0L);
+        long deltaTime = now - lastTime; // ms
+        long deltaBytes = bytesDownloaded - lastBytes;
+        lastTimeByUrl.put(game.getPkgUrl(), now);
+        lastBytesByUrl.put(game.getPkgUrl(), bytesDownloaded);
+
+        // Instant speed (MiB/s)
+        Double smoothed = smoothedSpeedMibByUrl.get(game.getPkgUrl());
+        double instantMib = -1.0;
+        if (deltaTime > 150 && deltaBytes > 0) { // require minimum interval
+            double bytesPerSec = (deltaBytes / (deltaTime / 1000.0));
+            instantMib = bytesPerSec / (1024 * 1024.0);
+            if (smoothed == null) {
+                smoothed = instantMib; // first measurement
+            } else {
+                double alpha = 0.25; // smoothing factor
+                smoothed = smoothed + alpha * (instantMib - smoothed);
+            }
+            smoothedSpeedMibByUrl.put(game.getPkgUrl(), smoothed);
+        }
+
+        // Determine progress percent (if known)
+        int progressPercent = -1;
+        if (totalBytes > 0) {
+            progressPercent = (int) ((bytesDownloaded * 100) / totalBytes);
+            bar.setIndeterminate(false);
+            bar.setValue(progressPercent);
+        } else {
+            bar.setIndeterminate(true);
+        }
+
+        // Throttle UI updates: update text only if progress changed or 1s elapsed
+        long lastUi = lastUiUpdateMsByUrl.getOrDefault(game.getPkgUrl(), 0L);
+        int lastProgressStored = lastProgressPercentByUrl.getOrDefault(game.getPkgUrl(), -999);
+        boolean progressChanged = progressPercent != lastProgressStored && progressPercent >= 0;
+        boolean timeElapsed = (now - lastUi) >= 1000; // 1s throttle
+        boolean first = lastUi == 0L;
+        if (progressChanged || timeElapsed || first || bar.isIndeterminate()) {
+            lastUiUpdateMsByUrl.put(game.getPkgUrl(), now);
+            lastProgressPercentByUrl.put(game.getPkgUrl(), progressPercent);
+            String speedStr;
+            Double current = smoothedSpeedMibByUrl.get(game.getPkgUrl());
+            if (current == null || current <= 0) {
+                speedStr = "—"; // em dash for unknown
+            } else {
+                speedStr = String.format("%.2f MiB/s", current);
+            }
+            String base;
+            if (bar.isIndeterminate()) {
+                base = String.format("%s – %d bytes – %s – %s", game.getTitle(), bytesDownloaded, game.getConsole(), speedStr);
+            } else {
+                base = String.format("%s – %d%% – %s – %s", game.getTitle(), progressPercent, game.getConsole(), speedStr);
+            }
+            if (downloadPaused) base += " (Paused)";
+            bar.setString(base);
+        }
+    }
+
+    private void markDownloadCompleted(Game game) {
+        javax.swing.JProgressBar bar = progressBarsByUrl.get(game.getPkgUrl());
+        if (bar != null) {
+            bar.setIndeterminate(false);
+            bar.setValue(100);
+            bar.setString(game.getTitle() + " – Completed – " + game.getConsole());
+        }
+        activeDownloadCount--;
+        checkAllDownloadsFinished();
+    }
+
+    private void markDownloadError(Game game) {
+        javax.swing.JProgressBar bar = progressBarsByUrl.get(game.getPkgUrl());
+        if (bar != null) {
+            bar.setIndeterminate(false);
+            bar.setString(game.getTitle() + " – Error – " + game.getConsole());
+        }
+        activeDownloadCount--;
+        checkAllDownloadsFinished();
+    }
+
+    private void checkAllDownloadsFinished() {
+        if (activeDownloadCount <= 0) {
+            jbResumeAndPause.setEnabled(false);
+            downloadList.clear();
+        }
+    }
+
+    private void refreshPauseVisuals() {
+        for (javax.swing.JProgressBar bar : progressBarsByUrl.values()) {
+            String s = bar.getString();
+            if (s == null) continue;
+            if (downloadPaused) {
+                if (!s.endsWith("(Paused)")) {
+                    bar.setString(s + " (Paused)");
+                }
+            } else {
+                if (s.endsWith("(Paused)")) {
+                    bar.setString(s.substring(0, s.length() - 9));
+                }
+            }
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -611,7 +732,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private javax.swing.JButton jbSetting;
     private javax.swing.JLabel jbsearch;
     private javax.swing.JComboBox<String> jcbRegion;
-    private javax.swing.JProgressBar jpbDownload;
+    // Removed single progress bar; using downloadsPanel instead.
     private javax.swing.JRadioButton jrbPsp;
     private javax.swing.JRadioButton jrbPsvita;
     private javax.swing.JRadioButton jrbPsx;
@@ -621,14 +742,6 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
 
     private void jbRefreshActionPerformed(java.awt.event.ActionEvent evt) {
         fillTable();
-    }
-
-    private void jtfSearchKeyPressed(java.awt.event.KeyEvent evt) {
-        filtrarTablaPorTextoYRegion(jtfSearch.getText(), (String) jcbRegion.getSelectedItem());
-    }
-
-    private void jtfSearchKeyReleased(java.awt.event.KeyEvent evt) {
-        filtrarTablaPorTextoYRegion(jtfSearch.getText(), (String) jcbRegion.getSelectedItem());
     }
 
     private void jcbRegionItemStateChanged(java.awt.event.ItemEvent evt) {
