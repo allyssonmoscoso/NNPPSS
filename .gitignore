@@ -160,3 +160,9 @@ lib/
 app/
 url.txt
 .vscode/
+
+.build_tmp/*
+config.properties
+.classpath
+.project
+.settings/*
