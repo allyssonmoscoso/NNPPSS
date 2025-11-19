@@ -4,68 +4,58 @@
  */
 package com.squarepeace.nnppss;
 
-import com.squarepeace.nnppss.Utilities;
+import com.squarepeace.nnppss.model.Console;
+import com.squarepeace.nnppss.model.Game;
+import com.squarepeace.nnppss.service.ConfigManager;
+import com.squarepeace.nnppss.service.DownloadService;
+import com.squarepeace.nnppss.service.GameRepository;
+import com.squarepeace.nnppss.service.PackageService;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedInputStream;
-import java.io.Console;
+import java.awt.event.ItemEvent;
+import java.awt.event.KeyEvent;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.RowFilter;
-import javax.swing.SwingWorker;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
 public class Frame extends javax.swing.JFrame implements ActionListener {
 
-    /**
-     * Creates new form Frame
-     */
-    private DefaultTableModel originalModel; // Variable para almacenar el modelo de datos original
-
-    // Declaración del TableRowSorter
+    private DefaultTableModel originalModel;
     private TableRowSorter<DefaultTableModel> rowSorter;
 
-    private final Utilities utilities; // Utilizamos una variable final para guardar la instancia de Utilities
+    private final ConfigManager configManager;
+    private final GameRepository gameRepository;
+    private final DownloadService downloadService;
+    private final PackageService packageService;
 
-    // Variable para controlar el estado de la descarga
     private boolean downloadPaused = false;
-
-    // Variable para controlar si hay descargas en curso
     private boolean downloading = false;
 
-    Vector<String> DownloadList = new Vector<>();
+    private List<Game> downloadList = new ArrayList<>();
 
-    public Frame(Utilities utilities) { // Modifica el constructor para aceptar una instancia de Utilities
-        this.utilities = utilities; // Asigna la instancia recibida a la variable de clase
-        initComponents(); // Asegúrate de llamar al constructor de la superclase si es necesario
-        jbResumeAndPause.setEnabled(false); // Inicialmente deshabilitado
-        // jrdPsvita como seleccionado por defecto
-        //jrbPsvita.setSelected(true);
-
-        utilities.setFrameIcon(this, "/n.png");
+    public Frame(ConfigManager configManager, GameRepository gameRepository, DownloadService downloadService, PackageService packageService) {
+        this.configManager = configManager;
+        this.gameRepository = gameRepository;
+        this.downloadService = downloadService;
+        this.packageService = packageService;
+        
+        initComponents();
+        jbResumeAndPause.setEnabled(false);
     }
 
     /**
@@ -265,285 +255,90 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-        private void jbDownloadListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbDownloadListActionPerformed
-
-            JTable table = new JTable();
-            
-            // Fill the table with the download list
-            DefaultTableModel model = (DefaultTableModel) table.getModel();
-            model.addColumn("File URL");
-            model.addColumn("Local File Path");
-            model.addColumn("File Name");
-            model.addColumn("zRIF");
-            model.addColumn("Console");
-            model.addColumn("Name");
-            model.addColumn("Size");
-
-            for (int i = 0; i < DownloadList.size(); i += 7) {
-                model.addRow(new Object[] { DownloadList.get(i), DownloadList.get(i + 1), DownloadList.get(i + 2),
-                        DownloadList.get(i + 3), DownloadList.get(i + 4), DownloadList.get(i + 5), DownloadList.get(i + 6) });
-            }
-            
-            // Add a button to remove selected rows
-            JButton removeButton = new JButton("Remove Selected");
-            removeButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    int[] selectedRows = table.getSelectedRows();
-                    for (int i = selectedRows.length - 1; i >= 0; i--) {
-                        int modelRow = table.convertRowIndexToModel(selectedRows[i]);
-                        for (int j = 0; j < 7; j++) {
-                            DownloadList.remove(model.getValueAt(modelRow, j));
-                        }
-                        model.removeRow(modelRow);
-                    }
-                }
-            });
-
-            JButton clearButton = new JButton("Clear List");
-            clearButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    DownloadList.clear();
-                    model.setRowCount(0);
-                }
-            });
-
-            // Table inside JOptionPane
-            JButton downloadButton = new JButton("Download");
-            downloadButton.addActionListener(this);
-            JOptionPane.showMessageDialog(null, new Object[] { new JScrollPane(table), downloadButton, removeButton, clearButton }, "Download List", JOptionPane.PLAIN_MESSAGE);
-            
-    }//GEN-LAST:event_jbDownloadListActionPerformed
-
-    private void jrbPsxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jrbPsxActionPerformed
-        fillTable();
-    }//GEN-LAST:event_jrbPsxActionPerformed
-
-    private void jrbPsvitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jrbPsvitaActionPerformed
-        fillTable();
-    }//GEN-LAST:event_jrbPsvitaActionPerformed
-
-    public void actionPerformed(ActionEvent e) {
-        if (e.getActionCommand().equals("Download")) {
-            
-            if (DownloadList.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "The download list is empty.");
-                return;
-            }else{
-
-                if (downloading) {
-                    JOptionPane.showMessageDialog(this, "There are downloads in progress. Please wait until they are completed.");
-                    return;
-                    
-                }else{
-    
-                // download the list of games in the download list
-                for (int i = 0; i < DownloadList.size(); i += 7) {
-                    List<String> fileURLs = new ArrayList<>();
-                    List<String> localFilePaths = new ArrayList<>();
-                    List<String> fileNames = new ArrayList<>();
-                    List<String> zRIFs = new ArrayList<>();
-                    List<String> consoles = new ArrayList<>();
-                    List<String> Names = new ArrayList<>();
-                    List<String> Sizes = new ArrayList<>();
-
-                    fileURLs.add(DownloadList.get(i));
-                    localFilePaths.add(DownloadList.get(i + 1));
-                    fileNames.add(DownloadList.get(i + 2));
-                    zRIFs.add(DownloadList.get(i + 3));
-                    consoles.add(DownloadList.get(i + 4));
-                    Names.add(DownloadList.get(i + 5));
-                    Sizes.add(DownloadList.get(i + 6));
-
-                    downloadFilesInBackground(fileURLs, localFilePaths, fileNames, zRIFs, consoles, Names);
-                }
-                
-                // Clear the download list
-                DownloadList.clear();
-                }
-
-            }     
-        }
-}
-
-    private void jbRefreshActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbRefreshActionPerformed
-
-        if (jrbPsp.isSelected()) {
-            fillTableAndComboBox("Psp");
-        } else if (jrbPsvita.isSelected()) {
-        fillTableAndComboBox("Psvita");
-        } else if (jrbPsx.isSelected()) {
-            fillTableAndComboBox("Psx");
-            }
-        
-    }// GEN-LAST:event_jbRefreshActionPerformed
-
-    private void jtfSearchKeyPressed(java.awt.event.KeyEvent evt) {// GEN-FIRST:event_jtfSearchKeyPressed
-        String searchText = jtfSearch.getText().trim();
-        filtrarTablaPorTextoYRegion(searchText, (String) jcbRegion.getSelectedItem());
-    }// GEN-LAST:event_jtfSearchKeyPressed
-
-    private void jcbRegionItemStateChanged(java.awt.event.ItemEvent evt) {// GEN-FIRST:event_jcbRegionItemStateChanged
-
-        String selectedRegion = (String) jcbRegion.getSelectedItem();
-        System.out.println("Selected Region: " + selectedRegion); // Mensaje de depuración
-        if (selectedRegion != null) {
-            filtrarTablaPorTextoYRegion(jtfSearch.getText().trim(), selectedRegion);
-        }
-    }// GEN-LAST:event_jcbRegionItemStateChanged
-
-    private void jtfSearchKeyReleased(java.awt.event.KeyEvent evt) {// GEN-FIRST:event_jtfSearchKeyReleased
-
-        String searchText = jtfSearch.getText().trim();
-        filtrarTablaPorTextoYRegion(searchText, (String) jcbRegion.getSelectedItem());
-
-    }// GEN-LAST:event_jtfSearchKeyReleased
-
-    private void jtDataMousePressed(java.awt.event.MouseEvent evt) {// GEN-FIRST:event_jtDataMousePressed
-
+        private void jtDataMousePressed(java.awt.event.MouseEvent evt) {
         int selectedRow = jtData.getSelectedRow();
-        if (selectedRow != -1) { // Verificar si se ha seleccionado una fila válida
-            // Obtener el índice de la fila seleccionada en el modelo de la vista
+        if (selectedRow != -1) {
             int modelRowIndex = jtData.convertRowIndexToModel(selectedRow);
+            DefaultTableModel model = (DefaultTableModel) jtData.getModel();
 
-            // Obtener el modelo de tabla filtrado a través del TableRowSorter
-            DefaultTableModel filteredModel = (DefaultTableModel) jtData.getModel();
+            String pkgUrl = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("PKG direct link"));
+            
+            if ("MISSING".equals(pkgUrl)) {
+                JOptionPane.showMessageDialog(this, "You cannot download this game because the download link is not registered.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            } else if ("CART ONLY".equals(pkgUrl)) {
+                JOptionPane.showMessageDialog(this, "This game is available in cart only.", "Information", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            } else if ("NOT REQUIRED".equals(pkgUrl)) {
+                JOptionPane.showMessageDialog(this, "No download required", "Information", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
 
-            // Obtener el valor de la columna "PKG direct link" en la fila seleccionada
-            Object pkgDirectLinkValue = filteredModel.getValueAt(modelRowIndex,
-                    getColumnIndexByName("PKG direct link"));
+            String name = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("Name"));
+            String fileSize = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("File Size"));
+            String zRif = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("zRIF"));
+            String region = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("Region"));
 
-            // Verificar si el valor de pkgDirectLinkValue es MISSING o CART ONLY
-            if (pkgDirectLinkValue.equals("MISSING")) {
-                // Mostrar mensaje de que el juego no se puede descargar porque el link de
-                // descarga no está registrado
-                JOptionPane.showMessageDialog(this,
-                        "You cannot download this game because the download link is not registered.", "Error",
-                        JOptionPane.ERROR_MESSAGE);
-            } else if (pkgDirectLinkValue.equals("CART ONLY")) {
-                // Mostrar mensaje de que el juego solo se encuentra en formato físico
-                JOptionPane.showMessageDialog(this, "This game is available in cart only.", "Información",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } else if (pkgDirectLinkValue.equals("NOT REQUIRED")) {
-                // Mostrar mensaje de que el juego solo se encuentra en formato físico
-                JOptionPane.showMessageDialog(this, "NO download required", "Información",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } else if (jrbPsp.isSelected()) {
-                {
-                    Object nameValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("Name"));
-                    Object fileSizeValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("File Size"));
+            int option = JOptionPane.showConfirmDialog(this,
+                    "Do you want to add " + name + " (" + fileSize + ") to download list?",
+                    "Download List",
+                    JOptionPane.YES_NO_OPTION);
 
-                    String pkgDirectLink = pkgDirectLinkValue.toString();
-                    String fileName = pkgDirectLink.substring(pkgDirectLink.lastIndexOf("/") + 1);
-
-                    // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
-                    int option = JOptionPane.showConfirmDialog(this,
-                            "¿You want to add  " + nameValue + ", Size is " + fileSizeValue + "?",
-                            "Download List",
-                            JOptionPane.YES_NO_OPTION);
-
-                    // Verificar la opción seleccionada por el usuario
-                    if (option == JOptionPane.YES_OPTION) {
-                        // Lógica para descargar el archivo aquí
-                        //downloadFileInBackground(pkgDirectLink , fileName, fileName, null, "Psp");
-
-                        //insert pkgDirectLink , fileName, fileName, null, "Psp" on DownloadList
-
-                        //if already exist in the download list then do not add it again
-                        if (DownloadList.contains(pkgDirectLink)) {
-                            JOptionPane.showMessageDialog(this, "The game is already in the download list.");
-                            return;
-                        }
-
-                        DownloadList.add(pkgDirectLink);
-                        DownloadList.add(fileName);
-                        DownloadList.add(fileName);
-                        DownloadList.add(null);
-                        DownloadList.add("Psp");
-                        DownloadList.add(nameValue.toString());
-                        DownloadList.add(fileSizeValue.toString());
-                        
-                        System.out.println(DownloadList); // Mensaje de depuración
-                    }
+            if (option == JOptionPane.YES_OPTION) {
+                if (downloadList.stream().anyMatch(g -> g.getPkgUrl().equals(pkgUrl))) {
+                    JOptionPane.showMessageDialog(this, "The game is already in the download list.");
+                    return;
                 }
-            } else if (jrbPsvita.isSelected()) {
-                // El juego está disponible para descarga
-                Object nameValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("Name"));
-                Object fileSizeValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("File Size"));
-                Object zRIFValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("zRIF"));
-                String pkgDirectLink = pkgDirectLinkValue.toString();
-                String fileName = pkgDirectLink.substring(pkgDirectLink.lastIndexOf("/") + 1);
-                String zRIF = zRIFValue.toString();
 
-                // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
-                int option = JOptionPane.showConfirmDialog(this,
-                            "¿You want to add  " + nameValue + ", Size is " + fileSizeValue + "?",
-                            "Download List",
-                            JOptionPane.YES_NO_OPTION);
+                Game game = new Game();
+                game.setTitle(name);
+                game.setPkgUrl(pkgUrl);
+                game.setzRif(zRif);
+                game.setRegion(region);
+                
+                if (jrbPsp.isSelected()) game.setConsole(Console.PSP);
+                else if (jrbPsvita.isSelected()) game.setConsole(Console.PSVITA);
+                else if (jrbPsx.isSelected()) game.setConsole(Console.PSX);
 
-                // Verificar la opción seleccionada por el usuario
-                if (option == JOptionPane.YES_OPTION) {
-                    // Lógica para descargar el archivo aquí
-                    //downloadFileInBackground(pkgDirectLink, fileName, fileName, zRIF, "Psvita");
-
-                    //if already exist in the download list then do not add it again
-                    if (DownloadList.contains(pkgDirectLink)) {
-                        JOptionPane.showMessageDialog(this, "The game is already in the download list.");
-                        return;
-                    }
-
-                    //insert pkgDirectLink , fileName, fileName, zRIF, "Psvita" on DownloadList
-                    DownloadList.add(pkgDirectLink);
-                    DownloadList.add(fileName);
-                    DownloadList.add(fileName);
-                    DownloadList.add(zRIF);
-                    DownloadList.add("Psvita");
-                    DownloadList.add(nameValue.toString());
-                    DownloadList.add(fileSizeValue.toString());
-                    
-                    System.out.println(DownloadList); // Mensaje de depuración
-                }
-            } else if (jrbPsx.isSelected()) {
-                {
-                    Object nameValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("Name"));
-                    Object fileSizeValue = filteredModel.getValueAt(modelRowIndex, getColumnIndexByName("File Size"));
-
-                    String pkgDirectLink = pkgDirectLinkValue.toString();
-                    String fileName = pkgDirectLink.substring(pkgDirectLink.lastIndexOf("/") + 1);
-
-                    // Mostrar el cuadro de diálogo de confirmación para descargar el archivo
-                    int option = JOptionPane.showConfirmDialog(this,
-                            "¿You want to add  " + nameValue + ", Size is " + fileSizeValue + "?",
-                            "Download List",
-                            JOptionPane.YES_NO_OPTION);
-
-                    // Verificar la opción seleccionada por el usuario
-                    if (option == JOptionPane.YES_OPTION) {
-                        // Lógica para descargar el archivo aquí
-                        //downloadFileInBackground(pkgDirectLink , fileName, fileName, null, "Psp");
-
-                        //insert pkgDirectLink , fileName, fileName, null, "Psp" on DownloadList
-
-                        //if already exist in the download list then do not add it again
-                        if (DownloadList.contains(pkgDirectLink)) {
-                            JOptionPane.showMessageDialog(this, "The game is already in the download list.");
-                            return;
-                        }
-
-                        DownloadList.add(pkgDirectLink);
-                        DownloadList.add(fileName);
-                        DownloadList.add(fileName);
-                        DownloadList.add(null);
-                        DownloadList.add("Psx");
-                        DownloadList.add(nameValue.toString());
-                        DownloadList.add(fileSizeValue.toString());
-                        
-                        System.out.println(DownloadList); // Mensaje de depuración
-                    }
-                }
+                downloadList.add(game);
+                System.out.println("Added to list: " + game);
             }
         }
+    }
+
+    private void jbDownloadListActionPerformed(java.awt.event.ActionEvent evt) {
+        JTable table = new JTable();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+        model.addColumn("Name");
+        model.addColumn("Region");
+        model.addColumn("Console");
+        model.addColumn("URL");
+
+        for (Game game : downloadList) {
+            model.addRow(new Object[]{game.getTitle(), game.getRegion(), game.getConsole(), game.getPkgUrl()});
+        }
+
+        JButton removeButton = new JButton("Remove Selected");
+        removeButton.addActionListener(e -> {
+            int[] selectedRows = table.getSelectedRows();
+            for (int i = selectedRows.length - 1; i >= 0; i--) {
+                int modelRow = table.convertRowIndexToModel(selectedRows[i]);
+                String url = (String) model.getValueAt(modelRow, 3);
+                downloadList.removeIf(g -> g.getPkgUrl().equals(url));
+                model.removeRow(modelRow);
+            }
+        });
+
+        JButton clearButton = new JButton("Clear List");
+        clearButton.addActionListener(e -> {
+            downloadList.clear();
+            model.setRowCount(0);
+        });
+
+        JButton downloadButton = new JButton("Download");
+        downloadButton.addActionListener(this);
+
+        JOptionPane.showMessageDialog(null, new Object[]{new JScrollPane(table), downloadButton, removeButton, clearButton}, "Download List", JOptionPane.PLAIN_MESSAGE);
     }// GEN-LAST:event_jtDataMousePressed
 
     private void jbResumeAndPauseActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbResumeAndPauseActionPerformed
@@ -558,7 +353,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     }// GEN-LAST:event_jbResumeAndPauseActionPerformed
 
     private void jbSettingActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbSettingActionPerformed
-        Config config = new Config();
+        Config config = new Config(configManager);
         config.setLocationRelativeTo(null);
         config.setResizable(false);
         config.setVisible(true);
@@ -588,95 +383,74 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         }
     }
 
-    public void fillTableAndComboBox(String console) {
-        // Crear un nuevo modelo de tabla usando los datos del archivo TSV
+    public void fillTableAndComboBox(String consoleName) {
+        Console console;
         try {
-            if (console.equals("Psp")) {
-                originalModel = utilities.readTSV(utilities.TSV_PSP);
-            }else if (console.equals("Psvita")) {
-                originalModel = utilities.readTSV(utilities.TSV_VITA);
-            }else if (console.equals("Psx")) {
-                originalModel = utilities.readTSV(utilities.TSV_PSX);
-            }
-        } catch (IOException e) {
-            // Manejar cualquier excepción que pueda ocurrir al leer el archivo TSV
+            console = Console.fromDisplayName(consoleName);
+        } catch (IllegalArgumentException e) {
             e.printStackTrace();
-            // Si ocurre un error al leer el archivo, salir del método
             return;
         }
 
-        // Crear un nuevo modelo de tabla para almacenar las filas que cumplen con el criterio
-        DefaultTableModel filteredModel = new DefaultTableModel();
-
-        // Obtener los nombres de las columnas del modelo original
-        Vector<String> columnIdentifiers = new Vector<>();
-        for (int i = 0; i < originalModel.getColumnCount(); i++) {
-            columnIdentifiers.add(originalModel.getColumnName(i));
-        }
-        // Establecer los nombres de las columnas en el modelo filtrado
-        filteredModel.setColumnIdentifiers(columnIdentifiers);
-
-        // Iterar sobre las filas del modelo original
-        for (int i = 0; i < originalModel.getRowCount(); i++) {
-            Object fileSizeValue = originalModel.getValueAt(i, getColumnIndexByName("File Size"));
-            // Verificar si el valor de "File Size" no está vacío, es distinto de null y mayor que 0
-            if (fileSizeValue != null && !fileSizeValue.toString().isEmpty()
-                    && Long.parseLong(fileSizeValue.toString()) > 0) {
-                // Obtener los datos de la fila actual como un array de objetos
-                Object[] rowData = new Object[originalModel.getColumnCount()];
-                for (int j = 0; j < originalModel.getColumnCount(); j++) {
-                    rowData[j] = originalModel.getValueAt(i, j);
-                }
-                // Convertir el tamaño del archivo en la fila actual
-                rowData[getColumnIndexByName("File Size")] = utilities.convertFileSize(fileSizeValue);
-                // Agregar la fila al modelo filtrado
-                filteredModel.addRow(rowData);
-            }
+        List<Game> games;
+        try {
+            games = gameRepository.loadGames(console);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
         }
 
-        // Asignar el nuevo modelo filtrado a la tabla
-        jtData.setModel(filteredModel);
+        // Define columns expected by the UI
+        String[] columnNames = {"Name", "Region", "PKG direct link", "zRIF", "File Size"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
 
-        // Crear el TableRowSorter si no existe
-        rowSorter = new TableRowSorter<>(filteredModel);
+        for (Game game : games) {
+            model.addRow(new Object[]{
+                    game.getTitle(),
+                    game.getRegion(),
+                    game.getPkgUrl(),
+                    game.getzRif(),
+                    convertFileSize(game.getFileSize())
+            });
+        }
+
+        originalModel = model;
+        jtData.setModel(model);
+
+        // Create the TableRowSorter
+        rowSorter = new TableRowSorter<>(model);
         jtData.setRowSorter(rowSorter);
 
-        // Obtener el número de columnas
-        int regionColumnIndex = jtData.getColumn("Region").getModelIndex();
-
-        // Verificar si la columna de la región existe
-        if (regionColumnIndex != -1) {
-            // Crear un conjunto para almacenar valores únicos de la columna de la región
-            Set<String> regionSet = new HashSet<>();
-
-            // Iterar sobre las filas para obtener los valores únicos de la región
-            for (int row = 0; row < filteredModel.getRowCount(); row++) {
-                // Obtener el valor de la región en la fila actual
-                String region = (String) filteredModel.getValueAt(row, regionColumnIndex);
-
-                // Agregar el valor al conjunto
+        // Update Region ComboBox
+        int regionColumnIndex = 1; // "Region" is at index 1
+        Set<String> regionSet = new HashSet<>();
+        for (int row = 0; row < model.getRowCount(); row++) {
+            String region = (String) model.getValueAt(row, regionColumnIndex);
+            if (region != null) {
                 regionSet.add(region);
             }
-
-            // Limpiar el JComboBox
-            jcbRegion.removeAllItems();
-            // Agregar la opción para mostrar todas las regiones
-            jcbRegion.addItem("All regions");
-
-            // Agregar los elementos únicos al JComboBox
-            for (String region : regionSet) {
-                jcbRegion.addItem(region);
-            }
-
-        } else {
-            System.out.println("The region column does not exist in the table.");
         }
+
+        jcbRegion.removeAllItems();
+        jcbRegion.addItem("All regions");
+        for (String region : regionSet) {
+            jcbRegion.addItem(region);
+        }
+    }
+
+    private String convertFileSize(long fileSize) {
+        double fileSizeMiB = fileSize / (1024 * 1024.0);
+        return String.format("%.1f MiB", fileSizeMiB);
     }
 
     private void filtrarTablaPorTextoYRegion(String searchText, String region) {
         System.out.println("Search Text: " + searchText);
         System.out.println("Region: " + region);
         
+        if (region == null) {
+            return;
+        }
+
         // Crear un RowFilter para filtrar por el texto ingresado y la región
         // seleccionada
         RowFilter<DefaultTableModel, Integer> rowFilterByText = null;
@@ -720,145 +494,83 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         return -1; // Si no se encuentra la columna, retornar -1
     }
 
-    public void downloadFilesInBackground(List<String> fileURLs, List<String> localFilePaths, List<String> fileNames, List<String> zRIFs, List<String> consoles, List<String> Names) {
-        int simultaneousDownloads = 1; // Set the number of simultaneous downloads
-        ExecutorService executor = Executors.newFixedThreadPool(simultaneousDownloads);
-
-        SwingWorker<Void, String> worker = new SwingWorker<Void, String>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                downloading = true;
-
-                File dbFolder = new File("db");
-                File gamesFolder = new File("games");
-                if (!dbFolder.exists()) {
-                    dbFolder.mkdir();
-                }
-                if (!gamesFolder.exists()) {
-                    gamesFolder.mkdir();
-                }
-
-                for (int i = 0; i < fileURLs.size(); i++) {
-                    final int index = i;
-                    executor.submit(() -> {
-                        String fileURL = fileURLs.get(index);
-                        String localFilePath = localFilePaths.get(index);
-                        String fileName = fileNames.get(index);
-                        String zRIF = zRIFs.get(index);
-                        String console = consoles.get(index);
-                        String Name = Names.get(index);
-
-                        File file = new File(localFilePath);
-                        if (file.exists()) {
-                            System.err.println("The file already exists. There is no need to download it again.");
-                            return;
-                        }
-
-                        jbResumeAndPause.setEnabled(true);
-
-                        long bytesDownloaded = 0;
-                        try (BufferedInputStream in = new BufferedInputStream(new URL(fileURL).openStream());
-                            FileOutputStream fileOutputStream = new FileOutputStream(localFilePath)) {
-
-                            byte dataBuffer[] = new byte[1024];
-                            int bytesRead;
-
-                            if (file.exists()) {
-                                bytesDownloaded = file.length();
-                                in.skip(bytesDownloaded);
-                            }
-
-                            long fileSize = utilities.getFileSize(fileURL);
-                            DecimalFormat df = new DecimalFormat("#.##");
-
-                            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                                while (downloadPaused) {
-                                    try {
-                                        Thread.sleep(1000);
-                                    } catch(InterruptedException e) {
-                                        System.out.println("got interrupted!");
-                                    }
-
-                                }
-
-                                fileOutputStream.write(dataBuffer, 0, bytesRead);
-                                bytesDownloaded += bytesRead;
-
-                                int progress = (int) (bytesDownloaded * 100 / fileSize);
-                                String progressText = Name + " " + df.format(bytesDownloaded / (1024.0 * 1024.0)) + "MB of " + df.format(fileSize / (1024.0 * 1024.0)) + "MB";
-                                publish(progressText + "::" + progress);
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    });
-                }
-
-                executor.shutdown();
-                executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-                return null;
-            }
-
-            @Override
-            protected void process(java.util.List<String> chunks) {
-                String[] lastChunk = chunks.get(chunks.size() - 1).split("::");
-                String progressText = lastChunk[0];
-                int progress = Integer.parseInt(lastChunk[1]);
-                jpbDownload.setString(progressText);
-                jpbDownload.setValue(progress);
-            }
-
-            @Override
-            protected void done() {
-                downloading = false;
-                jbResumeAndPause.setEnabled(false);
-
-                for (int i = 0; i < fileURLs.size(); i++) {
-                    String localFilePath = localFilePaths.get(i);
-                    String fileName = fileNames.get(i);
-                    String zRIF = zRIFs.get(i);
-                    String console = consoles.get(i);
-
-                    String extension = localFilePath.substring(localFilePath.lastIndexOf(".") + 1).toLowerCase();
-                    switch (extension) {
-                        case "tsv":
-                            switch (localFilePath) {
-                                case "db/PSV_GAMES.tsv":
-                                    utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                                    System.err.println("Psvita Database loaded");
-                                    break;
-                                case "db/PSP_GAMES.tsv":
-                                    utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                                    System.err.println("Psp Database loaded");
-                                    break;
-                                case "db/PSX_GAMES.tsv":
-                                    utilities.moveFile(localFilePath, "db/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                                    System.err.println("Psx Database loaded");
-                                    break;
-                                default:
-                                    break;
-                            }
-                            break;
-                        case "pkg":
-                            utilities.moveFile(localFilePath, "games/" + localFilePath.substring(localFilePath.lastIndexOf("/") + 1));
-                            System.out.println("PKG download completed.");
-                            String command = utilities.buildCommand(fileName, zRIF, console);
-                            utilities.runCommandWithLoadingMessage(command);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-        };
-
-        worker.execute();
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getActionCommand().equals("Download")) {
+            startDownloads();
+        }
     }
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
+    private void startDownloads() {
+        if (downloadList.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "The download list is empty.");
+            return;
+        }
+
+        if (downloading) {
+            JOptionPane.showMessageDialog(this, "Downloads in progress.");
+            return;
+        }
+
+        downloading = true;
+        jbResumeAndPause.setEnabled(true);
+
+        new Thread(() -> {
+            ExecutorService executor = Executors.newFixedThreadPool(1);
+
+            for (Game game : new ArrayList<>(downloadList)) {
+                executor.submit(() -> {
+                    String fileName = game.getFileName();
+                    String destPath = "games/" + fileName;
+
+                    downloadService.downloadFile(game.getPkgUrl(), destPath, new DownloadService.DownloadListener() {
+                        @Override
+                        public void onProgress(long bytesDownloaded, long totalBytes) {
+                            int progress = (int) (bytesDownloaded * 100 / totalBytes);
+                            SwingUtilities.invokeLater(() -> {
+                                jpbDownload.setValue(progress);
+                                jpbDownload.setString(game.getTitle() + ": " + progress + "%");
+                            });
+                        }
+
+                        @Override
+                        public void onComplete(File file) {
+                            SwingUtilities.invokeLater(() -> {
+                                jpbDownload.setValue(100);
+                                jpbDownload.setString(game.getTitle() + " Completed");
+                            });
+
+                            if (game.getzRif() != null && !game.getzRif().isEmpty()) {
+                                packageService.extractPackage(fileName, game.getzRif(), game.getConsole());
+                            }
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            e.printStackTrace();
+                            SwingUtilities.invokeLater(() -> {
+                                JOptionPane.showMessageDialog(Frame.this, "Error downloading " + game.getTitle());
+                            });
+                        }
+                    });
+                });
+            }
+
+            executor.shutdown();
+            try {
+                executor.awaitTermination(Long.MAX_VALUE, java.util.concurrent.TimeUnit.NANOSECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            downloading = false;
+            SwingUtilities.invokeLater(() -> {
+                jbResumeAndPause.setEnabled(false);
+                jpbDownload.setString("All downloads completed");
+                downloadList.clear();
+            });
+
+        }).start();
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -880,4 +592,28 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private javax.swing.JTable jtData;
     private javax.swing.JTextField jtfSearch;
     // End of variables declaration//GEN-END:variables
+
+    private void jbRefreshActionPerformed(java.awt.event.ActionEvent evt) {
+        fillTable();
+    }
+
+    private void jtfSearchKeyPressed(java.awt.event.KeyEvent evt) {
+        filtrarTablaPorTextoYRegion(jtfSearch.getText(), (String) jcbRegion.getSelectedItem());
+    }
+
+    private void jtfSearchKeyReleased(java.awt.event.KeyEvent evt) {
+        filtrarTablaPorTextoYRegion(jtfSearch.getText(), (String) jcbRegion.getSelectedItem());
+    }
+
+    private void jcbRegionItemStateChanged(java.awt.event.ItemEvent evt) {
+        filtrarTablaPorTextoYRegion(jtfSearch.getText(), (String) jcbRegion.getSelectedItem());
+    }
+
+    private void jrbPsvitaActionPerformed(java.awt.event.ActionEvent evt) {
+        fillTable();
+    }
+
+    private void jrbPsxActionPerformed(java.awt.event.ActionEvent evt) {
+        fillTable();
+    }
 }
