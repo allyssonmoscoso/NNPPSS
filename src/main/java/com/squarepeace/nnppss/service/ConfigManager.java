@@ -62,4 +62,19 @@ public class ConfigManager {
     public String getPsxUrl() {
         return getProperty("psx.url");
     }
+
+    public int getSimultaneousDownloads() {
+        String value = getProperty("simultaneousDownloads");
+        int n = 1;
+        try {
+            if (value != null) {
+                n = Integer.parseInt(value.trim());
+            }
+        } catch (NumberFormatException ignore) {
+            n = 1;
+        }
+        if (n < 1) n = 1;
+        if (n > 4) n = 4;
+        return n;
+    }
 }

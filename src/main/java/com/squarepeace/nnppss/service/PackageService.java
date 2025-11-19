@@ -81,15 +81,32 @@ public class PackageService {
              
              new Thread(() -> {
                  try {
-                     Process process = Runtime.getRuntime().exec(command);
-                     int exitCode = process.waitFor();
-                     if (exitCode == 0) {
-                         System.out.println("Extraction successful!");
+                     // Use ProcessBuilder with shell splitting when needed
+                     java.util.List<String> cmd;
+                     if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                         cmd = java.util.Arrays.asList("cmd", "/c", command);
                      } else {
-                         System.err.println("Error running pkg2zip");
+                         cmd = java.util.Arrays.asList("sh", "-lc", command);
+                     }
+                     ProcessBuilder pb = new ProcessBuilder(cmd);
+                     pb.redirectErrorStream(true);
+                     Process process = pb.start();
+
+                     // Drain output
+                     try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))) {
+                         String line;
+                         while ((line = r.readLine()) != null) {
+                             System.out.println(line);
+                         }
+                     }
+
+                     int exitCode = process.waitFor();
+                     if (exitCode != 0) {
+                         SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "pkg2zip failed (exit " + exitCode + ")"));
                      }
                  } catch (Exception e) {
                      e.printStackTrace();
+                     SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "Error running pkg2zip: " + e.getMessage()));
                  }
              }).start();
         });

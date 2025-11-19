@@ -36,56 +36,51 @@ public class DownloadService {
         try {
             URL url = new URL(fileURL);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            long fileSize = connection.getContentLengthLong();
-            
-            // Check if file exists and resume? 
-            // The original code checks if file exists and skips bytes.
-            long existingFileSize = 0;
-            if (destinationFile.exists()) {
-                 existingFileSize = destinationFile.length();
-                 if (existingFileSize >= fileSize && fileSize > 0) {
-                     listener.onComplete(destinationFile);
-                     return;
-                 }
-                 // Resume logic if server supports it, but original code just skipped bytes from stream which is inefficient but let's stick to it or improve it.
-                 // Original code: in.skip(bytesDownloaded);
-                 // Better: connection.setRequestProperty("Range", "bytes=" + existingFileSize + "-");
+            connection.setInstanceFollowRedirects(true);
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(30000);
+
+            long existingFileSize = destinationFile.exists() ? destinationFile.length() : 0L;
+            if (existingFileSize > 0) {
+                connection.setRequestProperty("Range", "bytes=" + existingFileSize + "-");
             }
 
-            // Let's try to use Range header for proper resume if supported, otherwise fallback or overwrite.
-            // For now, to be safe and consistent with original logic (which was skipping), I will implement the loop.
-            
-            try (BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
-                 FileOutputStream fileOutputStream = new FileOutputStream(destinationFile, false)) { // Overwrite for now as original logic was a bit weird with skip but new FileOutputStream(path) overwrites unless append is true.
-                 // Wait, original code: new FileOutputStream(localFilePath) -> overwrites.
-                 // But it did: if (file.exists()) { bytesDownloaded = file.length(); in.skip(bytesDownloaded); }
-                 // This implies it was trying to resume but writing to a NEW stream (overwriting). This is a BUG in original code. It would write the TAIL of the file to the beginning of the file.
-                 // I will FIX this by using append mode if resuming, or just overwrite if not.
-                 
-                 // Actually, let's just implement a clean download.
-                 
-                byte[] dataBuffer = new byte[1024];
-                int bytesRead;
-                long totalBytesRead = 0;
+            int status = connection.getResponseCode();
+            // Handle basic redirects (already enabled) and errors
+            if (status >= 400) {
+                throw new IOException("HTTP error: " + status);
+            }
 
-                while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+            long reportedLength = connection.getContentLengthLong();
+            boolean partial = status == HttpURLConnection.HTTP_PARTIAL;
+            long totalSize = (reportedLength > 0)
+                    ? (partial ? existingFileSize + reportedLength : reportedLength)
+                    : -1L;
+
+            try (BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
+                 FileOutputStream out = new FileOutputStream(destinationFile, partial)) {
+                byte[] buf = new byte[64 * 1024];
+                int read;
+                long downloaded = partial ? existingFileSize : 0L;
+                while ((read = in.read(buf)) != -1) {
                     while (paused.get()) {
                         try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e) {
+                            Thread.sleep(100);
+                        } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
                             return;
                         }
                     }
-
-                    fileOutputStream.write(dataBuffer, 0, bytesRead);
-                    totalBytesRead += bytesRead;
+                    out.write(buf, 0, read);
+                    downloaded += read;
                     if (listener != null) {
-                        listener.onProgress(totalBytesRead, fileSize);
+                        listener.onProgress(downloaded, totalSize);
                     }
                 }
+            } finally {
+                connection.disconnect();
             }
-            
+
             if (listener != null) {
                 listener.onComplete(destinationFile);
             }

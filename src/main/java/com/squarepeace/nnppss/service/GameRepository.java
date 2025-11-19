@@ -1,8 +1,10 @@
 package com.squarepeace.nnppss.service;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,7 +19,7 @@ public class GameRepository {
         List<Game> games = new ArrayList<>();
         String filePath = console.getDbPath();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+        try (BufferedReader reader = Files.newBufferedReader(Path.of(filePath), StandardCharsets.UTF_8)) {
             String headerLine = reader.readLine();
             if (headerLine == null) {
                 return games;
@@ -46,11 +48,7 @@ public class GameRepository {
                 
                 String fileSizeStr = getValue(data, columnMap, "File Size");
                 if (fileSizeStr != null && !fileSizeStr.isEmpty()) {
-                    try {
-                        game.setFileSize(Long.parseLong(fileSizeStr));
-                    } catch (NumberFormatException e) {
-                        game.setFileSize(0);
-                    }
+                    game.setFileSize(parseSizeToBytes(fileSizeStr));
                 }
 
                 // Filter invalid games as per original logic (size > 0)
@@ -69,5 +67,28 @@ public class GameRepository {
             return data[index];
         }
         return null;
+    }
+
+    private long parseSizeToBytes(String text) {
+        String s = text.trim();
+        try {
+            // Pure number => assume bytes
+            if (s.matches("^\\d+$")) {
+                return Long.parseLong(s);
+            }
+            // Number with unit
+            s = s.replaceAll(",", ".");
+            String[] parts = s.split("\\s+", 2);
+            double value = Double.parseDouble(parts[0]);
+            String unit = parts.length > 1 ? parts[1].toLowerCase() : "b";
+            long mul = 1L;
+            if (unit.startsWith("kb") || unit.startsWith("kib")) mul = 1024L;
+            else if (unit.startsWith("mb") || unit.startsWith("mib")) mul = 1024L * 1024L;
+            else if (unit.startsWith("gb") || unit.startsWith("gib")) mul = 1024L * 1024L * 1024L;
+            else if (unit.startsWith("b")) mul = 1L;
+            return (long) (value * mul);
+        } catch (Exception ignore) {
+            return 0L;
+        }
     }
 }

@@ -15,6 +15,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.KeyEvent;
+import javax.swing.Timer;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -56,6 +59,20 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         
         initComponents();
         jbResumeAndPause.setEnabled(false);
+
+        // Debounced search filtering using DocumentListener + Swing Timer
+        final Timer debounceTimer = new Timer(250, e -> {
+            filtrarTablaPorTextoYRegion(jtfSearch.getText(), (String) jcbRegion.getSelectedItem());
+        });
+        debounceTimer.setRepeats(false);
+        jtfSearch.getDocument().addDocumentListener(new DocumentListener() {
+            private void changed() {
+                debounceTimer.restart();
+            }
+            public void insertUpdate(DocumentEvent e) { changed(); }
+            public void removeUpdate(DocumentEvent e) { changed(); }
+            public void changedUpdate(DocumentEvent e) { changed(); }
+        });
     }
 
     /**
@@ -350,6 +367,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         } else {
             jbResumeAndPause.setText("Pause");
         }
+        downloadService.setPaused(downloadPaused);
     }// GEN-LAST:event_jbResumeAndPauseActionPerformed
 
     private void jbSettingActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbSettingActionPerformed
@@ -423,7 +441,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
 
         // Update Region ComboBox
         int regionColumnIndex = 1; // "Region" is at index 1
-        Set<String> regionSet = new HashSet<>();
+        java.util.Set<String> regionSet = new java.util.TreeSet<>();
         for (int row = 0; row < model.getRowCount(); row++) {
             String region = (String) model.getValueAt(row, regionColumnIndex);
             if (region != null) {
@@ -436,6 +454,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         for (String region : regionSet) {
             jcbRegion.addItem(region);
         }
+        jcbRegion.setSelectedIndex(0);
     }
 
     private String convertFileSize(long fileSize) {
@@ -515,61 +534,68 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         downloading = true;
         jbResumeAndPause.setEnabled(true);
 
-        new Thread(() -> {
-            ExecutorService executor = Executors.newFixedThreadPool(1);
+        final int concurrency = Math.max(1, configManager.getSimultaneousDownloads());
+        ExecutorService executor = Executors.newFixedThreadPool(concurrency);
 
-            for (Game game : new ArrayList<>(downloadList)) {
-                executor.submit(() -> {
-                    String fileName = game.getFileName();
-                    String destPath = "games/" + fileName;
+        for (Game game : new ArrayList<>(downloadList)) {
+            executor.submit(() -> {
+                String fileName = game.getFileName();
+                String destPath = "games/" + fileName;
 
-                    downloadService.downloadFile(game.getPkgUrl(), destPath, new DownloadService.DownloadListener() {
-                        @Override
-                        public void onProgress(long bytesDownloaded, long totalBytes) {
-                            int progress = (int) (bytesDownloaded * 100 / totalBytes);
-                            SwingUtilities.invokeLater(() -> {
+                downloadService.downloadFile(game.getPkgUrl(), destPath, new DownloadService.DownloadListener() {
+                    @Override
+                    public void onProgress(long bytesDownloaded, long totalBytes) {
+                        SwingUtilities.invokeLater(() -> {
+                            if (totalBytes <= 0) {
+                                jpbDownload.setIndeterminate(true);
+                                jpbDownload.setString(game.getTitle() + ": " + bytesDownloaded + " bytes");
+                            } else {
+                                jpbDownload.setIndeterminate(false);
+                                int progress = (int) ((bytesDownloaded * 100) / totalBytes);
                                 jpbDownload.setValue(progress);
                                 jpbDownload.setString(game.getTitle() + ": " + progress + "%");
-                            });
-                        }
-
-                        @Override
-                        public void onComplete(File file) {
-                            SwingUtilities.invokeLater(() -> {
-                                jpbDownload.setValue(100);
-                                jpbDownload.setString(game.getTitle() + " Completed");
-                            });
-
-                            if (game.getzRif() != null && !game.getzRif().isEmpty()) {
-                                packageService.extractPackage(fileName, game.getzRif(), game.getConsole());
                             }
-                        }
+                        });
+                    }
 
-                        @Override
-                        public void onError(Exception e) {
-                            e.printStackTrace();
-                            SwingUtilities.invokeLater(() -> {
-                                JOptionPane.showMessageDialog(Frame.this, "Error downloading " + game.getTitle());
-                            });
+                    @Override
+                    public void onComplete(File file) {
+                        SwingUtilities.invokeLater(() -> {
+                            jpbDownload.setIndeterminate(false);
+                            jpbDownload.setValue(100);
+                            jpbDownload.setString(game.getTitle() + " Completed");
+                        });
+
+                        if (game.getzRif() != null && !game.getzRif().isEmpty()) {
+                            packageService.extractPackage(fileName, game.getzRif(), game.getConsole());
                         }
-                    });
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        e.printStackTrace();
+                        SwingUtilities.invokeLater(() -> {
+                            JOptionPane.showMessageDialog(Frame.this, "Error downloading " + game.getTitle());
+                        });
+                    }
                 });
-            }
+            });
+        }
 
+        new Thread(() -> {
             executor.shutdown();
             try {
                 executor.awaitTermination(Long.MAX_VALUE, java.util.concurrent.TimeUnit.NANOSECONDS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
             downloading = false;
             SwingUtilities.invokeLater(() -> {
                 jbResumeAndPause.setEnabled(false);
+                jpbDownload.setIndeterminate(false);
                 jpbDownload.setString("All downloads completed");
                 downloadList.clear();
             });
-
         }).start();
     }
 
