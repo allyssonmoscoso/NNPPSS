@@ -39,6 +39,7 @@ public class ConfigManager {
         properties.setProperty("psvita.url", "");
         properties.setProperty("psx.url", "");
         properties.setProperty("simultaneousDownloads", "1");
+        properties.setProperty("autoCleanupPkg", "false");
         saveConfig();
     }
 
@@ -84,5 +85,10 @@ public class ConfigManager {
         if (n < 1) n = 1;
         if (n > 4) n = 4;
         return n;
+    }
+
+    public boolean isAutoCleanupEnabled() {
+        String value = getProperty("autoCleanupPkg");
+        return value != null && Boolean.parseBoolean(value);
     }
 }

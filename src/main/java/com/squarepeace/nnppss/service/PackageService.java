@@ -1,6 +1,7 @@
 package com.squarepeace.nnppss.service;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
@@ -14,6 +15,11 @@ import com.squarepeace.nnppss.model.Console;
 
 public class PackageService {
     private static final Logger log = LoggerFactory.getLogger(PackageService.class);
+    private final ConfigManager configManager;
+    
+    public PackageService(ConfigManager configManager) {
+        this.configManager = configManager;
+    }
 
     public void extractPackage(String pkgName, String zRifKey, Console console) {
         log.info("Starting package extraction: {} (console: {})", pkgName, console);
@@ -22,7 +28,7 @@ public class PackageService {
             log.warn("No command generated for package extraction: {}", pkgName);
             return;
         }
-        runCommandWithLoadingMessage(command);
+        runCommandWithLoadingMessage(command, pkgName);
     }
 
     private String buildCommand(String pkgName, String zRifKey, Console console) {
@@ -79,7 +85,7 @@ public class PackageService {
         return false;
     }
 
-    private void runCommandWithLoadingMessage(String command) {
+    private void runCommandWithLoadingMessage(String command, String pkgName) {
         // This UI logic should ideally be separated, but for now we keep it here or use a callback.
         // To keep it clean, we will run it and block, letting the caller handle UI?
         // The original code showed a JDialog.
@@ -116,6 +122,11 @@ public class PackageService {
                          SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "pkg2zip failed (exit " + exitCode + ")"));
                      } else {
                          log.info("Package extraction completed successfully");
+                         
+                         // Auto-cleanup if enabled
+                         if (configManager.isAutoCleanupEnabled()) {
+                             cleanupPkgFile(pkgName);
+                         }
                      }
                  } catch (Exception e) {
                      log.error("Error running pkg2zip command", e);
@@ -123,5 +134,22 @@ public class PackageService {
                  }
              }).start();
         });
+    }
+    
+    private void cleanupPkgFile(String pkgName) {
+        String fileSeparator = System.getProperty("file.separator");
+        String pkgPath = "games" + fileSeparator + pkgName;
+        File pkgFile = new File(pkgPath);
+        
+        if (pkgFile.exists()) {
+            boolean deleted = pkgFile.delete();
+            if (deleted) {
+                log.info("Auto-cleanup: Deleted package file: {}", pkgPath);
+            } else {
+                log.warn("Auto-cleanup: Failed to delete package file: {}", pkgPath);
+            }
+        } else {
+            log.debug("Auto-cleanup: Package file not found: {}", pkgPath);
+        }
     }
 }

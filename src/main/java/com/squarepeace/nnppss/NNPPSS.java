@@ -30,7 +30,7 @@ public class NNPPSS {
         ConfigManager configManager = new ConfigManager();
         GameRepository gameRepository = new GameRepository();
         DownloadService downloadService = new DownloadService();
-        PackageService packageService = new PackageService();
+        PackageService packageService = new PackageService(configManager);
         DownloadStateManager downloadStateManager = new DownloadStateManager();
 
         // Check configuration

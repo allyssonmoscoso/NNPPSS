@@ -37,6 +37,7 @@ public class Config extends javax.swing.JFrame {
         jtfUrlPsx = new javax.swing.JTextField();
         jLabel4 = new javax.swing.JLabel();
         jSpinner_simultaneous_downloads = new javax.swing.JSpinner();
+        jCheckBoxAutoCleanup = new javax.swing.JCheckBox();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Configuration");
@@ -71,6 +72,9 @@ public class Config extends javax.swing.JFrame {
 
         jLabel4.setText("simultaneous downloads:");
 
+        jCheckBoxAutoCleanup.setText("Auto-delete .pkg files after extraction");
+        jCheckBoxAutoCleanup.setToolTipText("Automatically delete package files after successful extraction to save disk space");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -103,7 +107,9 @@ public class Config extends javax.swing.JFrame {
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jCheckBoxAutoCleanup))
                 .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -125,6 +131,8 @@ public class Config extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
                     .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addComponent(jCheckBoxAutoCleanup)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 19, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jbSave)
@@ -149,6 +157,7 @@ public class Config extends javax.swing.JFrame {
         configManager.setProperty("psp.url", jtfUrlPsp.getText());
         configManager.setProperty("psx.url", jtfUrlPsx.getText());
         configManager.setProperty("simultaneousDownloads", jSpinner_simultaneous_downloads.getValue().toString());
+        configManager.setProperty("autoCleanupPkg", String.valueOf(jCheckBoxAutoCleanup.isSelected()));
         configManager.saveConfig();
         JOptionPane.showMessageDialog(null, "Configuration saved successfully");
     }
@@ -162,6 +171,7 @@ public class Config extends javax.swing.JFrame {
         String pspUrl = configManager.getPspUrl();
         String psxUrl = configManager.getPsxUrl();
         String simultaneousDownloads = configManager.getProperty("simultaneousDownloads");
+        String autoCleanup = configManager.getProperty("autoCleanupPkg");
 
         if (psvitaUrl != null) jtfUrlPsvita.setText(psvitaUrl);
         if (pspUrl != null) jtfUrlPsp.setText(pspUrl);
@@ -172,6 +182,8 @@ public class Config extends javax.swing.JFrame {
         } else {
             jSpinner_simultaneous_downloads.setValue(1);
         }
+        
+        jCheckBoxAutoCleanup.setSelected(autoCleanup != null && Boolean.parseBoolean(autoCleanup));
     }
 
     
@@ -211,6 +223,7 @@ public class Config extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JCheckBox jCheckBoxAutoCleanup;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;

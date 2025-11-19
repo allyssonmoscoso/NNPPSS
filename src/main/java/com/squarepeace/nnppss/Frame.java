@@ -935,6 +935,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
 
     private void checkAllDownloadsFinished() {
         if (activeDownloadCount <= 0) {
+            downloading = false;
             jbResumeAndPause.setEnabled(false);
             downloadList.clear();
         }
