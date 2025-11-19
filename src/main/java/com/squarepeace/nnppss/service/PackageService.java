@@ -17,18 +17,29 @@ public class PackageService {
     private static final Logger log = LoggerFactory.getLogger(PackageService.class);
     private final ConfigManager configManager;
     
+    public interface ExtractionListener {
+        void onExtractionComplete(boolean success);
+    }
+    
     public PackageService(ConfigManager configManager) {
         this.configManager = configManager;
     }
 
     public void extractPackage(String pkgName, String zRifKey, Console console) {
+        extractPackage(pkgName, zRifKey, console, null);
+    }
+    
+    public void extractPackage(String pkgName, String zRifKey, Console console, ExtractionListener listener) {
         log.info("Starting package extraction: {} (console: {})", pkgName, console);
         String command = buildCommand(pkgName, zRifKey, console);
         if (command == null || command.isEmpty()) {
             log.warn("No command generated for package extraction: {}", pkgName);
+            if (listener != null) {
+                SwingUtilities.invokeLater(() -> listener.onExtractionComplete(false));
+            }
             return;
         }
-        runCommandWithLoadingMessage(command, pkgName);
+        runCommandWithLoadingMessage(command, pkgName, listener);
     }
 
     private String buildCommand(String pkgName, String zRifKey, Console console) {
@@ -85,7 +96,7 @@ public class PackageService {
         return false;
     }
 
-    private void runCommandWithLoadingMessage(String command, String pkgName) {
+    private void runCommandWithLoadingMessage(String command, String pkgName, ExtractionListener listener) {
         // This UI logic should ideally be separated, but for now we keep it here or use a callback.
         // To keep it clean, we will run it and block, letting the caller handle UI?
         // The original code showed a JDialog.
@@ -119,7 +130,12 @@ public class PackageService {
                      int exitCode = process.waitFor();
                      if (exitCode != 0) {
                          log.error("pkg2zip failed with exit code: {}", exitCode);
-                         SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "pkg2zip failed (exit " + exitCode + ")"));
+                         SwingUtilities.invokeLater(() -> {
+                             JOptionPane.showMessageDialog(null, "pkg2zip failed (exit " + exitCode + ")");
+                             if (listener != null) {
+                                 listener.onExtractionComplete(false);
+                             }
+                         });
                      } else {
                          log.info("Package extraction completed successfully");
                          
@@ -127,10 +143,20 @@ public class PackageService {
                          if (configManager.isAutoCleanupEnabled()) {
                              cleanupPkgFile(pkgName);
                          }
+                         
+                         // Notify completion
+                         if (listener != null) {
+                             SwingUtilities.invokeLater(() -> listener.onExtractionComplete(true));
+                         }
                      }
                  } catch (Exception e) {
                      log.error("Error running pkg2zip command", e);
-                     SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "Error running pkg2zip: " + e.getMessage()));
+                     SwingUtilities.invokeLater(() -> {
+                         JOptionPane.showMessageDialog(null, "Error running pkg2zip: " + e.getMessage());
+                         if (listener != null) {
+                             listener.onExtractionComplete(false);
+                         }
+                     });
                  }
              }).start();
         });

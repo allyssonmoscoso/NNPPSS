@@ -10,9 +10,11 @@ import org.slf4j.LoggerFactory;
 import com.squarepeace.nnppss.model.Console;
 import com.squarepeace.nnppss.model.Game;
 import com.squarepeace.nnppss.model.DownloadState;
+import com.squarepeace.nnppss.model.DownloadHistory;
 import com.squarepeace.nnppss.service.ConfigManager;
 import com.squarepeace.nnppss.service.DownloadService;
 import com.squarepeace.nnppss.service.DownloadStateManager;
+import com.squarepeace.nnppss.service.DownloadHistoryManager;
 import com.squarepeace.nnppss.service.GameRepository;
 import com.squarepeace.nnppss.service.PackageService;
 import com.squarepeace.nnppss.service.SystemValidator;
@@ -42,6 +44,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.RowFilter;
+import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.Component;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.DocumentEvent;
@@ -52,6 +56,12 @@ import javax.swing.table.TableRowSorter;
 public class Frame extends javax.swing.JFrame implements ActionListener {
     private static final Logger log = LoggerFactory.getLogger(Frame.class);
 
+    // Color constants for download status
+    private static final Color COLOR_COMPLETED = new Color(34, 139, 34);  // Green
+    private static final Color COLOR_PAUSED = new Color(255, 165, 0);     // Orange
+    private static final Color COLOR_FAILED = new Color(220, 20, 60);     // Red
+    private static final Color COLOR_DEFAULT = Color.BLACK;                // Black
+
     private DefaultTableModel originalModel;
     private TableRowSorter<DefaultTableModel> rowSorter;
 
@@ -60,6 +70,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private final DownloadService downloadService;
     private final PackageService packageService;
     private final DownloadStateManager downloadStateManager;
+    private final DownloadHistoryManager historyManager;
     private final SystemValidator systemValidator;
 
     private boolean downloadPaused = false; // deprecated global; kept for compatibility, not used
@@ -94,6 +105,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         this.downloadService = downloadService;
         this.packageService = packageService;
         this.downloadStateManager = downloadStateManager;
+        this.historyManager = new DownloadHistoryManager();
         this.systemValidator = new SystemValidator(configManager);
         
         initComponents();
@@ -339,6 +351,19 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             String zRif = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("zRIF"));
             String region = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("Region"));
 
+            // Check if already downloaded
+            if (historyManager.isDownloaded(pkgUrl)) {
+                int redownloadOption = JOptionPane.showConfirmDialog(this,
+                        name + " has already been downloaded before.\n\nDo you want to download it again?",
+                        "Already Downloaded",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE);
+                
+                if (redownloadOption != JOptionPane.YES_OPTION) {
+                    return;
+                }
+            }
+
             int option = JOptionPane.showConfirmDialog(this,
                     "Do you want to add " + name + " (" + fileSize + ") to download list?",
                     "Download List",
@@ -501,11 +526,58 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             jcbRegion.addItem(region);
         }
         jcbRegion.setSelectedIndex(0);
+        
+        // Apply colors based on download history
+        applyRowColors();
     }
 
     private String convertFileSize(long fileSize) {
         double fileSizeMiB = fileSize / (1024 * 1024.0);
         return String.format("%.1f MiB", fileSizeMiB);
+    }
+
+    /**
+     * Apply colors to table rows based on download history status
+     */
+    private void applyRowColors() {
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                
+                if (!isSelected) {
+                    // Get the PKG URL from column 2
+                    int modelRow = table.convertRowIndexToModel(row);
+                    String pkgUrl = (String) table.getModel().getValueAt(modelRow, 2);
+                    
+                    if (pkgUrl != null && !pkgUrl.isEmpty()) {
+                        // Check download history status
+                        if (historyManager.isDownloaded(pkgUrl)) {
+                            c.setForeground(COLOR_COMPLETED);
+                        } else if (historyManager.isPaused(pkgUrl)) {
+                            c.setForeground(COLOR_PAUSED);
+                        } else if (historyManager.isFailed(pkgUrl)) {
+                            c.setForeground(COLOR_FAILED);
+                        } else {
+                            c.setForeground(COLOR_DEFAULT);
+                        }
+                    } else {
+                        c.setForeground(COLOR_DEFAULT);
+                    }
+                } else {
+                    // Keep default selection colors
+                    c.setForeground(table.getSelectionForeground());
+                }
+                
+                return c;
+            }
+        };
+        
+        // Apply renderer to all columns
+        for (int i = 0; i < jtData.getColumnCount(); i++) {
+            jtData.getColumnModel().getColumn(i).setCellRenderer(renderer);
+        }
     }
 
     private void filtrarTablaPorTextoYRegion(String searchText, String region) {
@@ -608,11 +680,21 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                             // PSVita needs zRif for extraction, PSP/PSX don't
                             if (game.getConsole() == Console.PSVITA) {
                                 if (game.getzRif() != null && !game.getzRif().isEmpty()) {
-                                    packageService.extractPackage(fileName, game.getzRif(), game.getConsole());
+                                    packageService.extractPackage(fileName, game.getzRif(), game.getConsole(), success -> {
+                                        if (success) {
+                                            log.info("Extraction completed, updating table colors");
+                                            applyRowColors();
+                                        }
+                                    });
                                 }
                             } else {
                                 // PSP and PSX always extract (no zRif needed)
-                                packageService.extractPackage(fileName, null, game.getConsole());
+                                packageService.extractPackage(fileName, null, game.getConsole(), success -> {
+                                    if (success) {
+                                        log.info("Extraction completed, updating table colors");
+                                        applyRowColors();
+                                    }
+                                });
                             }
                         });
                     }
@@ -902,6 +984,18 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             bar.setValue(100);
             bar.setString(game.getTitle() + " – Completed – " + game.getConsole());
         }
+        
+        // Save to download history
+        DownloadHistory entry = new DownloadHistory();
+        entry.setPkgUrl(game.getPkgUrl());
+        entry.setTitle(game.getTitle());
+        entry.setConsole(game.getConsole().toString());
+        entry.setStatus("completed");
+        entry.setDownloadDate(System.currentTimeMillis());
+        entry.setFilePath("games/" + game.getConsole().toString());
+        historyManager.addEntry(entry);
+        log.info("Download completed and saved to history: {}", game.getTitle());
+        
         activeDownloadCount--;
         checkAllDownloadsFinished();
         saveDownloadState(); // Save state after completion
@@ -913,6 +1007,18 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             bar.setIndeterminate(false);
             bar.setString(game.getTitle() + " – Error – " + game.getConsole());
         }
+        
+        // Save to download history
+        DownloadHistory entry = new DownloadHistory();
+        entry.setPkgUrl(game.getPkgUrl());
+        entry.setTitle(game.getTitle());
+        entry.setConsole(game.getConsole().toString());
+        entry.setStatus("failed");
+        entry.setDownloadDate(System.currentTimeMillis());
+        entry.setFilePath("");
+        historyManager.addEntry(entry);
+        log.warn("Download failed and saved to history: {}", game.getTitle());
+        
         activeDownloadCount--;
         checkAllDownloadsFinished();
         saveDownloadState(); // Save state after error
