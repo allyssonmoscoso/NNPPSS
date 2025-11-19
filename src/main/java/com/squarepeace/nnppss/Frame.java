@@ -20,6 +20,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.ArrayList;
+import java.awt.Color;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.border.LineBorder;
+import javax.swing.JPopupMenu;
+import javax.swing.JMenuItem;
 
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
@@ -44,10 +53,15 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private final DownloadService downloadService;
     private final PackageService packageService;
 
-    private boolean downloadPaused = false;
+    private boolean downloadPaused = false; // deprecated global; kept for compatibility, not used
     private boolean downloading = false;
 
     private List<Game> downloadList = new ArrayList<>();
+    private final Set<String> selectedUrls = new LinkedHashSet<>();
+    private final Map<String, Color> originalBarColorByUrl = new LinkedHashMap<>();
+    private List<String> downloadOrderUrls = new ArrayList<>();
+    private int lastAnchorIndex = -1;
+    private String lastAnchorUrl = null;
 
     private final Map<String, javax.swing.JProgressBar> progressBarsByUrl = new LinkedHashMap<>();
     private JPanel downloadsPanel;
@@ -365,16 +379,17 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     }// GEN-LAST:event_jtDataMousePressed
 
     private void jbResumeAndPauseActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbResumeAndPauseActionPerformed
-        // Cambiar el estado de la descarga
-        downloadPaused = !downloadPaused;
-        // Actualizar el texto del botón
-        if (downloadPaused) {
-            jbResumeAndPause.setText("Resume");
+        Set<String> targets = selectedUrls.isEmpty() ? new LinkedHashSet<>(progressBarsByUrl.keySet()) : new LinkedHashSet<>(selectedUrls);
+        if (targets.isEmpty()) return;
+        boolean anyPaused = false;
+        for (String url : targets) { if (downloadService.isPaused(url)) { anyPaused = true; break; } }
+        if (anyPaused) {
+            for (String url : targets) { if (downloadService.isPaused(url)) downloadService.resumeUrl(url); }
         } else {
-            jbResumeAndPause.setText("Pause");
+            for (String url : targets) { downloadService.pauseUrl(url); }
         }
-        downloadService.setPaused(downloadPaused);
-        refreshPauseVisuals();
+        refreshPauseVisualsPerBar();
+        updatePauseButtonText();
     }// GEN-LAST:event_jbResumeAndPauseActionPerformed
 
     private void jbSettingActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbSettingActionPerformed
@@ -571,6 +586,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                         });
                     }
                     @Override
+                    public void onCancelled() {
+                        SwingUtilities.invokeLater(() -> markDownloadCancelled(game));
+                    }
+                    @Override
                     public void onError(Exception e) {
                         e.printStackTrace();
                         SwingUtilities.invokeLater(() -> markDownloadError(game));
@@ -599,7 +618,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             smoothedSpeedMibByUrl.clear();
             lastUiUpdateMsByUrl.clear();
             lastProgressPercentByUrl.clear();
+            originalBarColorByUrl.clear();
+            downloadOrderUrls = new ArrayList<>(games.size());
             activeDownloadCount = games.size();
+            java.util.HashSet<String> newUrls = new java.util.HashSet<>();
             for (Game g : games) {
                 javax.swing.JProgressBar bar = new javax.swing.JProgressBar();
                 bar.setStringPainted(true);
@@ -610,13 +632,153 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 lastTimeByUrl.put(g.getPkgUrl(), System.currentTimeMillis());
                 lastUiUpdateMsByUrl.put(g.getPkgUrl(), 0L);
                 lastProgressPercentByUrl.put(g.getPkgUrl(), -1);
+                originalBarColorByUrl.put(g.getPkgUrl(), bar.getForeground());
+                bar.putClientProperty("url", g.getPkgUrl());
+                newUrls.add(g.getPkgUrl());
+                downloadOrderUrls.add(g.getPkgUrl());
+                bar.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mousePressed(MouseEvent e) {
+                        javax.swing.JProgressBar source = (javax.swing.JProgressBar) e.getSource();
+                        Object prop = source.getClientProperty("url");
+                        if (!(prop instanceof String)) return;
+                        String u = (String) prop;
+
+                        if (javax.swing.SwingUtilities.isRightMouseButton(e)) {
+                            showContextMenu(source, e.getX(), e.getY());
+                            return;
+                        }
+                        if (!javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
+
+                        int idx = downloadOrderUrls.indexOf(u);
+                        boolean ctrl = e.isControlDown() || e.isMetaDown();
+                        boolean shift = e.isShiftDown();
+
+                        if (shift && lastAnchorIndex >= 0 && idx >= 0) {
+                            int start = Math.min(lastAnchorIndex, idx);
+                            int end = Math.max(lastAnchorIndex, idx);
+                            if (!ctrl) selectedUrls.clear();
+                            for (int i = start; i <= end; i++) selectedUrls.add(downloadOrderUrls.get(i));
+                        } else if (ctrl) {
+                            if (selectedUrls.contains(u)) selectedUrls.remove(u); else selectedUrls.add(u);
+                            lastAnchorIndex = idx;
+                            lastAnchorUrl = u;
+                        } else {
+                            selectedUrls.clear();
+                            selectedUrls.add(u);
+                            lastAnchorIndex = idx;
+                            lastAnchorUrl = u;
+                        }
+                        refreshSelectionVisuals();
+                        updatePauseButtonText();
+                    }
+                });
                 downloadsPanel.add(bar);
+            }
+            // Persist selection to only URLs that still exist
+            selectedUrls.retainAll(newUrls);
+            // Recompute anchor index based on last anchor URL
+            if (lastAnchorUrl != null) {
+                lastAnchorIndex = downloadOrderUrls.indexOf(lastAnchorUrl);
+            } else {
+                lastAnchorIndex = -1;
             }
             downloadsPanel.revalidate();
             downloadsPanel.repaint();
             jbResumeAndPause.setEnabled(true);
-            refreshPauseVisuals();
+            refreshPauseVisualsPerBar();
+            refreshSelectionVisuals();
+            updatePauseButtonText();
         });
+    }
+
+    private void showContextMenu(java.awt.Component invoker, int x, int y) {
+        boolean hasSelection = !selectedUrls.isEmpty();
+        java.util.Set<String> targets = hasSelection ? new LinkedHashSet<>(selectedUrls) : new LinkedHashSet<>(progressBarsByUrl.keySet());
+        String invokerUrl = null;
+        if (invoker instanceof javax.swing.JProgressBar) {
+            Object p = ((javax.swing.JProgressBar)invoker).getClientProperty("url");
+            if (p instanceof String) invokerUrl = (String) p;
+        }
+        final String fInvokerUrl = invokerUrl;
+
+        JPopupMenu menu = new JPopupMenu();
+        JMenuItem pauseItem = new JMenuItem(hasSelection ? "Pause Selected" : "Pause All");
+        JMenuItem continueItem = new JMenuItem(hasSelection ? "Continue Selected" : "Continue All");
+        JMenuItem clearSel = new JMenuItem("Clear Selection");
+        JMenuItem removeFromSel = new JMenuItem("Remove from Selection");
+        JMenuItem cancelItem = new JMenuItem(hasSelection ? "Cancel Selected" : "Cancel All");
+        JMenuItem cancelRemoveItem = new JMenuItem(hasSelection ? "Cancel && Remove Selected" : "Cancel && Remove All");
+
+        pauseItem.addActionListener(ae -> {
+            for (String url : targets) downloadService.pauseUrl(url);
+            refreshPauseVisualsPerBar();
+            updatePauseButtonText();
+        });
+        continueItem.addActionListener(ae -> {
+            for (String url : targets) if (downloadService.isPaused(url)) downloadService.resumeUrl(url);
+            refreshPauseVisualsPerBar();
+            updatePauseButtonText();
+        });
+        clearSel.addActionListener(ae -> {
+            selectedUrls.clear();
+            refreshSelectionVisuals();
+            updatePauseButtonText();
+        });
+        removeFromSel.addActionListener(ae -> {
+            if (fInvokerUrl != null) {
+                selectedUrls.remove(fInvokerUrl);
+                refreshSelectionVisuals();
+                updatePauseButtonText();
+            }
+        });
+        cancelItem.addActionListener(ae -> cancelDownloads(targets, false, true));
+        cancelRemoveItem.addActionListener(ae -> cancelDownloads(targets, true, true));
+
+        menu.add(pauseItem);
+        menu.add(continueItem);
+        menu.addSeparator();
+        menu.add(cancelItem);
+        menu.add(cancelRemoveItem);
+        menu.addSeparator();
+        if (fInvokerUrl != null) menu.add(removeFromSel);
+        menu.add(clearSel);
+        menu.show(invoker, x, y);
+    }
+
+    private void cancelDownloads(java.util.Set<String> targets, boolean removeBars, boolean confirmAlways) {
+        if (targets == null || targets.isEmpty()) return;
+        if (confirmAlways || targets.size() > 1) {
+            String action = removeBars ? "cancel and remove" : "cancel";
+            int r = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to " + action + " " + targets.size() + " download(s)?",
+                "Confirm Cancel",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+            if (r != JOptionPane.YES_OPTION) return;
+        }
+        for (String url : new java.util.ArrayList<>(targets)) {
+            downloadService.cancelUrl(url);
+            if (removeBars) {
+                javax.swing.JProgressBar bar = progressBarsByUrl.remove(url);
+                if (bar != null) {
+                    downloadsPanel.remove(bar);
+                }
+                originalBarColorByUrl.remove(url);
+                lastBytesByUrl.remove(url);
+                lastTimeByUrl.remove(url);
+                smoothedSpeedMibByUrl.remove(url);
+                lastUiUpdateMsByUrl.remove(url);
+                lastProgressPercentByUrl.remove(url);
+                selectedUrls.remove(url);
+                downloadOrderUrls.remove(url);
+            }
+        }
+        downloadsPanel.revalidate();
+        downloadsPanel.repaint();
+        refreshSelectionVisuals();
+        refreshPauseVisualsPerBar();
+        updatePauseButtonText();
     }
 
     private void updateDownloadProgress(Game game, long bytesDownloaded, long totalBytes) {
@@ -677,7 +839,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             } else {
                 base = String.format("%s – %d%% – %s – %s", game.getTitle(), progressPercent, game.getConsole(), speedStr);
             }
-            if (downloadPaused) base += " (Paused)";
+            if (downloadService.isPaused(game.getPkgUrl())) base += " (Paused)";
             bar.setString(base);
         }
     }
@@ -703,6 +865,20 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         checkAllDownloadsFinished();
     }
 
+    private void markDownloadCancelled(Game game) {
+        javax.swing.JProgressBar bar = progressBarsByUrl.get(game.getPkgUrl());
+        if (bar != null) {
+            bar.setIndeterminate(false);
+            bar.setString(game.getTitle() + " – Cancelled – " + game.getConsole());
+            bar.setForeground(Color.GRAY);
+        }
+        selectedUrls.remove(game.getPkgUrl());
+        refreshSelectionVisuals();
+        updatePauseButtonText();
+        activeDownloadCount--;
+        checkAllDownloadsFinished();
+    }
+
     private void checkAllDownloadsFinished() {
         if (activeDownloadCount <= 0) {
             jbResumeAndPause.setEnabled(false);
@@ -710,20 +886,41 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         }
     }
 
-    private void refreshPauseVisuals() {
-        for (javax.swing.JProgressBar bar : progressBarsByUrl.values()) {
+    private void refreshPauseVisualsPerBar() {
+        for (Map.Entry<String, javax.swing.JProgressBar> e : progressBarsByUrl.entrySet()) {
+            String url = e.getKey();
+            javax.swing.JProgressBar bar = e.getValue();
             String s = bar.getString();
             if (s == null) continue;
-            if (downloadPaused) {
-                if (!s.endsWith("(Paused)")) {
-                    bar.setString(s + " (Paused)");
-                }
+            boolean paused = downloadService.isPaused(url);
+            if (paused) {
+                if (!s.endsWith("(Paused)")) bar.setString(s + " (Paused)");
+                bar.setForeground(Color.GRAY);
             } else {
-                if (s.endsWith("(Paused)")) {
-                    bar.setString(s.substring(0, s.length() - 9));
-                }
+                if (s.endsWith("(Paused)")) bar.setString(s.substring(0, s.length() - 9));
+                Color orig = originalBarColorByUrl.get(url);
+                if (orig != null) bar.setForeground(orig);
             }
         }
+    }
+
+    private void refreshSelectionVisuals() {
+        for (Map.Entry<String, javax.swing.JProgressBar> e : progressBarsByUrl.entrySet()) {
+            String url = e.getKey();
+            javax.swing.JProgressBar bar = e.getValue();
+            if (selectedUrls.contains(url)) {
+                bar.setBorder(new LineBorder(new Color(0x3B,0x82,0xF6), 2));
+            } else {
+                bar.setBorder(null);
+            }
+        }
+    }
+
+    private void updatePauseButtonText() {
+        Set<String> targets = selectedUrls.isEmpty() ? progressBarsByUrl.keySet() : selectedUrls;
+        boolean anyPaused = false;
+        for (String url : targets) { if (downloadService.isPaused(url)) { anyPaused = true; break; } }
+        jbResumeAndPause.setText(anyPaused ? "Continue" : "Pause");
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
