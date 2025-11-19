@@ -10,10 +10,13 @@ import java.util.concurrent.CountDownLatch;
 import javax.swing.SwingUtilities;
 
 import com.squarepeace.nnppss.model.Console;
+import com.squarepeace.nnppss.model.DownloadState;
 import com.squarepeace.nnppss.service.ConfigManager;
 import com.squarepeace.nnppss.service.DownloadService;
+import com.squarepeace.nnppss.service.DownloadStateManager;
 import com.squarepeace.nnppss.service.GameRepository;
 import com.squarepeace.nnppss.service.PackageService;
+import java.util.List;
 
 public class NNPPSS {
 
@@ -51,6 +54,13 @@ public class NNPPSS {
 
         // Download TSV files if needed
         downloadDatabases(downloadService, configManager, frame);
+        
+        // Restore any saved download state from previous session
+        DownloadStateManager stateManager = new DownloadStateManager();
+        List<DownloadState> savedStates = stateManager.loadStates();
+        if (!savedStates.isEmpty()) {
+            SwingUtilities.invokeLater(() -> frame.restoreDownloads(savedStates));
+        }
     }
 
     private static void downloadDatabases(DownloadService downloadService, ConfigManager configManager, Frame frame) {

@@ -6,8 +6,10 @@ package com.squarepeace.nnppss;
 
 import com.squarepeace.nnppss.model.Console;
 import com.squarepeace.nnppss.model.Game;
+import com.squarepeace.nnppss.model.DownloadState;
 import com.squarepeace.nnppss.service.ConfigManager;
 import com.squarepeace.nnppss.service.DownloadService;
+import com.squarepeace.nnppss.service.DownloadStateManager;
 import com.squarepeace.nnppss.service.GameRepository;
 import com.squarepeace.nnppss.service.PackageService;
 
@@ -52,9 +54,12 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private final GameRepository gameRepository;
     private final DownloadService downloadService;
     private final PackageService packageService;
+    private final DownloadStateManager stateManager;
 
     private boolean downloadPaused = false; // deprecated global; kept for compatibility, not used
     private boolean downloading = false;
+    private long lastStateSaveMs = 0;
+    private static final long STATE_SAVE_INTERVAL_MS = 10_000; // 10 seconds
 
     private List<Game> downloadList = new ArrayList<>();
     private final Set<String> selectedUrls = new LinkedHashSet<>();
@@ -80,9 +85,18 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         this.gameRepository = gameRepository;
         this.downloadService = downloadService;
         this.packageService = packageService;
+        this.stateManager = new DownloadStateManager();
         
         initComponents();
         jbResumeAndPause.setEnabled(false);
+        
+        // Add shutdown hook to save state on exit
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                saveDownloadState();
+            }
+        });
 
         // Debounced search filtering using DocumentListener + Swing Timer
         final Timer debounceTimer = new Timer(250, e -> {
@@ -390,6 +404,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         }
         refreshPauseVisualsPerBar();
         updatePauseButtonText();
+        saveDownloadState(); // Save state after pause/resume
     }// GEN-LAST:event_jbResumeAndPauseActionPerformed
 
     private void jbSettingActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbSettingActionPerformed
@@ -842,6 +857,12 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             if (downloadService.isPaused(game.getPkgUrl())) base += " (Paused)";
             bar.setString(base);
         }
+        
+        // Throttled state save (every 10 seconds)
+        if (now - lastStateSaveMs >= STATE_SAVE_INTERVAL_MS) {
+            saveDownloadState();
+            lastStateSaveMs = now;
+        }
     }
 
     private void markDownloadCompleted(Game game) {
@@ -853,6 +874,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         }
         activeDownloadCount--;
         checkAllDownloadsFinished();
+        saveDownloadState(); // Save state after completion
     }
 
     private void markDownloadError(Game game) {
@@ -863,6 +885,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         }
         activeDownloadCount--;
         checkAllDownloadsFinished();
+        saveDownloadState(); // Save state after error
     }
 
     private void markDownloadCancelled(Game game) {
@@ -877,6 +900,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         updatePauseButtonText();
         activeDownloadCount--;
         checkAllDownloadsFinished();
+        saveDownloadState(); // Save state after cancellation
     }
 
     private void checkAllDownloadsFinished() {
@@ -921,6 +945,141 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         boolean anyPaused = false;
         for (String url : targets) { if (downloadService.isPaused(url)) { anyPaused = true; break; } }
         jbResumeAndPause.setText(anyPaused ? "Continue" : "Pause");
+    }
+
+    /**
+     * Collect current download states for persistence
+     */
+    private List<DownloadState> getCurrentDownloadStates() {
+        List<DownloadState> states = new ArrayList<>();
+        
+        for (Game game : downloadList) {
+            String url = game.getPkgUrl();
+            javax.swing.JProgressBar bar = progressBarsByUrl.get(url);
+            
+            // Skip completed, cancelled, or errored downloads
+            if (bar != null) {
+                String barText = bar.getString();
+                if (barText != null && (barText.contains("Completed") || 
+                    barText.contains("Cancelled") || 
+                    barText.contains("Error"))) {
+                    continue;
+                }
+            }
+            
+            DownloadState state = new DownloadState();
+            state.setTitle(game.getTitle());
+            state.setRegion(game.getRegion());
+            state.setConsole(game.getConsole().getDisplayName());
+            state.setPkgUrl(url);
+            state.setzRif(game.getzRif());
+            
+            // Progress tracking
+            Long bytes = lastBytesByUrl.get(url);
+            state.setBytesDownloaded(bytes != null ? bytes : 0L);
+            state.setTotalBytes(game.getFileSize());
+            
+            // File path
+            state.setFilePath("games/" + game.getFileName());
+            
+            // State flags
+            boolean paused = downloadService.isPaused(url);
+            state.setPaused(paused);
+            
+            // Determine status
+            if (paused) {
+                state.setStatus("paused");
+            } else if (downloading) {
+                state.setStatus("downloading");
+            } else {
+                state.setStatus("pending");
+            }
+            
+            state.setLastUpdateTimestamp(System.currentTimeMillis());
+            
+            states.add(state);
+        }
+        
+        return states;
+    }
+
+    /**
+     * Save current download state to disk
+     */
+    private void saveDownloadState() {
+        try {
+            List<DownloadState> states = getCurrentDownloadStates();
+            stateManager.saveStates(states);
+        } catch (Exception e) {
+            System.err.println("Error saving download state: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Restore downloads from saved state
+     * Call this after Frame is initialized
+     */
+    public void restoreDownloads(List<DownloadState> savedStates) {
+        if (savedStates == null || savedStates.isEmpty()) {
+            return;
+        }
+        
+        // Convert DownloadState → Game objects
+        downloadList.clear();
+        
+        // Store pause states to restore after starting downloads
+        Map<String, Boolean> pauseStatesByUrl = new LinkedHashMap<>();
+        
+        for (DownloadState state : savedStates) {
+            Game game = new Game();
+            game.setTitle(state.getTitle());
+            game.setRegion(state.getRegion());
+            game.setConsole(Console.fromDisplayName(state.getConsole()));
+            game.setPkgUrl(state.getPkgUrl());
+            game.setzRif(state.getzRif());
+            game.setFileSize(state.getTotalBytes());
+            
+            downloadList.add(game);
+            pauseStatesByUrl.put(state.getPkgUrl(), state.isPaused());
+        }
+        
+        // Show confirmation dialog to user
+        int count = downloadList.size();
+        if (count > 0) {
+            String message = String.format("Se encontraron %d descarga%s pendiente%s de la sesión anterior.\n¿Deseas reanudarlas ahora?",
+                    count, count == 1 ? "" : "s", count == 1 ? "" : "s");
+            int option = JOptionPane.showConfirmDialog(this, message, "Restaurar Descargas", 
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            
+            if (option == JOptionPane.YES_OPTION) {
+                // Start downloads immediately
+                startDownloads();
+                
+                // Restore pause states after a short delay to allow downloads to initialize
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        Thread.sleep(500); // Give downloads time to start
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    
+                    // Apply paused states
+                    for (Map.Entry<String, Boolean> entry : pauseStatesByUrl.entrySet()) {
+                        if (entry.getValue()) {
+                            downloadService.pauseUrl(entry.getKey());
+                        }
+                    }
+                    refreshPauseVisualsPerBar();
+                    updatePauseButtonText();
+                });
+            } else {
+                // User declined, clear the download list
+                downloadList.clear();
+                // Also clear the saved state file
+                stateManager.clearStates();
+            }
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
