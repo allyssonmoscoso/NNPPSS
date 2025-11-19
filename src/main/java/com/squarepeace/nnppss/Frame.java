@@ -4,6 +4,9 @@
  */
 package com.squarepeace.nnppss;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.squarepeace.nnppss.model.Console;
 import com.squarepeace.nnppss.model.Game;
 import com.squarepeace.nnppss.model.DownloadState;
@@ -12,6 +15,7 @@ import com.squarepeace.nnppss.service.DownloadService;
 import com.squarepeace.nnppss.service.DownloadStateManager;
 import com.squarepeace.nnppss.service.GameRepository;
 import com.squarepeace.nnppss.service.PackageService;
+import com.squarepeace.nnppss.service.SystemValidator;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -46,6 +50,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 
 public class Frame extends javax.swing.JFrame implements ActionListener {
+    private static final Logger log = LoggerFactory.getLogger(Frame.class);
 
     private DefaultTableModel originalModel;
     private TableRowSorter<DefaultTableModel> rowSorter;
@@ -54,7 +59,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private final GameRepository gameRepository;
     private final DownloadService downloadService;
     private final PackageService packageService;
-    private final DownloadStateManager stateManager;
+    private final DownloadStateManager downloadStateManager;
+    private final SystemValidator systemValidator;
 
     private boolean downloadPaused = false; // deprecated global; kept for compatibility, not used
     private boolean downloading = false;
@@ -75,17 +81,20 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     // Tracking for speed calculation per download
     private final Map<String, Long> lastBytesByUrl = new LinkedHashMap<>();
     private final Map<String, Long> lastTimeByUrl = new LinkedHashMap<>();
+    private final Map<String, Long> downloadStartTimeByUrl = new LinkedHashMap<>();
     // Smoothing + throttle maps
     private final Map<String, Double> smoothedSpeedMibByUrl = new LinkedHashMap<>();
     private final Map<String, Long> lastUiUpdateMsByUrl = new LinkedHashMap<>();
     private final Map<String, Integer> lastProgressPercentByUrl = new LinkedHashMap<>();
 
-    public Frame(ConfigManager configManager, GameRepository gameRepository, DownloadService downloadService, PackageService packageService) {
+    public Frame(ConfigManager configManager, GameRepository gameRepository, DownloadService downloadService,
+                 PackageService packageService, DownloadStateManager downloadStateManager) {
         this.configManager = configManager;
         this.gameRepository = gameRepository;
         this.downloadService = downloadService;
         this.packageService = packageService;
-        this.stateManager = new DownloadStateManager();
+        this.downloadStateManager = downloadStateManager;
+        this.systemValidator = new SystemValidator(configManager);
         
         initComponents();
         jbResumeAndPause.setEnabled(false);
@@ -443,7 +452,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         try {
             console = Console.fromDisplayName(consoleName);
         } catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            log.error("Invalid console name: {}", consoleName, e);
             return;
         }
 
@@ -451,7 +460,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         try {
             games = gameRepository.loadGames(console);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error loading games for console: {}", consoleName, e);
             return;
         }
 
@@ -533,11 +542,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             // Establecer el RowFilter en el TableRowSorter
             rowSorter.setRowFilter(combinedRowFilter);
         } catch (java.util.regex.PatternSyntaxException e) {
-            e.printStackTrace(); // Imprimir la traza de la excepción para depuración
-            // Si hay un error en la expresión regular, simplemente no aplicamos ningún
-            // filtro
+            // Si hay un error en la expresión regular, simplemente no aplicamos ningún filtro
+            log.debug("Invalid regex pattern in filter", e);
             rowSorter.setRowFilter(null);
-            return;
         }
     }
 
@@ -565,6 +572,15 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
 
         if (downloading) {
             JOptionPane.showMessageDialog(this, "Downloads in progress.");
+            return;
+        }
+
+        // Validate disk space before starting downloads
+        long totalSize = downloadList.stream().mapToLong(Game::getFileSize).sum();
+        SystemValidator.ValidationResult validationResult = systemValidator.validateTotalDiskSpace(totalSize, "games");
+        if (!validationResult.isValid()) {
+            JOptionPane.showMessageDialog(this, validationResult.getMessage(), 
+                "Insufficient Disk Space", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -606,7 +622,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                     }
                     @Override
                     public void onError(Exception e) {
-                        e.printStackTrace();
+                        log.error("Download error for game: {}", game.getTitle(), e);
                         SwingUtilities.invokeLater(() -> markDownloadError(game));
                     }
                 });
@@ -618,7 +634,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             try {
                 executor.awaitTermination(Long.MAX_VALUE, java.util.concurrent.TimeUnit.NANOSECONDS);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.warn("Download executor termination interrupted", e);
+                Thread.currentThread().interrupt();
             }
             // Final UI cleanup happens as each bar completes.
         }).start();
@@ -800,6 +817,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         javax.swing.JProgressBar bar = progressBarsByUrl.get(game.getPkgUrl());
         if (bar == null) return;
         long now = System.currentTimeMillis();
+        
+        // Initialize start time if first call
+        downloadStartTimeByUrl.putIfAbsent(game.getPkgUrl(), now);
+        
         long lastTime = lastTimeByUrl.getOrDefault(game.getPkgUrl(), now);
         long lastBytes = lastBytesByUrl.getOrDefault(game.getPkgUrl(), 0L);
         long deltaTime = now - lastTime; // ms
@@ -832,6 +853,14 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             bar.setIndeterminate(true);
         }
 
+        // Calculate ETA
+        String etaStr = "—";
+        if (totalBytes > 0 && smoothed != null && smoothed > 0) {
+            long remainingBytes = totalBytes - bytesDownloaded;
+            double remainingSeconds = remainingBytes / (smoothed * 1024 * 1024); // MiB/s to bytes/s
+            etaStr = formatETA((long) remainingSeconds);
+        }
+
         // Throttle UI updates: update text only if progress changed or 1s elapsed
         long lastUi = lastUiUpdateMsByUrl.getOrDefault(game.getPkgUrl(), 0L);
         int lastProgressStored = lastProgressPercentByUrl.getOrDefault(game.getPkgUrl(), -999);
@@ -852,7 +881,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             if (bar.isIndeterminate()) {
                 base = String.format("%s – %d bytes – %s – %s", game.getTitle(), bytesDownloaded, game.getConsole(), speedStr);
             } else {
-                base = String.format("%s – %d%% – %s – %s", game.getTitle(), progressPercent, game.getConsole(), speedStr);
+                base = String.format("%s – %d%% – %s – ETA: %s – %s", 
+                    game.getTitle(), progressPercent, game.getConsole(), etaStr, speedStr);
             }
             if (downloadService.isPaused(game.getPkgUrl())) base += " (Paused)";
             bar.setString(base);
@@ -948,6 +978,24 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     }
 
     /**
+     * Format seconds into human-readable ETA
+     */
+    private String formatETA(long seconds) {
+        if (seconds < 0) return "—";
+        if (seconds < 60) {
+            return seconds + "s";
+        } else if (seconds < 3600) {
+            long mins = seconds / 60;
+            long secs = seconds % 60;
+            return String.format("%dm %ds", mins, secs);
+        } else {
+            long hours = seconds / 3600;
+            long mins = (seconds % 3600) / 60;
+            return String.format("%dh %dm", hours, mins);
+        }
+    }
+
+    /**
      * Collect current download states for persistence
      */
     private List<DownloadState> getCurrentDownloadStates() {
@@ -1009,10 +1057,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private void saveDownloadState() {
         try {
             List<DownloadState> states = getCurrentDownloadStates();
-            stateManager.saveStates(states);
+            downloadStateManager.saveStates(states);
         } catch (Exception e) {
-            System.err.println("Error saving download state: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error saving download state", e);
         }
     }
 
@@ -1077,7 +1124,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 // User declined, clear the download list
                 downloadList.clear();
                 // Also clear the saved state file
-                stateManager.clearStates();
+                downloadStateManager.clearStates();
             }
         }
     }

@@ -38,6 +38,17 @@ GSON_VERSION="2.10.1"
 GSON_JAR="gson-${GSON_VERSION}.jar"
 GSON_URL="https://repo1.maven.org/maven2/com/google/code/gson/gson/${GSON_VERSION}/${GSON_JAR}"
 
+SLF4J_VERSION="2.0.9"
+SLF4J_JAR="slf4j-api-${SLF4J_VERSION}.jar"
+SLF4J_URL="https://repo1.maven.org/maven2/org/slf4j/slf4j-api/${SLF4J_VERSION}/${SLF4J_JAR}"
+
+LOGBACK_VERSION="1.4.11"
+LOGBACK_CLASSIC_JAR="logback-classic-${LOGBACK_VERSION}.jar"
+LOGBACK_CLASSIC_URL="https://repo1.maven.org/maven2/ch/qos/logback/logback-classic/${LOGBACK_VERSION}/${LOGBACK_CLASSIC_JAR}"
+
+LOGBACK_CORE_JAR="logback-core-${LOGBACK_VERSION}.jar"
+LOGBACK_CORE_URL="https://repo1.maven.org/maven2/ch/qos/logback/logback-core/${LOGBACK_VERSION}/${LOGBACK_CORE_JAR}"
+
 JAVAC_FLAGS="--release 17"
 PLAIN_JAR_NAME="NNPPSS.jar"
 FAT_JAR_NAME="NNPPSS-fat.jar"
@@ -197,6 +208,9 @@ ensure_dirs
 # Asegurar dependencias externas necesarias
 download_dep_if_missing "$JSOUP_JAR" "$JSOUP_URL"
 download_dep_if_missing "$GSON_JAR" "$GSON_URL"
+download_dep_if_missing "$SLF4J_JAR" "$SLF4J_URL"
+download_dep_if_missing "$LOGBACK_CLASSIC_JAR" "$LOGBACK_CLASSIC_URL"
+download_dep_if_missing "$LOGBACK_CORE_JAR" "$LOGBACK_CORE_URL"
 
 # Compilar y empaquetar
 compile_sources

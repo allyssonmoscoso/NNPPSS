@@ -1,5 +1,8 @@
 package com.squarepeace.nnppss.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -15,6 +18,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DownloadStateManager {
+    private static final Logger log = LoggerFactory.getLogger(DownloadStateManager.class);
     private static final String STATE_FILE = "download-state.json";
     private static final long STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
     private final Gson gson;
@@ -30,6 +34,7 @@ public class DownloadStateManager {
     public List<DownloadState> loadStates() {
         File file = new File(STATE_FILE);
         if (!file.exists()) {
+            log.debug("No download state file found: {}", STATE_FILE);
             return new ArrayList<>();
         }
 
@@ -38,18 +43,22 @@ public class DownloadStateManager {
             List<DownloadState> states = gson.fromJson(reader, listType);
             
             if (states == null) {
+                log.warn("Download state file is empty or invalid: {}", STATE_FILE);
                 return new ArrayList<>();
             }
             
+            int originalCount = states.size();
             // Filter out completed downloads and stale downloads
-            return states.stream()
+            List<DownloadState> filteredStates = states.stream()
                     .filter(state -> !"completed".equals(state.getStatus()))
                     .filter(state -> !isStale(state))
                     .collect(Collectors.toList());
             
+            log.info("Loaded {} download states ({} filtered out)", filteredStates.size(), originalCount - filteredStates.size());
+            return filteredStates;
+            
         } catch (IOException e) {
-            System.err.println("Error loading download states: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error loading download states from: {}", STATE_FILE, e);
             return new ArrayList<>();
         }
     }
@@ -65,9 +74,9 @@ public class DownloadStateManager {
 
         try (FileWriter writer = new FileWriter(STATE_FILE)) {
             gson.toJson(states, writer);
+            log.debug("Saved {} download states to: {}", states.size(), STATE_FILE);
         } catch (IOException e) {
-            System.err.println("Error saving download states: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error saving download states to: {}", STATE_FILE, e);
         }
     }
 
@@ -87,7 +96,12 @@ public class DownloadStateManager {
     public void clearStates() {
         File file = new File(STATE_FILE);
         if (file.exists()) {
-            file.delete();
+            boolean deleted = file.delete();
+            if (deleted) {
+                log.info("Cleared download state file: {}", STATE_FILE);
+            } else {
+                log.warn("Failed to delete download state file: {}", STATE_FILE);
+            }
         }
     }
 }

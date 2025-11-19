@@ -7,13 +7,19 @@ import java.io.InputStreamReader;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.squarepeace.nnppss.model.Console;
 
 public class PackageService {
+    private static final Logger log = LoggerFactory.getLogger(PackageService.class);
 
     public void extractPackage(String pkgName, String zRifKey, Console console) {
+        log.info("Starting package extraction: {} (console: {})", pkgName, console);
         String command = buildCommand(pkgName, zRifKey, console);
         if (command == null || command.isEmpty()) {
+            log.warn("No command generated for package extraction: {}", pkgName);
             return;
         }
         runCommandWithLoadingMessage(command);
@@ -23,6 +29,7 @@ public class PackageService {
         String fileSeparator = System.getProperty("file.separator");
         String command = "";
         String os = System.getProperty("os.name").toLowerCase();
+        log.debug("Building extraction command for OS: {}", os);
 
         if (os.contains("win")) {
             String exePath = "lib" + fileSeparator + "pkg2zip.exe";
@@ -42,11 +49,14 @@ public class PackageService {
                     command = "pkg2zip " + pkgPath;
                 }
             } else {
+                log.error("pkg2zip is not installed on system");
                 JOptionPane.showMessageDialog(null, "pkg2zip is not installed");
             }
         } else {
+            log.error("Unsupported operating system: {}", os);
             JOptionPane.showMessageDialog(null, "Operating system not supported");
         }
+        log.debug("Generated command: {}", command);
         return command;
     }
 
@@ -64,7 +74,7 @@ public class PackageService {
             }
             process.waitFor();
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            log.warn("Error checking if command is installed: {}", command, e);
         }
         return false;
     }
@@ -96,16 +106,19 @@ public class PackageService {
                      try (java.io.BufferedReader r = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))) {
                          String line;
                          while ((line = r.readLine()) != null) {
-                             System.out.println(line);
+                             log.debug("pkg2zip output: {}", line);
                          }
                      }
 
                      int exitCode = process.waitFor();
                      if (exitCode != 0) {
+                         log.error("pkg2zip failed with exit code: {}", exitCode);
                          SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "pkg2zip failed (exit " + exitCode + ")"));
+                     } else {
+                         log.info("Package extraction completed successfully");
                      }
                  } catch (Exception e) {
-                     e.printStackTrace();
+                     log.error("Error running pkg2zip command", e);
                      SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "Error running pkg2zip: " + e.getMessage()));
                  }
              }).start();

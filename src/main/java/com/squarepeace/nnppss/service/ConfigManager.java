@@ -1,5 +1,8 @@
 package com.squarepeace.nnppss.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -7,6 +10,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class ConfigManager {
+    private static final Logger log = LoggerFactory.getLogger(ConfigManager.class);
     private static final String CONFIG_FILE = "config.properties";
     private Properties properties;
 
@@ -18,16 +22,19 @@ public class ConfigManager {
     private void loadConfig() {
         File file = new File(CONFIG_FILE);
         if (!file.exists()) {
+            log.info("Config file not found, creating default configuration");
             createDefaultConfig();
         }
         try (FileInputStream fis = new FileInputStream(file)) {
             properties.load(fis);
+            log.info("Configuration loaded from {}", CONFIG_FILE);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error loading configuration file: {}", CONFIG_FILE, e);
         }
     }
 
     private void createDefaultConfig() {
+        log.debug("Creating default configuration");
         properties.setProperty("psp.url", "");
         properties.setProperty("psvita.url", "");
         properties.setProperty("psx.url", "");
@@ -38,8 +45,9 @@ public class ConfigManager {
     public void saveConfig() {
         try (FileOutputStream fos = new FileOutputStream(CONFIG_FILE)) {
             properties.store(fos, "NNPPSS Configuration");
+            log.info("Configuration saved to {}", CONFIG_FILE);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error saving configuration file: {}", CONFIG_FILE, e);
         }
     }
 

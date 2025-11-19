@@ -1,5 +1,8 @@
 package com.squarepeace.nnppss.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -14,14 +17,17 @@ import com.squarepeace.nnppss.model.Console;
 import com.squarepeace.nnppss.model.Game;
 
 public class GameRepository {
+    private static final Logger log = LoggerFactory.getLogger(GameRepository.class);
 
     public List<Game> loadGames(Console console) throws IOException {
+        log.info("Loading games for console: {}", console);
         List<Game> games = new ArrayList<>();
         String filePath = console.getDbPath();
 
         try (BufferedReader reader = Files.newBufferedReader(Path.of(filePath), StandardCharsets.UTF_8)) {
             String headerLine = reader.readLine();
             if (headerLine == null) {
+                log.warn("Empty database file for console: {}", console);
                 return games;
             }
 
@@ -58,6 +64,7 @@ public class GameRepository {
             }
         }
 
+        log.info("Loaded {} games for console: {}", games.size(), console);
         return games;
     }
 
@@ -87,7 +94,8 @@ public class GameRepository {
             else if (unit.startsWith("gb") || unit.startsWith("gib")) mul = 1024L * 1024L * 1024L;
             else if (unit.startsWith("b")) mul = 1L;
             return (long) (value * mul);
-        } catch (Exception ignore) {
+        } catch (Exception e) {
+            log.debug("Failed to parse size string: {}", text, e);
             return 0L;
         }
     }

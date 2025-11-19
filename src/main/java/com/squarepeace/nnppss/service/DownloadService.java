@@ -1,5 +1,8 @@
 package com.squarepeace.nnppss.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -11,10 +14,14 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DownloadService {
+    private static final Logger log = LoggerFactory.getLogger(DownloadService.class);
+    private static final int MAX_RETRIES = 3;
+    private static final long INITIAL_RETRY_DELAY_MS = 2000; // 2 seconds
 
     private final AtomicBoolean paused = new AtomicBoolean(false); // legacy global pause
     private final ConcurrentMap<String, AtomicBoolean> pausedByUrl = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, AtomicBoolean> cancelledByUrl = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Integer> retryCountByUrl = new ConcurrentHashMap<>();
 
     public interface DownloadListener {
         void onProgress(long bytesDownloaded, long totalBytes);
@@ -55,6 +62,11 @@ public class DownloadService {
     }
 
     public void downloadFile(String fileURL, String destinationPath, DownloadListener listener) {
+        retryCountByUrl.put(fileURL, 0);
+        downloadFileWithRetry(fileURL, destinationPath, listener, 0);
+    }
+
+    private void downloadFileWithRetry(String fileURL, String destinationPath, DownloadListener listener, int attempt) {
         File destinationFile = new File(destinationPath);
         File parentDir = destinationFile.getParentFile();
         if (!parentDir.exists()) {
@@ -62,6 +74,7 @@ public class DownloadService {
         }
 
         try {
+            log.info("Starting download: {} (attempt {}/{})", fileURL, attempt + 1, MAX_RETRIES + 1);
             URL url = new URL(fileURL);
             pausedByUrl.computeIfAbsent(fileURL, k -> new AtomicBoolean(false));
             cancelledByUrl.computeIfAbsent(fileURL, k -> new AtomicBoolean(false));
@@ -133,9 +146,39 @@ public class DownloadService {
             }
 
         } catch (IOException e) {
-            if (listener != null) {
-                listener.onError(e);
+            log.error("Download failed for URL: {} (attempt {}/{})", fileURL, attempt + 1, MAX_RETRIES + 1, e);
+            
+            // Retry logic with exponential backoff
+            if (attempt < MAX_RETRIES && !isCancelled(fileURL)) {
+                long delay = INITIAL_RETRY_DELAY_MS * (long) Math.pow(2, attempt);
+                log.info("Retrying download in {}ms...", delay);
+                
+                try {
+                    Thread.sleep(delay);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.warn("Retry interrupted for URL: {}", fileURL);
+                    if (listener != null) {
+                        listener.onError(e);
+                    }
+                    return;
+                }
+                
+                // Retry the download
+                retryCountByUrl.put(fileURL, attempt + 1);
+                downloadFileWithRetry(fileURL, destinationPath, listener, attempt + 1);
+            } else {
+                // Max retries exceeded or cancelled
+                if (attempt >= MAX_RETRIES) {
+                    log.error("Max retries exceeded for URL: {}", fileURL);
+                }
+                retryCountByUrl.remove(fileURL);
+                if (listener != null) {
+                    listener.onError(e);
+                }
             }
+        } finally {
+            retryCountByUrl.remove(fileURL);
         }
     }
     
