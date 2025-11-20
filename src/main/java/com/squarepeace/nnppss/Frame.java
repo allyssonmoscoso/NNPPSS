@@ -121,7 +121,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
 
         // Debounced search filtering using DocumentListener + Swing Timer
         final Timer debounceTimer = new Timer(250, e -> {
-            filtrarTablaPorTextoYRegion(jtfSearch.getText(), (String) jcbRegion.getSelectedItem());
+            applyFilters();
         });
         debounceTimer.setRepeats(false);
         jtfSearch.getDocument().addDocumentListener(new DocumentListener() {
@@ -150,6 +150,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         jbRefresh = new javax.swing.JButton();
         jtfSearch = new javax.swing.JTextField();
         jcbRegion = new javax.swing.JComboBox<>();
+        jcbFileSize = new javax.swing.JComboBox<>();
+        jlFileSize = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jtData = new javax.swing.JTable();
         jLabel1 = new javax.swing.JLabel();
@@ -184,6 +186,19 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         jcbRegion.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 jcbRegionItemStateChanged(evt);
+            }
+        });
+
+        jlFileSize.setText("File Size:");
+        
+        jcbFileSize.addItem("All sizes");
+        jcbFileSize.addItem("< 1GB");
+        jcbFileSize.addItem("1-5GB");
+        jcbFileSize.addItem("> 5GB");
+        jcbFileSize.setSelectedIndex(0);
+        jcbFileSize.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jcbFileSizeItemStateChanged(evt);
             }
         });
 
@@ -256,6 +271,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 .addGap(18, 18, 18)
                 .addComponent(jcbRegion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
+                .addComponent(jlFileSize)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jcbFileSize, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
                 .addComponent(jbsearch)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -274,6 +293,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 .addGap(19, 19, 19)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jcbRegion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jlFileSize)
+                    .addComponent(jcbFileSize, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jbsearch)
                     .addComponent(jtfSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jbRefresh)
@@ -580,44 +601,78 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         }
     }
 
-    private void filtrarTablaPorTextoYRegion(String searchText, String region) {
-        System.out.println("Search Text: " + searchText);
-        System.out.println("Region: " + region);
-        
-        if (region == null) {
+    private void filtrarTablaPorTextoRegionYTamano(String searchText, String region, String fileSize) {
+        if (region == null || fileSize == null) {
             return;
         }
 
-        // Crear un RowFilter para filtrar por el texto ingresado y la región
-        // seleccionada
-        RowFilter<DefaultTableModel, Integer> rowFilterByText = null;
-        RowFilter<DefaultTableModel, Integer> rowFilterByRegion = null;
         try {
+            List<RowFilter<DefaultTableModel, Integer>> filters = new ArrayList<>();
+            
             // Filtrar por texto ingresado
-            rowFilterByText = RowFilter.regexFilter("(?i)" + searchText); // Ignore case
-            System.out.println("Row Filter By Text: " + rowFilterByText);
-            // Filtrar por región seleccionada si no se selecciona "Todas las regiones"
+            if (searchText != null && !searchText.isEmpty()) {
+                filters.add(RowFilter.regexFilter("(?i)" + searchText));
+            }
+            
+            // Filtrar por región seleccionada
             if (!region.equals("All regions")) {
-                rowFilterByRegion = RowFilter.regexFilter("(?i)" + region, getColumnIndexByName("Region"));
-                System.out.println("Row Filter By Region: " + rowFilterByRegion);
+                filters.add(RowFilter.regexFilter("(?i)" + region, getColumnIndexByName("Region")));
+            }
+            
+            // Filtrar por tamaño de archivo
+            if (!fileSize.equals("All sizes")) {
+                filters.add(createFileSizeFilter(fileSize));
             }
 
             // Combinar los filtros
-            List<RowFilter<DefaultTableModel, Integer>> filters = new ArrayList<>();
-            if (rowFilterByText != null)
-                filters.add(rowFilterByText);
-            if (rowFilterByRegion != null)
-                filters.add(rowFilterByRegion);
-
             RowFilter<DefaultTableModel, Integer> combinedRowFilter = RowFilter.andFilter(filters);
-
-            // Establecer el RowFilter en el TableRowSorter
             rowSorter.setRowFilter(combinedRowFilter);
         } catch (java.util.regex.PatternSyntaxException e) {
-            // Si hay un error en la expresión regular, simplemente no aplicamos ningún filtro
             log.debug("Invalid regex pattern in filter", e);
             rowSorter.setRowFilter(null);
         }
+    }
+    
+    private RowFilter<DefaultTableModel, Integer> createFileSizeFilter(String sizeRange) {
+        return new RowFilter<DefaultTableModel, Integer>() {
+            @Override
+            public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                int fileSizeColumnIndex = getColumnIndexByName("File Size");
+                if (fileSizeColumnIndex == -1) {
+                    return true;
+                }
+                
+                String fileSizeStr = (String) entry.getValue(fileSizeColumnIndex);
+                if (fileSizeStr == null || fileSizeStr.isEmpty()) {
+                    return true;
+                }
+                
+                // Parse "X.X MiB" to get size in GB
+                try {
+                    String[] parts = fileSizeStr.split(" ");
+                    if (parts.length < 2) {
+                        return true;
+                    }
+                    
+                    double sizeInMiB = Double.parseDouble(parts[0]);
+                    double sizeInGB = sizeInMiB / 1024.0;
+                    
+                    switch (sizeRange) {
+                        case "< 1GB":
+                            return sizeInGB < 1.0;
+                        case "1-5GB":
+                            return sizeInGB >= 1.0 && sizeInGB <= 5.0;
+                        case "> 5GB":
+                            return sizeInGB > 5.0;
+                        default:
+                            return true;
+                    }
+                } catch (NumberFormatException e) {
+                    log.debug("Error parsing file size: {}", fileSizeStr, e);
+                    return true;
+                }
+            }
+        };
     }
 
     private int getColumnIndexByName(String columnName) {
@@ -1248,6 +1303,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private javax.swing.JButton jbSetting;
     private javax.swing.JLabel jbsearch;
     private javax.swing.JComboBox<String> jcbRegion;
+    private javax.swing.JComboBox<String> jcbFileSize;
+    private javax.swing.JLabel jlFileSize;
     // Removed single progress bar; using downloadsPanel instead.
     private javax.swing.JRadioButton jrbPsp;
     private javax.swing.JRadioButton jrbPsvita;
@@ -1261,7 +1318,17 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     }
 
     private void jcbRegionItemStateChanged(java.awt.event.ItemEvent evt) {
-        filtrarTablaPorTextoYRegion(jtfSearch.getText(), (String) jcbRegion.getSelectedItem());
+        applyFilters();
+    }
+    
+    private void jcbFileSizeItemStateChanged(java.awt.event.ItemEvent evt) {
+        applyFilters();
+    }
+    
+    private void applyFilters() {
+        filtrarTablaPorTextoRegionYTamano(jtfSearch.getText(), 
+            (String) jcbRegion.getSelectedItem(),
+            (String) jcbFileSize.getSelectedItem());
     }
 
     private void jrbPsvitaActionPerformed(java.awt.event.ActionEvent evt) {
