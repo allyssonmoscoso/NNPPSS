@@ -511,13 +511,14 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         }
 
         // Define columns expected by the UI
-        String[] columnNames = {"Name", "Region", "PKG direct link", "zRIF", "File Size"};
+        String[] columnNames = {"Name", "Region", "Content ID", "PKG direct link", "zRIF", "File Size"};
         DefaultTableModel model = new DefaultTableModel(columnNames, 0);
 
         for (Game game : games) {
             model.addRow(new Object[]{
                     game.getTitle(),
                     game.getRegion(),
+                    game.getContentId(),
                     game.getPkgUrl(),
                     game.getzRif(),
                     convertFileSize(game.getFileSize())
@@ -568,9 +569,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 
                 if (!isSelected) {
-                    // Get the PKG URL from column 2
+                    // Get the PKG URL from column 3 (after adding Content ID column)
                     int modelRow = table.convertRowIndexToModel(row);
-                    String pkgUrl = (String) table.getModel().getValueAt(modelRow, 2);
+                    String pkgUrl = (String) table.getModel().getValueAt(modelRow, 3);
                     
                     if (pkgUrl != null && !pkgUrl.isEmpty()) {
                         // Check download history status
@@ -609,9 +610,15 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         try {
             List<RowFilter<DefaultTableModel, Integer>> filters = new ArrayList<>();
             
-            // Filtrar por texto ingresado
+            // Filtrar por texto ingresado (busca en Name, Region, Content ID y PKG direct link)
             if (searchText != null && !searchText.isEmpty()) {
-                filters.add(RowFilter.regexFilter("(?i)" + searchText));
+                // Create filter for multiple columns: Name (0), Region (1), Content ID (2), PKG direct link (3)
+                List<RowFilter<DefaultTableModel, Integer>> textFilters = new ArrayList<>();
+                textFilters.add(RowFilter.regexFilter("(?i)" + searchText, 0)); // Name
+                textFilters.add(RowFilter.regexFilter("(?i)" + searchText, 1)); // Region
+                textFilters.add(RowFilter.regexFilter("(?i)" + searchText, 2)); // Content ID
+                textFilters.add(RowFilter.regexFilter("(?i)" + searchText, 3)); // PKG direct link
+                filters.add(RowFilter.orFilter(textFilters));
             }
             
             // Filtrar por región seleccionada
