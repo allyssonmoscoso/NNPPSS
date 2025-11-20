@@ -11,15 +11,21 @@ import java.awt.event.ActionEvent;
 
 public class Config extends javax.swing.JFrame {
 
+    private final Frame mainFrame;
     private final ConfigManager configManager;
 
-    public Config(ConfigManager configManager) {
+    public Config(ConfigManager configManager, Frame mainFrame) {
         this.configManager = configManager;
+        this.mainFrame = mainFrame;
         initComponents();
     }
     
+    public Config(ConfigManager configManager) {
+        this(configManager, null);
+    }
+    
     public Config() {
-        this(new ConfigManager());
+        this(new ConfigManager(), null);
     }
 
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -174,6 +180,9 @@ public class Config extends javax.swing.JFrame {
         configManager.setProperty("downloadSpeedLimit", jSpinner_download_speed.getValue().toString());
         configManager.setProperty("autoCleanupPkg", String.valueOf(jCheckBoxAutoCleanup.isSelected()));
         configManager.saveConfig();
+        if (mainFrame != null) {
+            mainFrame.refreshConfiguration();
+        }
         JOptionPane.showMessageDialog(null, "Configuration saved successfully");
     }
 

@@ -59,57 +59,12 @@ public class NNPPSS {
         frame.setVisible(true);
 
         // Download TSV files if needed
-        downloadDatabases(downloadService, configManager, frame);
+        frame.downloadDatabases();
         
         // Restore any saved download state from previous session
         List<DownloadState> savedStates = downloadStateManager.loadStates();
         if (!savedStates.isEmpty()) {
             SwingUtilities.invokeLater(() -> frame.restoreDownloads(savedStates));
-        }
-    }
-
-    private static void downloadDatabases(DownloadService downloadService, ConfigManager configManager, Frame frame) {
-        downloadDatabase(downloadService, configManager.getPsVitaUrl(), Console.PSVITA.getDbPath());
-        downloadDatabase(downloadService, configManager.getPspUrl(), Console.PSP.getDbPath());
-        downloadDatabase(downloadService, configManager.getPsxUrl(), Console.PSX.getDbPath());
-        
-        // Refresh table after downloads (optional, or user can click refresh)
-        SwingUtilities.invokeLater(frame::fillTable);
-    }
-
-    private static void downloadDatabase(DownloadService downloadService, String url, String path) {
-        if (url == null || url.isEmpty()) return;
-        
-        File file = new File(path);
-        if (file.exists()) return; // Already exists
-
-        System.out.println("Downloading database: " + path);
-        CountDownLatch latch = new CountDownLatch(1);
-        
-        downloadService.downloadFile(url, path, new DownloadService.DownloadListener() {
-            @Override
-            public void onProgress(long bytesDownloaded, long totalBytes) {
-                // Optional: show splash screen progress
-            }
-
-            @Override
-            public void onComplete(File file) {
-                System.out.println("Downloaded: " + path);
-                latch.countDown();
-            }
-
-            @Override
-            public void onError(Exception e) {
-                log.error("Error downloading database: {}", path, e);
-                latch.countDown();
-            }
-        });
-
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            log.warn("Database download interrupted: {}", path, e);
-            Thread.currentThread().interrupt();
         }
     }
 }

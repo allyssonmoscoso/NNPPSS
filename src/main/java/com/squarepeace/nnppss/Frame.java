@@ -109,9 +109,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         this.systemValidator = new SystemValidator(configManager);
         
         initComponents();
+        checkConsoleAvailability();
         jbResumeAndPause.setEnabled(false);
         
-        // Add shutdown hook to save state on exit
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
@@ -133,6 +133,53 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             public void changedUpdate(DocumentEvent e) { changed(); }
         });
     }
+
+    public void downloadDatabases() {
+        downloadDatabase(configManager.getPsVitaUrl(), Console.PSVITA.getDbPath());
+        downloadDatabase(configManager.getPspUrl(), Console.PSP.getDbPath());
+        downloadDatabase(configManager.getPsxUrl(), Console.PSX.getDbPath());
+        
+        // Refresh table after downloads
+        SwingUtilities.invokeLater(this::fillTable);
+    }
+
+    private void downloadDatabase(String url, String path) {
+        if (url == null || url.isEmpty()) return;
+        
+        File file = new File(path);
+        if (file.exists()) return; // Already exists
+
+        System.out.println("Downloading database: " + path);
+        // We don't want to block the UI thread if called from there, so run in background
+        new Thread(() -> {
+            java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+            downloadService.downloadFile(url, path, new DownloadService.DownloadListener() {
+                @Override
+                public void onProgress(long bytesDownloaded, long totalBytes) {}
+
+                @Override
+                public void onComplete(File file) {
+                    System.out.println("Downloaded: " + path);
+                    latch.countDown();
+                    SwingUtilities.invokeLater(() -> {
+                        checkConsoleAvailability(); // Re-check availability after download
+                    });
+                }
+
+                @Override
+                public void onCancelled() { latch.countDown(); }
+
+                @Override
+                public void onError(Exception e) {
+                    log.error("Error downloading database: {}", path, e);
+                    latch.countDown();
+                }
+            });
+            try { latch.await(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        }).start();
+    }
+
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -463,7 +510,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     }// GEN-LAST:event_jbResumeAndPauseActionPerformed
 
     private void jbSettingActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbSettingActionPerformed
-        Config config = new Config(configManager);
+        Config config = new Config(configManager, this);
         config.setLocationRelativeTo(null);
         config.setResizable(false);
         config.setVisible(true);
@@ -1344,5 +1391,53 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
 
     private void jrbPsxActionPerformed(java.awt.event.ActionEvent evt) {
         fillTable();
+    }
+
+    private void checkConsoleAvailability() {
+        boolean psvitaAvailable = isConsoleAvailable(configManager.getPsVitaUrl(), Console.PSVITA.getDbPath());
+        boolean pspAvailable = isConsoleAvailable(configManager.getPspUrl(), Console.PSP.getDbPath());
+        boolean psxAvailable = isConsoleAvailable(configManager.getPsxUrl(), Console.PSX.getDbPath());
+
+        jrbPsvita.setEnabled(psvitaAvailable);
+        jrbPsp.setEnabled(pspAvailable);
+        jrbPsx.setEnabled(psxAvailable);
+
+        // Ensure a valid selection
+        if (jrbPsvita.isSelected() && !psvitaAvailable) {
+            bgConsoles.clearSelection();
+        } else if (jrbPsp.isSelected() && !pspAvailable) {
+            bgConsoles.clearSelection();
+        } else if (jrbPsx.isSelected() && !psxAvailable) {
+            bgConsoles.clearSelection();
+        }
+
+        if (bgConsoles.getSelection() == null) {
+            if (psvitaAvailable) {
+                jrbPsvita.setSelected(true);
+                fillTable();
+            } else if (pspAvailable) {
+                jrbPsp.setSelected(true);
+                fillTable();
+            } else if (psxAvailable) {
+                jrbPsx.setSelected(true);
+                fillTable();
+            } else {
+                // No consoles available
+                jtData.setModel(new DefaultTableModel());
+            }
+        }
+    }
+
+    private boolean isConsoleAvailable(String url, String dbPath) {
+        if (url != null && !url.isEmpty()) {
+            return true; // URL exists, assume we can download or have downloaded
+        }
+        File dbFile = new File(dbPath);
+        return dbFile.exists() && dbFile.length() > 0;
+    }
+
+    public void refreshConfiguration() {
+        downloadDatabases();
+        checkConsoleAvailability();
     }
 }
