@@ -37,6 +37,10 @@ public class Config extends javax.swing.JFrame {
         jtfUrlPsx = new javax.swing.JTextField();
         jLabel4 = new javax.swing.JLabel();
         jSpinner_simultaneous_downloads = new javax.swing.JSpinner();
+        jLabel5 = new javax.swing.JLabel();
+        jSpinner_download_speed = new javax.swing.JSpinner();
+        jSpinner_download_speed.setModel(new javax.swing.SpinnerNumberModel(0, 0, null, 50));
+        ((javax.swing.JSpinner.DefaultEditor)jSpinner_download_speed.getEditor()).getTextField().setColumns(8);
         jCheckBoxAutoCleanup = new javax.swing.JCheckBox();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -72,6 +76,9 @@ public class Config extends javax.swing.JFrame {
 
         jLabel4.setText("simultaneous downloads:");
 
+        jLabel5.setText("Download Speed Limit (KB/s):");
+        jSpinner_download_speed.setToolTipText("0 for unlimited");
+
         jCheckBoxAutoCleanup.setText("Auto-delete .pkg files after extraction");
         jCheckBoxAutoCleanup.setToolTipText("Automatically delete package files after successful extraction to save disk space");
 
@@ -103,12 +110,15 @@ public class Config extends javax.swing.JFrame {
                                 .addComponent(jtfUrlPsvita, javax.swing.GroupLayout.DEFAULT_SIZE, 294, Short.MAX_VALUE)
                                 .addComponent(jtfUrlPsx))
                             .addComponent(jtfUrlPsp, javax.swing.GroupLayout.PREFERRED_SIZE, 294, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jtfUrlPsp, javax.swing.GroupLayout.PREFERRED_SIZE, 294, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jSpinner_download_speed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel5)
                     .addComponent(jCheckBoxAutoCleanup))
                 .addGap(0, 0, Short.MAX_VALUE))
         );
@@ -131,6 +141,10 @@ public class Config extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
                     .addComponent(jSpinner_simultaneous_downloads, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5)
+                    .addComponent(jSpinner_download_speed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addComponent(jCheckBoxAutoCleanup)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 19, Short.MAX_VALUE)
@@ -157,6 +171,7 @@ public class Config extends javax.swing.JFrame {
         configManager.setProperty("psp.url", jtfUrlPsp.getText());
         configManager.setProperty("psx.url", jtfUrlPsx.getText());
         configManager.setProperty("simultaneousDownloads", jSpinner_simultaneous_downloads.getValue().toString());
+        configManager.setProperty("downloadSpeedLimit", jSpinner_download_speed.getValue().toString());
         configManager.setProperty("autoCleanupPkg", String.valueOf(jCheckBoxAutoCleanup.isSelected()));
         configManager.saveConfig();
         JOptionPane.showMessageDialog(null, "Configuration saved successfully");
@@ -171,6 +186,7 @@ public class Config extends javax.swing.JFrame {
         String pspUrl = configManager.getPspUrl();
         String psxUrl = configManager.getPsxUrl();
         String simultaneousDownloads = configManager.getProperty("simultaneousDownloads");
+        int downloadSpeedLimit = configManager.getDownloadSpeedLimit();
         String autoCleanup = configManager.getProperty("autoCleanupPkg");
 
         if (psvitaUrl != null) jtfUrlPsvita.setText(psvitaUrl);
@@ -182,6 +198,8 @@ public class Config extends javax.swing.JFrame {
         } else {
             jSpinner_simultaneous_downloads.setValue(1);
         }
+        
+        jSpinner_download_speed.setValue(downloadSpeedLimit);
         
         jCheckBoxAutoCleanup.setSelected(autoCleanup != null && Boolean.parseBoolean(autoCleanup));
     }
@@ -228,8 +246,10 @@ public class Config extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JSpinner jSpinner_simultaneous_downloads;
+    private javax.swing.JSpinner jSpinner_download_speed;
     private javax.swing.JButton jbClear;
     private javax.swing.JButton jbClose;
     private javax.swing.JButton jbSave;

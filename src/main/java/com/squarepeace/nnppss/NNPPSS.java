@@ -29,7 +29,7 @@ public class NNPPSS {
         // Initialize services
         ConfigManager configManager = new ConfigManager();
         GameRepository gameRepository = new GameRepository();
-        DownloadService downloadService = new DownloadService();
+        DownloadService downloadService = new DownloadService(configManager);
         PackageService packageService = new PackageService(configManager);
         DownloadStateManager downloadStateManager = new DownloadStateManager();
 

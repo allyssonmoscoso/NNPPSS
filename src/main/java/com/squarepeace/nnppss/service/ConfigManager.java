@@ -87,6 +87,19 @@ public class ConfigManager {
         return n;
     }
 
+    public int getDownloadSpeedLimit() {
+        String value = getProperty("downloadSpeedLimit");
+        int limit = 0;
+        try {
+            if (value != null) {
+                limit = Integer.parseInt(value.trim());
+            }
+        } catch (NumberFormatException ignore) {
+            limit = 0;
+        }
+        return limit < 0 ? 0 : limit;
+    }
+
     public boolean isAutoCleanupEnabled() {
         String value = getProperty("autoCleanupPkg");
         return value != null && Boolean.parseBoolean(value);

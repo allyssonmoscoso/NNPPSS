@@ -22,6 +22,21 @@ public class DownloadService {
     private final ConcurrentMap<String, AtomicBoolean> pausedByUrl = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, AtomicBoolean> cancelledByUrl = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Integer> retryCountByUrl = new ConcurrentHashMap<>();
+    private final ConfigManager configManager;
+
+    public DownloadService(ConfigManager configManager) {
+        this.configManager = configManager;
+    }
+
+    /**
+     * Legacy constructor for backward compatibility if needed, 
+     * but we should update callers to pass ConfigManager.
+     * For now, we can create a default one or throw.
+     * Better to update callers.
+     */
+    public DownloadService() {
+        this(new ConfigManager());
+    }
 
     public interface DownloadListener {
         void onProgress(long bytesDownloaded, long totalBytes);
@@ -106,7 +121,11 @@ public class DownloadService {
                 byte[] buf = new byte[64 * 1024];
                 int read;
                 long downloaded = partial ? existingFileSize : 0L;
-                while ((read = in.read(buf)) != -1) {
+                while (true) {
+                    long startChunkTime = System.currentTimeMillis();
+                    read = in.read(buf);
+                    if (read == -1) break;
+                    
                     if (isCancelled(fileURL)) { wasCancelled = true; break; }
                     while (paused.get() || isPaused(fileURL)) {
                         try {
@@ -118,6 +137,22 @@ public class DownloadService {
                     }
                     if (isCancelled(fileURL)) { wasCancelled = true; break; }
                     out.write(buf, 0, read);
+                    
+                    // Speed Limiting
+                    int speedLimitKBps = configManager.getDownloadSpeedLimit();
+                    if (speedLimitKBps > 0) {
+                        long expectedTimeMs = (read * 1000L) / (speedLimitKBps * 1024L);
+                        long actualTimeMs = System.currentTimeMillis() - startChunkTime;
+                        if (actualTimeMs < expectedTimeMs) {
+                            try {
+                                Thread.sleep(expectedTimeMs - actualTimeMs);
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
+                        }
+                    }
+
                     downloaded += read;
                     if (listener != null) {
                         listener.onProgress(downloaded, totalSize);
