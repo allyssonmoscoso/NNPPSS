@@ -1,6 +1,6 @@
 # NNPPSS
 
-A professional tool for managing and downloading PlayStation (PSP, PS Vita, PSX) game packages. Built with Java and Swing, NNPPSS provides a robust download manager with persistence, retry capabilities, and automated package extraction.
+A tool for managing and downloading "Magic packages".    Built with Java, NNPPSS provides a robust download manager with persistence, retry capabilities, and automated package extraction.
 
 NNPPSS is compatible with Windows, macOS, and Linux/Unix-based operating systems.
 
@@ -11,27 +11,17 @@ NNPPSS is compatible with Windows, macOS, and Linux/Unix-based operating systems
 
 ## Installation
 
-### Quick Start (Recommended)
+### Easiest (Download release)
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/allyssonmoscoso/NNPPSS.git
-   cd NNPPSS
-   ```
+The simplest way to install or run NNPPSS is to download the latest release from the project's GitHub Releases page:
 
-2. Build the application:
-   ```bash
-   ./build.sh
-   ```
+https://github.com/allyssonmoscoso/NNPPSS/releases
 
-3. Run the application:
-   ```bash
-   ./run.sh
-   ```
-   Or directly:
-   ```bash
-   java -jar dist/NNPPSS-fat.jar
-   ```
+Release assets include a pre-built `NNPPSS.jar` (all dependencies bundled). Download the release archive, extract (if needed) and run:
+
+```bash
+java -jar NNPPSS.jar
+```
 
 ### Development Mode
 
@@ -43,54 +33,6 @@ For quick compilation and testing:
 ./run-dev.sh clean    # Clean build artifacts
 ```
 
-## Features
-
-### Download Management
-
-- **Multi-threaded Downloads**: Configure up to 4 simultaneous downloads
-- **HTTP Resume Support**: Resume interrupted downloads from where they left off
-- **Automatic Retry**: Failed downloads automatically retry up to 3 times with exponential backoff (2s, 4s, 8s)
-- **Download Persistence**: Downloads automatically resume when restarting the application
-- **Progress Tracking**: Real-time progress bars with:
-  - Download percentage
-  - Download speed (MiB/s with smoothing algorithm)
-  - ETA (estimated time remaining)
-  - Pause/Resume status
-
-### Download Controls
-
-- **Individual Download Management**:
-  - Pause/resume specific downloads via context menu
-  - Cancel downloads with confirmation dialog
-  - View download status and progress in real-time
-- **Batch Selection**:
-  - Click to select single game
-  - Ctrl+Click for multiple selection
-  - Shift+Click for range selection
-  - Context menu for paused downloads
-
-### Game Database
-
-- **Multi-console Support**: PSP, PS Vita (PSV), and PSX games
-- **Advanced Search**: Real-time text filtering across game titles
-- **Region Filter**: Filter games by region (US, EU, JP, etc.)
-- **Auto-sync**: Game databases automatically download on first launch
-- **Refresh**: Manual database refresh button available
-
-### Package Management
-
-- **Automatic Extraction**: Games are automatically extracted after download
-- **Console-specific Handling**:
-  - PS Vita: Requires zRIF key for extraction
-  - PSP/PSX: Direct extraction without additional keys
-- **Background Processing**: Extraction runs in background without blocking UI
-
-### System Validation
-
-- **Disk Space Check**: Validates sufficient disk space before starting downloads
-- **5GB Safety Buffer**: Ensures system stability by maintaining free space buffer
-- **User Notifications**: Clear warnings when disk space is insufficient
-
 ### Configuration
 
 - **Persistent Settings**: Configuration saved in `config.properties`
@@ -99,43 +41,11 @@ For quick compilation and testing:
   - Simultaneous download limit (1-4)
 - **Easy Setup**: Configuration wizard on first launch
 
-### Professional Logging
 
-- **SLF4J + Logback Integration**:
-  - Main log: `logs/nnppss.log` (7-day rotation)
-  - Error log: `logs/nnppss-error.log` (30-day rotation)
-  - Console output for immediate feedback
-- **Comprehensive Coverage**:
-  - Download operations and errors
-  - Retry attempts and success/failure
-  - Database loading and parsing
-  - Configuration changes
-  - Package extraction status
-  - System validation checks
-
-## Architecture
-
-NNPPSS follows Clean Code principles with a modular service-oriented architecture.
-
-## File Structure
-
-```
-NNPPSS/
-├── config.properties          # User configuration
-├── download-state.json        # Download persistence (auto-managed)
-├── logs/                      # Application logs
-│   ├── nnppss.log            # Main log file
-│   └── nnppss-error.log      # Error log file
-├── games/                     # Downloaded games
-├── db/                        # Game databases (TSV format)
-│   ├── PSP_GAMES.tsv
-│   ├── PSV_GAMES.tsv
-│   └── PSX_GAMES.tsv
-├── lib/                       # Dependencies (auto-downloaded)
-└── dist/                      # Compiled JARs
-    ├── NNPPSS.jar            # Regular JAR (requires lib/)
-    └── NNPPSS-fat.jar        # Fat JAR (all dependencies included)
-```
+- **Language selection**: change UI language; the choice is saved to `config.properties` and requires application restart to apply.
+- **Dark Mode (experimental)**: an experimental dark theme can be enabled in Settings; the theme is applied after restart.
+- **Download speed limit**: set an approximate download speed limit (KB/s). `0` means unlimited. The limiter works by throttling write loops and may be approximate.
+- **Auto-cleanup**: enable or disable automatic deletion of `.pkg` files after extraction.
 
 ## Usage Tips
 
@@ -144,21 +54,19 @@ NNPPSS/
 3. **Managing Downloads**: Right-click on progress bars for pause/resume/cancel options
 4. **Resuming Sessions**: Close and reopen app - downloads automatically resume
 5. **Disk Space**: Ensure at least 5GB free space plus download size
-6. **Extraction**: Games auto-extract after download (PS Vita requires valid zRIF)
+6. **Extraction**: Games auto-extract after download
+
+Notes on resume behavior:
+- On startup the app detects previously in-progress downloads and will prompt the user to resume them — it does not silently resume everything without user confirmation.
+- Download states older than a configured stale threshold (24 hours by default) are treated as stale and typically ignored to avoid attempting to resume very old partial downloads.
+
+Notifications and UI tips:
+- The app uses in-window toast-style notifications for success/error/info messages (auto-dismiss by default).
+- Exported queue JSON follows the internal `Game` model structure (fields such as `title`, `region`, `console`, `pkgUrl`, `zRif`, `contentId`, `fileSize`). Import validates JSON and reports invalid files.
 
 ## Troubleshooting
 
 - **Downloads won't start**: Check disk space and configuration
-- **Extraction fails**: Ensure pkg2zip is installed (non-Windows) or verify zRIF for PS Vita
+- **Extraction fails**: Ensure pkg2zip is installed (non-Windows)
 - **Database empty**: Click "Refresh" button or check database URLs in settings
 - **Logs**: Check `logs/nnppss-error.log` for detailed error information
-
-## Building from Source
-
-Dependencies are automatically downloaded during build:
-- jsoup 1.15.3
-- Gson 2.10.1
-- SLF4J 2.0.9
-- Logback 1.4.11
-
-The build scripts (`build.sh` and `run-dev.sh`) handle all dependency management.
