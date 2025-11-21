@@ -377,6 +377,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             String fileSize = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("File Size"));
             String zRif = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("zRIF"));
             String region = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("Region"));
+            String contentId = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("Content ID"));
 
             // Check if already downloaded
             if (historyManager.isDownloaded(pkgUrl)) {
@@ -407,6 +408,21 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 game.setPkgUrl(pkgUrl);
                 game.setzRif(zRif);
                 game.setRegion(region);
+                game.setContentId(contentId);
+                
+                // Parse file size from string "X.X MiB" to long bytes
+                if (fileSize != null && !fileSize.isEmpty()) {
+                    try {
+                        String[] parts = fileSize.split(" ");
+                        if (parts.length >= 2) {
+                            double sizeInMiB = Double.parseDouble(parts[0]);
+                            long sizeInBytes = (long) (sizeInMiB * 1024 * 1024);
+                            game.setFileSize(sizeInBytes);
+                        }
+                    } catch (NumberFormatException e) {
+                        log.debug("Could not parse file size: {}", fileSize, e);
+                    }
+                }
                 
                 if (jrbPsp.isSelected()) game.setConsole(Console.PSP);
                 else if (jrbPsvita.isSelected()) game.setConsole(Console.PSVITA);
@@ -419,39 +435,231 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     }
 
     private void jbDownloadListActionPerformed(java.awt.event.ActionEvent evt) {
-        JTable table = new JTable();
-        DefaultTableModel model = (DefaultTableModel) table.getModel();
-        model.addColumn("Name");
-        model.addColumn("Region");
-        model.addColumn("Console");
-        model.addColumn("URL");
-
-        for (Game game : downloadList) {
-            model.addRow(new Object[]{game.getTitle(), game.getRegion(), game.getConsole(), game.getPkgUrl()});
-        }
-
-        JButton removeButton = new JButton("Remove Selected");
-        removeButton.addActionListener(e -> {
+        showDownloadListDialog();
+    }// GEN-LAST:event_jtDataMousePressed
+    
+    /**
+     * Shows an improved download list dialog with better UI and functionality
+     */
+    private void showDownloadListDialog() {
+        // Create dialog
+        javax.swing.JDialog dialog = new javax.swing.JDialog(this, "Download Queue", true);
+        dialog.setSize(900, 500);
+        dialog.setLocationRelativeTo(this);
+        
+        // Create table with non-editable model
+        String[] columnNames = {"#", "Name", "Region", "Console", "Size", "Content ID"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make table read-only
+            }
+        };
+        
+        JTable table = new JTable(model);
+        table.setSelectionMode(javax.swing.ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        table.getColumnModel().getColumn(0).setPreferredWidth(40);  // #
+        table.getColumnModel().getColumn(1).setPreferredWidth(300); // Name
+        table.getColumnModel().getColumn(2).setPreferredWidth(80);  // Region
+        table.getColumnModel().getColumn(3).setPreferredWidth(70);  // Console
+        table.getColumnModel().getColumn(4).setPreferredWidth(100); // Size
+        table.getColumnModel().getColumn(5).setPreferredWidth(150); // Content ID
+        
+        // Populate table
+        updateDownloadListTable(model);
+        
+        JScrollPane scrollPane = new JScrollPane(table);
+        
+        // Info panel at bottom
+        JPanel infoPanel = new JPanel(new java.awt.BorderLayout());
+        infoPanel.setBorder(javax.swing.BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        
+        javax.swing.JLabel infoLabel = new javax.swing.JLabel();
+        updateDownloadListInfo(infoLabel);
+        infoPanel.add(infoLabel, java.awt.BorderLayout.WEST);
+        
+        // Button panel
+        JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 10, 10));
+        
+        // Move Up button
+        JButton moveUpButton = new JButton("▲ Move Up");
+        moveUpButton.setToolTipText("Move selected items up in the queue");
+        moveUpButton.addActionListener(e -> {
             int[] selectedRows = table.getSelectedRows();
-            for (int i = selectedRows.length - 1; i >= 0; i--) {
-                int modelRow = table.convertRowIndexToModel(selectedRows[i]);
-                String url = (String) model.getValueAt(modelRow, 3);
-                downloadList.removeIf(g -> g.getPkgUrl().equals(url));
-                model.removeRow(modelRow);
+            if (selectedRows.length == 0 || selectedRows[0] == 0) return;
+            
+            for (int row : selectedRows) {
+                if (row > 0) {
+                    Game temp = downloadList.get(row);
+                    downloadList.set(row, downloadList.get(row - 1));
+                    downloadList.set(row - 1, temp);
+                }
+            }
+            updateDownloadListTable(model);
+            // Restore selection (shifted up)
+            for (int i = 0; i < selectedRows.length; i++) {
+                if (selectedRows[i] > 0) {
+                    table.addRowSelectionInterval(selectedRows[i] - 1, selectedRows[i] - 1);
+                }
             }
         });
-
-        JButton clearButton = new JButton("Clear List");
-        clearButton.addActionListener(e -> {
-            downloadList.clear();
-            model.setRowCount(0);
+        
+        // Move Down button
+        JButton moveDownButton = new JButton("▼ Move Down");
+        moveDownButton.setToolTipText("Move selected items down in the queue");
+        moveDownButton.addActionListener(e -> {
+            int[] selectedRows = table.getSelectedRows();
+            if (selectedRows.length == 0 || selectedRows[selectedRows.length - 1] == downloadList.size() - 1) return;
+            
+            for (int i = selectedRows.length - 1; i >= 0; i--) {
+                int row = selectedRows[i];
+                if (row < downloadList.size() - 1) {
+                    Game temp = downloadList.get(row);
+                    downloadList.set(row, downloadList.get(row + 1));
+                    downloadList.set(row + 1, temp);
+                }
+            }
+            updateDownloadListTable(model);
+            // Restore selection (shifted down)
+            for (int i = 0; i < selectedRows.length; i++) {
+                if (selectedRows[i] < downloadList.size() - 1) {
+                    table.addRowSelectionInterval(selectedRows[i] + 1, selectedRows[i] + 1);
+                }
+            }
         });
-
-        JButton downloadButton = new JButton("Download");
-        downloadButton.addActionListener(this);
-
-        JOptionPane.showMessageDialog(null, new Object[]{new JScrollPane(table), downloadButton, removeButton, clearButton}, "Download List", JOptionPane.PLAIN_MESSAGE);
-    }// GEN-LAST:event_jtDataMousePressed
+        
+        // Remove button
+        JButton removeButton = new JButton("✖ Remove Selected");
+        removeButton.setForeground(new Color(200, 50, 50));
+        removeButton.setToolTipText("Remove selected games from queue");
+        removeButton.addActionListener(e -> {
+            int[] selectedRows = table.getSelectedRows();
+            if (selectedRows.length == 0) {
+                JOptionPane.showMessageDialog(dialog, "Please select items to remove.", "No Selection", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            
+            int confirm = JOptionPane.showConfirmDialog(dialog, 
+                "Remove " + selectedRows.length + " item(s) from queue?",
+                "Confirm Removal", 
+                JOptionPane.YES_NO_OPTION);
+                
+            if (confirm == JOptionPane.YES_OPTION) {
+                // Remove in reverse order to maintain indices
+                for (int i = selectedRows.length - 1; i >= 0; i--) {
+                    downloadList.remove(selectedRows[i]);
+                }
+                updateDownloadListTable(model);
+                updateDownloadListInfo(infoLabel);
+            }
+        });
+        
+        // Clear button
+        JButton clearButton = new JButton("Clear All");
+        clearButton.setToolTipText("Remove all games from queue");
+        clearButton.addActionListener(e -> {
+            if (downloadList.isEmpty()) return;
+            
+            int confirm = JOptionPane.showConfirmDialog(dialog,
+                "Clear all " + downloadList.size() + " item(s) from queue?",
+                "Confirm Clear",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+                
+            if (confirm == JOptionPane.YES_OPTION) {
+                downloadList.clear();
+                updateDownloadListTable(model);
+                updateDownloadListInfo(infoLabel);
+            }
+        });
+        
+        // Start Download button
+        JButton downloadButton = new JButton("▶ Start Downloads");
+        downloadButton.setForeground(new Color(34, 139, 34));
+        downloadButton.setFont(downloadButton.getFont().deriveFont(java.awt.Font.BOLD));
+        downloadButton.setToolTipText("Start downloading all queued games");
+        downloadButton.addActionListener(e -> {
+            if (downloadList.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "The download queue is empty.", "Empty Queue", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            dialog.dispose();
+            startDownloads();
+        });
+        
+        // Close button
+        JButton closeButton = new JButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        
+        // Add buttons to panel
+        buttonPanel.add(moveUpButton);
+        buttonPanel.add(moveDownButton);
+        buttonPanel.add(removeButton);
+        buttonPanel.add(clearButton);
+        buttonPanel.add(new javax.swing.JSeparator(javax.swing.SwingConstants.VERTICAL));
+        buttonPanel.add(downloadButton);
+        buttonPanel.add(closeButton);
+        
+        // Main panel layout
+        JPanel mainPanel = new JPanel(new java.awt.BorderLayout(5, 5));
+        mainPanel.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        mainPanel.add(scrollPane, java.awt.BorderLayout.CENTER);
+        mainPanel.add(infoPanel, java.awt.BorderLayout.SOUTH);
+        mainPanel.add(buttonPanel, java.awt.BorderLayout.PAGE_END);
+        
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+    }
+    
+    /**
+     * Update the download list table with current queue
+     */
+    private void updateDownloadListTable(DefaultTableModel model) {
+        model.setRowCount(0);
+        int index = 1;
+        for (Game game : downloadList) {
+            model.addRow(new Object[]{
+                index++,
+                game.getTitle(),
+                game.getRegion(),
+                game.getConsole().toString(),
+                convertFileSize(game.getFileSize()),
+                game.getContentId() != null ? game.getContentId() : "N/A"
+            });
+        }
+    }
+    
+    /**
+     * Update the info label with queue statistics
+     */
+    private void updateDownloadListInfo(javax.swing.JLabel label) {
+        if (downloadList.isEmpty()) {
+            label.setText("Queue is empty. Add games from the table above.");
+            return;
+        }
+        
+        long totalSize = downloadList.stream().mapToLong(Game::getFileSize).sum();
+        double totalGB = totalSize / (1024.0 * 1024.0 * 1024.0);
+        
+        String info = String.format("<html><b>Queue:</b> %d game(s) | <b>Total size:</b> %.2f GB", 
+            downloadList.size(), totalGB);
+        
+        // Check available disk space
+        File gamesDir = new File("games");
+        if (gamesDir.exists()) {
+            long freeSpace = gamesDir.getFreeSpace();
+            double freeGB = freeSpace / (1024.0 * 1024.0 * 1024.0);
+            
+            if (totalSize > freeSpace) {
+                info += String.format(" | <font color='red'><b>⚠ Free space: %.2f GB (Insufficient!)</b></font>", freeGB);
+            } else {
+                info += String.format(" | <b>Free space:</b> %.2f GB", freeGB);
+            }
+        }
+        
+        info += "</html>";
+        label.setText(info);
+    }
 
     private void jbResumeAndPauseActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbResumeAndPauseActionPerformed
         Set<String> targets = selectedUrls.isEmpty() ? new LinkedHashSet<>(progressBarsByUrl.keySet()) : new LinkedHashSet<>(selectedUrls);
