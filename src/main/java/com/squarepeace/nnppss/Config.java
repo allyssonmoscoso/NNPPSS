@@ -9,7 +9,6 @@ import com.squarepeace.nnppss.service.ConfigListener;
 import com.squarepeace.nnppss.util.I18n;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
 
 public class Config extends javax.swing.JFrame {
 

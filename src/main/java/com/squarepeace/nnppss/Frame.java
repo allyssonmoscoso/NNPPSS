@@ -118,7 +118,6 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     // Tracking for speed calculation per download
     private final Map<String, Long> lastBytesByUrl = new LinkedHashMap<>();
     private final Map<String, Long> lastTimeByUrl = new LinkedHashMap<>();
-    private final Map<String, Long> downloadStartTimeByUrl = new LinkedHashMap<>();
     // Smoothing + throttle maps
     private final Map<String, Double> smoothedSpeedMibByUrl = new LinkedHashMap<>();
     private final Map<String, Long> lastUiUpdateMsByUrl = new LinkedHashMap<>();
@@ -509,8 +508,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     private void showDownloadListDialog() {
         // Create dialog
         javax.swing.JDialog dialog = new javax.swing.JDialog(this, I18n.get("dialog.downloadqueue.title"), true);
-        dialog.setSize(900, 500);
-        dialog.setLocationRelativeTo(this);
+        dialog.setResizable(true);
+        dialog.setMinimumSize(new java.awt.Dimension(720, 420));
         
         // Create table with non-editable model
         String[] columnNames = {"#", "Name", "Region", "Console", "Size", "Content ID"};
@@ -535,7 +534,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         
         JScrollPane scrollPane = new JScrollPane(table);
         
-        // Info panel at bottom
+        // Info panel (queue stats)
         JPanel infoPanel = new JPanel(new java.awt.BorderLayout());
         infoPanel.setBorder(javax.swing.BorderFactory.createEmptyBorder(5, 10, 5, 10));
         
@@ -543,7 +542,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         updateDownloadListInfo(infoLabel);
         infoPanel.add(infoLabel, java.awt.BorderLayout.WEST);
         
-        // Button panel
+        // Button panel (actions)
         JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 10, 10));
         
         // Select All button
@@ -705,14 +704,27 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         buttonPanel.add(downloadButton);
         buttonPanel.add(closeButton);
         
+        // South container: info panel on top + scrollable button row below (to avoid clipping on small windows)
+        JPanel southPanel = new JPanel();
+        southPanel.setLayout(new javax.swing.BoxLayout(southPanel, javax.swing.BoxLayout.Y_AXIS));
+        southPanel.add(infoPanel);
+        javax.swing.JScrollPane buttonsScroll = new javax.swing.JScrollPane(
+            buttonPanel,
+            javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+            javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
+        );
+        buttonsScroll.setBorder(javax.swing.BorderFactory.createEmptyBorder());
+        southPanel.add(buttonsScroll);
+
         // Main panel layout
         JPanel mainPanel = new JPanel(new java.awt.BorderLayout(5, 5));
         mainPanel.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
         mainPanel.add(scrollPane, java.awt.BorderLayout.CENTER);
-        mainPanel.add(infoPanel, java.awt.BorderLayout.SOUTH);
-        mainPanel.add(buttonPanel, java.awt.BorderLayout.PAGE_END);
+        mainPanel.add(southPanel, java.awt.BorderLayout.SOUTH);
         
         dialog.add(mainPanel);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
     
@@ -1427,9 +1439,6 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             .sum();
         globalProgressPanel.updateProgress(totalDownloaded);
         
-        // Initialize start time if first call
-        downloadStartTimeByUrl.putIfAbsent(game.getPkgUrl(), now);
-        
         long lastTime = lastTimeByUrl.getOrDefault(game.getPkgUrl(), now);
         long lastBytes = lastBytesByUrl.getOrDefault(game.getPkgUrl(), 0L);
         long deltaTime = now - lastTime; // ms
@@ -1439,15 +1448,14 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
 
         // Instant speed (MiB/s)
         Double smoothed = smoothedSpeedMibByUrl.get(game.getPkgUrl());
-        double instantMib = -1.0;
         if (deltaTime > 150 && deltaBytes > 0) { // require minimum interval
             double bytesPerSec = (deltaBytes / (deltaTime / 1000.0));
-            instantMib = bytesPerSec / (1024 * 1024.0);
+            double currentMib = bytesPerSec / (1024 * 1024.0);
             if (smoothed == null) {
-                smoothed = instantMib; // first measurement
+                smoothed = currentMib; // first measurement
             } else {
                 double alpha = 0.25; // smoothing factor
-                smoothed = smoothed + alpha * (instantMib - smoothed);
+                smoothed = smoothed + alpha * (currentMib - smoothed);
             }
             smoothedSpeedMibByUrl.put(game.getPkgUrl(), smoothed);
         }
