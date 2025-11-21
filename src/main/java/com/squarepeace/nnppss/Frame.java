@@ -52,8 +52,10 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
+import javax.swing.SwingWorker;
+import java.awt.Cursor;
 
-public class Frame extends javax.swing.JFrame implements ActionListener {
+public class Frame extends javax.swing.JFrame implements ActionListener, com.squarepeace.nnppss.service.ConfigListener {
     private static final Logger log = LoggerFactory.getLogger(Frame.class);
 
     // Color constants for download status
@@ -72,6 +74,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private final DownloadStateManager downloadStateManager;
     private final DownloadHistoryManager historyManager;
     private final SystemValidator systemValidator;
+    private final com.squarepeace.nnppss.service.DatabaseManager databaseManager;
+    private javax.swing.SwingWorker<java.util.List<Game>, Void> currentLoadWorker;
 
     private boolean downloadPaused = false; // deprecated global; kept for compatibility, not used
     private boolean downloading = false;
@@ -99,7 +103,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     private final Map<String, Integer> lastProgressPercentByUrl = new LinkedHashMap<>();
 
     public Frame(ConfigManager configManager, GameRepository gameRepository, DownloadService downloadService,
-                 PackageService packageService, DownloadStateManager downloadStateManager) {
+                 PackageService packageService, DownloadStateManager downloadStateManager, 
+                 com.squarepeace.nnppss.service.DatabaseManager databaseManager) {
         this.configManager = configManager;
         this.gameRepository = gameRepository;
         this.downloadService = downloadService;
@@ -107,9 +112,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         this.downloadStateManager = downloadStateManager;
         this.historyManager = new DownloadHistoryManager();
         this.systemValidator = new SystemValidator(configManager);
+        this.databaseManager = databaseManager;
         
         initComponents();
-        checkConsoleAvailability();
+        setupDatabaseManager();
         jbResumeAndPause.setEnabled(false);
         
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -133,53 +139,6 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             public void changedUpdate(DocumentEvent e) { changed(); }
         });
     }
-
-    public void downloadDatabases() {
-        downloadDatabase(configManager.getPsVitaUrl(), Console.PSVITA.getDbPath());
-        downloadDatabase(configManager.getPspUrl(), Console.PSP.getDbPath());
-        downloadDatabase(configManager.getPsxUrl(), Console.PSX.getDbPath());
-        
-        // Refresh table after downloads
-        SwingUtilities.invokeLater(this::fillTable);
-    }
-
-    private void downloadDatabase(String url, String path) {
-        if (url == null || url.isEmpty()) return;
-        
-        File file = new File(path);
-        if (file.exists()) return; // Already exists
-
-        System.out.println("Downloading database: " + path);
-        // We don't want to block the UI thread if called from there, so run in background
-        new Thread(() -> {
-            java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
-            downloadService.downloadFile(url, path, new DownloadService.DownloadListener() {
-                @Override
-                public void onProgress(long bytesDownloaded, long totalBytes) {}
-
-                @Override
-                public void onComplete(File file) {
-                    System.out.println("Downloaded: " + path);
-                    latch.countDown();
-                    SwingUtilities.invokeLater(() -> {
-                        checkConsoleAvailability(); // Re-check availability after download
-                    });
-                }
-
-                @Override
-                public void onCancelled() { latch.countDown(); }
-
-                @Override
-                public void onError(Exception e) {
-                    log.error("Error downloading database: {}", path, e);
-                    latch.countDown();
-                }
-            });
-            try { latch.await(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-        }).start();
-    }
-
-
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -541,6 +500,11 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
     }
 
     public void fillTableAndComboBox(String consoleName) {
+        // Cancel previous load if still running
+        if (currentLoadWorker != null && !currentLoadWorker.isDone()) {
+            currentLoadWorker.cancel(true);
+        }
+
         Console console;
         try {
             console = Console.fromDisplayName(consoleName);
@@ -549,14 +513,58 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
             return;
         }
 
-        List<Game> games;
-        try {
-            games = gameRepository.loadGames(console);
-        } catch (Exception e) {
-            log.error("Error loading games for console: {}", consoleName, e);
-            return;
-        }
+        // Show wait cursor
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        
+        // Disable console buttons during loading
+        jrbPsp.setEnabled(false);
+        jrbPsvita.setEnabled(false);
+        jrbPsx.setEnabled(false);
 
+        // Create SwingWorker for async loading
+        currentLoadWorker = new SwingWorker<List<Game>, Void>() {
+            @Override
+            protected List<Game> doInBackground() throws Exception {
+                return gameRepository.loadGames(console);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    if (isCancelled()) {
+                        log.debug("Game loading was cancelled for console: {}", consoleName);
+                        return;
+                    }
+
+                    List<Game> games = get();
+                    fillTableWithGames(games);
+                    
+                } catch (InterruptedException e) {
+                    log.debug("Game loading interrupted for console: {}", consoleName, e);
+                    Thread.currentThread().interrupt();
+                } catch (java.util.concurrent.ExecutionException e) {
+                    log.error("Error loading games for console: {}", consoleName, e.getCause());
+                    JOptionPane.showMessageDialog(Frame.this, 
+                        "Error loading games: " + e.getCause().getMessage(),
+                        "Loading Error", 
+                        JOptionPane.ERROR_MESSAGE);
+                } finally {
+                    // Restore cursor and enable buttons
+                    setCursor(Cursor.getDefaultCursor());
+                    jrbPsp.setEnabled(true);
+                    jrbPsvita.setEnabled(true);
+                    jrbPsx.setEnabled(true);
+                }
+            }
+        };
+
+        currentLoadWorker.execute();
+    }
+
+    /**
+     * Populate the table with the loaded games (called on EDT after async load)
+     */
+    private void fillTableWithGames(List<Game> games) {
         // Define columns expected by the UI
         String[] columnNames = {"Name", "Region", "Content ID", "PKG direct link", "zRIF", "File Size"};
         DefaultTableModel model = new DefaultTableModel(columnNames, 0);
@@ -1393,51 +1401,94 @@ public class Frame extends javax.swing.JFrame implements ActionListener {
         fillTable();
     }
 
-    private void checkConsoleAvailability() {
-        boolean psvitaAvailable = isConsoleAvailable(configManager.getPsVitaUrl(), Console.PSVITA.getDbPath());
-        boolean pspAvailable = isConsoleAvailable(configManager.getPspUrl(), Console.PSP.getDbPath());
-        boolean psxAvailable = isConsoleAvailable(configManager.getPsxUrl(), Console.PSX.getDbPath());
-
-        jrbPsvita.setEnabled(psvitaAvailable);
-        jrbPsp.setEnabled(pspAvailable);
-        jrbPsx.setEnabled(psxAvailable);
-
-        // Ensure a valid selection
-        if (jrbPsvita.isSelected() && !psvitaAvailable) {
-            bgConsoles.clearSelection();
-        } else if (jrbPsp.isSelected() && !pspAvailable) {
-            bgConsoles.clearSelection();
-        } else if (jrbPsx.isSelected() && !psxAvailable) {
-            bgConsoles.clearSelection();
-        }
-
-        if (bgConsoles.getSelection() == null) {
-            if (psvitaAvailable) {
-                jrbPsvita.setSelected(true);
-                fillTable();
-            } else if (pspAvailable) {
-                jrbPsp.setSelected(true);
-                fillTable();
-            } else if (psxAvailable) {
-                jrbPsx.setSelected(true);
-                fillTable();
-            } else {
-                // No consoles available
+    /**
+     * Setup DatabaseManager listeners and check initial availability
+     */
+    private void setupDatabaseManager() {
+        // Subscribe to database events
+        databaseManager.addListener(new com.squarepeace.nnppss.service.DatabaseManager.DatabaseListener() {
+            @Override
+            public void onAvailabilityChanged(Console console, boolean available) {
+                SwingUtilities.invokeLater(() -> updateConsoleButton(console, available));
+            }
+            
+            @Override
+            public void onDownloadComplete(Console console, boolean success) {
+                SwingUtilities.invokeLater(() -> {
+                    if (success) {
+                        log.info("Database downloaded successfully for {}", console);
+                        updateConsoleButton(console, true);
+                        
+                        // Auto-select and load if no console is currently selected
+                        if (bgConsoles.getSelection() == null) {
+                            selectConsole(console);
+                        }
+                    }
+                });
+            }
+            
+            @Override
+            public void onDownloadProgress(Console console, String message) {
+                log.debug("Download progress: {}", message);
+            }
+        });
+        
+        // Check availability at startup and download missing databases
+        databaseManager.checkAllConsolesAvailability().thenRun(() -> {
+            log.info("Console availability check completed");
+            
+            // Auto-select first available console
+            SwingUtilities.invokeLater(() -> {
+                if (bgConsoles.getSelection() == null) {
+                    for (Console console : Console.values()) {
+                        if (databaseManager.isConsoleAvailable(console)) {
+                            selectConsole(console);
+                            break;
+                        }
+                    }
+                }
+                
+                // Download missing databases
+                databaseManager.downloadAllDatabases();
+            });
+        });
+    }
+    
+    private void updateConsoleButton(Console console, boolean available) {
+        javax.swing.JRadioButton button = getConsoleButton(console);
+        if (button != null) {
+            button.setEnabled(available);
+            
+            // If current selection becomes unavailable, clear it
+            if (!available && button.isSelected()) {
+                bgConsoles.clearSelection();
                 jtData.setModel(new DefaultTableModel());
             }
         }
     }
-
-    private boolean isConsoleAvailable(String url, String dbPath) {
-        if (url != null && !url.isEmpty()) {
-            return true; // URL exists, assume we can download or have downloaded
+    
+    private javax.swing.JRadioButton getConsoleButton(Console console) {
+        switch (console) {
+            case PSP: return jrbPsp;
+            case PSVITA: return jrbPsvita;
+            case PSX: return jrbPsx;
+            default: return null;
         }
-        File dbFile = new File(dbPath);
-        return dbFile.exists() && dbFile.length() > 0;
     }
-
-    public void refreshConfiguration() {
-        downloadDatabases();
-        checkConsoleAvailability();
+    
+    private void selectConsole(Console console) {
+        javax.swing.JRadioButton button = getConsoleButton(console);
+        if (button != null && button.isEnabled()) {
+            button.setSelected(true);
+            fillTable();
+        }
+    }
+    
+    @Override
+    public void onConfigSaved() {
+        // Recheck database availability after config changes
+        databaseManager.checkAllConsolesAvailability().thenRun(() -> {
+            databaseManager.downloadAllDatabases();
+        });
     }
 }

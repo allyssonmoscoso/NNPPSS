@@ -28,7 +28,7 @@ public class DownloadHistoryManager {
     public List<DownloadHistory> loadHistory() {
         File file = new File(HISTORY_FILE);
         if (!file.exists()) {
-            log.debug("No download history file found: {}", HISTORY_FILE);
+            //log.debug("No download history file found: {}", HISTORY_FILE);
             return new ArrayList<>();
         }
 

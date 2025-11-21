@@ -4,22 +4,20 @@
 
 package com.squarepeace.nnppss;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.concurrent.CountDownLatch;
+import java.util.List;
 
 import javax.swing.SwingUtilities;
 
-import com.squarepeace.nnppss.model.Console;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.squarepeace.nnppss.model.DownloadState;
 import com.squarepeace.nnppss.service.ConfigManager;
+import com.squarepeace.nnppss.service.DatabaseManager;
 import com.squarepeace.nnppss.service.DownloadService;
 import com.squarepeace.nnppss.service.DownloadStateManager;
 import com.squarepeace.nnppss.service.GameRepository;
 import com.squarepeace.nnppss.service.PackageService;
-import java.util.List;
 
 public class NNPPSS {
     private static final Logger log = LoggerFactory.getLogger(NNPPSS.class);
@@ -32,6 +30,7 @@ public class NNPPSS {
         DownloadService downloadService = new DownloadService(configManager);
         PackageService packageService = new PackageService(configManager);
         DownloadStateManager downloadStateManager = new DownloadStateManager();
+        DatabaseManager databaseManager = new DatabaseManager(configManager, downloadService);
 
         // Check configuration
         String psvitaUrl = configManager.getPsVitaUrl();
@@ -52,14 +51,11 @@ public class NNPPSS {
         }
 
         // Create and show Frame
-        Frame frame = new Frame(configManager, gameRepository, downloadService, packageService, downloadStateManager);
+        Frame frame = new Frame(configManager, gameRepository, downloadService, packageService, downloadStateManager, databaseManager);
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setResizable(false);
         frame.setVisible(true);
-
-        // Download TSV files if needed
-        frame.downloadDatabases();
         
         // Restore any saved download state from previous session
         List<DownloadState> savedStates = downloadStateManager.loadStates();
