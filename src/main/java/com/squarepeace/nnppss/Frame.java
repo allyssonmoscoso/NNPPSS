@@ -120,6 +120,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         setupDatabaseManager();
         jbResumeAndPause.setEnabled(false);
         
+        // Update Retry Failed button state based on history
+        updateRetryFailedButton();
+        
         // Restore download queue from previous session
         restoreDownloadQueue();
         
@@ -182,6 +185,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         jbDownloadList = new javax.swing.JButton();
         jrbPsx = new javax.swing.JRadioButton();
         jbResumeAndPause = new javax.swing.JButton();
+        jbRetryFailed = new javax.swing.JButton();
         downloadsPanel = new JPanel();
         downloadsPanel.setLayout(new javax.swing.BoxLayout(downloadsPanel, javax.swing.BoxLayout.Y_AXIS));
         downloadsScroll = new JScrollPane(downloadsPanel);
@@ -338,6 +342,15 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             }
         });
 
+        jbRetryFailed.setText("Retry Failed");
+        jbRetryFailed.setToolTipText("Retry downloads that previously failed");
+        jbRetryFailed.setEnabled(false);
+        jbRetryFailed.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbRetryFailedActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -349,7 +362,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 .addGap(40, 40, 40)
                 .addComponent(downloadsScroll, javax.swing.GroupLayout.PREFERRED_SIZE, 1000, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jbResumeAndPause)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jbResumeAndPause, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jbRetryFailed, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(40, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -361,6 +376,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                     .addComponent(downloadsScroll, javax.swing.GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jbResumeAndPause)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jbRetryFailed)
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -1349,6 +1366,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         activeDownloadCount--;
         checkAllDownloadsFinished();
         saveDownloadState(); // Save state after completion
+        updateRetryFailedButton();
     }
 
     private void markDownloadError(Game game) {
@@ -1372,6 +1390,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         activeDownloadCount--;
         checkAllDownloadsFinished();
         saveDownloadState(); // Save state after error
+        updateRetryFailedButton();
     }
 
     private void markDownloadCancelled(Game game) {
@@ -1664,6 +1683,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     private javax.swing.JButton jbDownloadList;
     private javax.swing.JButton jbRefresh;
     private javax.swing.JButton jbResumeAndPause;
+    private javax.swing.JButton jbRetryFailed;
     private javax.swing.JButton jbSetting;
     private javax.swing.JLabel jbsearch;
     private javax.swing.JComboBox<String> jcbRegion;
@@ -1701,6 +1721,140 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
 
     private void jrbPsxActionPerformed(java.awt.event.ActionEvent evt) {
         fillTable();
+    }
+
+    private void jbRetryFailedActionPerformed(java.awt.event.ActionEvent evt) {
+        retryFailedDownloads();
+    }
+
+    /**
+     * Retry all failed downloads from history
+     */
+    private void retryFailedDownloads() {
+        List<DownloadHistory> history = historyManager.loadHistory();
+        List<DownloadHistory> failedDownloads = history.stream()
+                .filter(h -> "failed".equals(h.getStatus()))
+                .toList();
+
+        if (failedDownloads.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "No failed downloads found in history.",
+                    "No Failed Downloads",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Confirm retry
+        int result = JOptionPane.showConfirmDialog(this,
+                "Found " + failedDownloads.size() + " failed download(s).\nDo you want to retry all of them?",
+                "Retry Failed Downloads",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+
+        if (result != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        // Convert failed history entries to Game objects and add to download queue
+        int addedCount = 0;
+        for (DownloadHistory failed : failedDownloads) {
+            Game game = findGameByUrl(failed.getPkgUrl(), failed.getConsole());
+            if (game != null) {
+                // Check if not already in queue
+                boolean alreadyInQueue = downloadList.stream()
+                        .anyMatch(g -> g.getPkgUrl().equals(game.getPkgUrl()));
+                
+                if (!alreadyInQueue) {
+                    downloadList.add(game);
+                    addedCount++;
+                    log.info("Added failed download to retry queue: {}", game.getTitle());
+                }
+            } else {
+                log.warn("Could not find game info for failed download: {} ({})", failed.getTitle(), failed.getPkgUrl());
+            }
+        }
+
+        // Remove failed entries from history (they'll be re-added on completion/failure)
+        history.removeIf(h -> "failed".equals(h.getStatus()));
+        historyManager.saveHistory(history);
+
+        // Update button state
+        updateRetryFailedButton();
+
+        if (addedCount > 0) {
+            JOptionPane.showMessageDialog(this,
+                    addedCount + " failed download(s) added to queue.",
+                    "Downloads Added",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "No failed downloads could be added (games may no longer be available).",
+                    "No Downloads Added",
+                    JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    /**
+     * Find a Game object by its PKG URL from the current table
+     */
+    private Game findGameByUrl(String pkgUrl, String consoleStr) {
+        DefaultTableModel model = (DefaultTableModel) jtData.getModel();
+        
+        // First try to find in current table
+        for (int i = 0; i < model.getRowCount(); i++) {
+            String tablePkgUrl = (String) model.getValueAt(i, getColumnIndexByName("PKG direct link"));
+            if (pkgUrl.equals(tablePkgUrl)) {
+                // Found in table, create Game object
+                String name = (String) model.getValueAt(i, getColumnIndexByName("Name"));
+                String region = (String) model.getValueAt(i, getColumnIndexByName("Region"));
+                String type = (String) model.getValueAt(i, getColumnIndexByName("Type"));
+                String console = (String) model.getValueAt(i, getColumnIndexByName("Console"));
+                String contentId = (String) model.getValueAt(i, getColumnIndexByName("Content ID"));
+                String fileSizeStr = (String) model.getValueAt(i, getColumnIndexByName("File Size"));
+                
+                // Parse file size
+                long fileSize = 0;
+                if (fileSizeStr != null && !fileSizeStr.isEmpty()) {
+                    try {
+                        String numericPart = fileSizeStr.replaceAll("[^0-9.]", "").trim();
+                        if (!numericPart.isEmpty()) {
+                            double sizeMB = Double.parseDouble(numericPart);
+                            fileSize = (long) (sizeMB * 1024 * 1024); // Convert MiB to bytes
+                        }
+                    } catch (NumberFormatException e) {
+                        log.warn("Could not parse file size: {}", fileSizeStr);
+                    }
+                }
+                
+                // Create Game using constructor: title, region, console, pkgUrl, zRif, fileSize
+                Game game = new Game(name, region, Console.fromDisplayName(console), pkgUrl, type, fileSize);
+                game.setContentId(contentId);
+                return game;
+            }
+        }
+        
+        // If not in current table, try loading from the appropriate database
+        try {
+            Console console = Console.fromDisplayName(consoleStr);
+            List<Game> games = gameRepository.loadGames(console);
+            return games.stream()
+                    .filter(g -> pkgUrl.equals(g.getPkgUrl()))
+                    .findFirst()
+                    .orElse(null);
+        } catch (Exception e) {
+            log.error("Error loading game from database for retry: {}", pkgUrl, e);
+            return null;
+        }
+    }
+
+    /**
+     * Update Retry Failed button state based on failed downloads in history
+     */
+    private void updateRetryFailedButton() {
+        List<DownloadHistory> history = historyManager.loadHistory();
+        boolean hasFailedDownloads = history.stream()
+                .anyMatch(h -> "failed".equals(h.getStatus()));
+        jbRetryFailed.setEnabled(hasFailedDownloads);
     }
 
     /**
