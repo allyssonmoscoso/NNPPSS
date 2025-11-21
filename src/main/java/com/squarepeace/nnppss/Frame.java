@@ -63,6 +63,14 @@ import javax.swing.KeyStroke;
 import javax.swing.AbstractAction;
 import java.awt.event.KeyEvent;
 import java.awt.Cursor;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import java.io.FileWriter;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class Frame extends javax.swing.JFrame implements ActionListener, com.squarepeace.nnppss.service.ConfigListener {
     private static final Logger log = LoggerFactory.getLogger(Frame.class);
@@ -129,6 +137,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         this.queueManager = new com.squarepeace.nnppss.service.DownloadQueueManager();
         
         initComponents();
+        applyDarkModeIfEnabled();
         setupDatabaseManager();
         setupNotificationAndProgressPanels();
         jbResumeAndPause.setEnabled(false);
@@ -530,6 +539,40 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         // Button panel
         JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 10, 10));
         
+        // Select All button
+        JButton selectAllButton = new JButton("Select All");
+        selectAllButton.setToolTipText("Select all items in queue");
+        selectAllButton.addActionListener(e -> {
+            table.selectAll();
+        });
+        
+        // Deselect All button
+        JButton deselectAllButton = new JButton("Deselect All");
+        deselectAllButton.setToolTipText("Clear selection");
+        deselectAllButton.addActionListener(e -> {
+            table.clearSelection();
+        });
+        
+        // Export Queue button
+        JButton exportButton = new JButton("📤 Export");
+        exportButton.setToolTipText("Export queue to JSON file");
+        exportButton.addActionListener(e -> {
+            if (downloadList.isEmpty()) {
+                showNotification("Queue is empty, nothing to export", NotificationPanel.NotificationType.WARNING);
+                return;
+            }
+            exportQueueToFile();
+        });
+        
+        // Import Queue button
+        JButton importButton = new JButton("📥 Import");
+        importButton.setToolTipText("Import queue from JSON file");
+        importButton.addActionListener(e -> {
+            importQueueFromFile();
+            updateDownloadListTable(model);
+            updateDownloadListInfo(infoLabel);
+        });
+        
         // Move Up button
         JButton moveUpButton = new JButton("▲ Move Up");
         moveUpButton.setToolTipText("Move selected items up in the queue");
@@ -641,10 +684,16 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         closeButton.addActionListener(e -> dialog.dispose());
         
         // Add buttons to panel
+        buttonPanel.add(selectAllButton);
+        buttonPanel.add(deselectAllButton);
+        buttonPanel.add(new javax.swing.JSeparator(javax.swing.SwingConstants.VERTICAL));
         buttonPanel.add(moveUpButton);
         buttonPanel.add(moveDownButton);
         buttonPanel.add(removeButton);
         buttonPanel.add(clearButton);
+        buttonPanel.add(new javax.swing.JSeparator(javax.swing.SwingConstants.VERTICAL));
+        buttonPanel.add(exportButton);
+        buttonPanel.add(importButton);
         buttonPanel.add(new javax.swing.JSeparator(javax.swing.SwingConstants.VERTICAL));
         buttonPanel.add(downloadButton);
         buttonPanel.add(closeButton);
@@ -708,6 +757,86 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         
         info += "</html>";
         label.setText(info);
+    }
+    
+    /**
+     * Export download queue to JSON file
+     */
+    private void exportQueueToFile() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Export Download Queue");
+        fileChooser.setFileFilter(new FileNameExtensionFilter("JSON files (*.json)", "json"));
+        fileChooser.setSelectedFile(new File("download-queue-export.json"));
+        
+        int result = fileChooser.showSaveDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            // Ensure .json extension
+            if (!file.getName().toLowerCase().endsWith(".json")) {
+                file = new File(file.getAbsolutePath() + ".json");
+            }
+            
+            try (FileWriter writer = new FileWriter(file)) {
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                gson.toJson(downloadList, writer);
+                showNotification("Queue exported successfully to " + file.getName(), 
+                    NotificationPanel.NotificationType.SUCCESS);
+                log.info("Queue exported to: {}", file.getAbsolutePath());
+            } catch (IOException e) {
+                showNotification("Failed to export queue: " + e.getMessage(), 
+                    NotificationPanel.NotificationType.ERROR);
+                log.error("Error exporting queue", e);
+            }
+        }
+    }
+    
+    /**
+     * Import download queue from JSON file
+     */
+    private void importQueueFromFile() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Import Download Queue");
+        fileChooser.setFileFilter(new FileNameExtensionFilter("JSON files (*.json)", "json"));
+        
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            
+            try (FileReader reader = new FileReader(file)) {
+                Gson gson = new Gson();
+                java.lang.reflect.Type listType = new TypeToken<ArrayList<Game>>(){}.getType();
+                List<Game> importedGames = gson.fromJson(reader, listType);
+                
+                if (importedGames == null || importedGames.isEmpty()) {
+                    showNotification("No games found in file", NotificationPanel.NotificationType.WARNING);
+                    return;
+                }
+                
+                // Filter out duplicates
+                int addedCount = 0;
+                for (Game game : importedGames) {
+                    if (!downloadList.stream().anyMatch(g -> g.getPkgUrl().equals(game.getPkgUrl()))) {
+                        downloadList.add(game);
+                        addedCount++;
+                    }
+                }
+                
+                if (addedCount > 0) {
+                    showNotification(addedCount + " game(s) imported successfully", 
+                        NotificationPanel.NotificationType.SUCCESS);
+                    log.info("Imported {} games from: {}", addedCount, file.getAbsolutePath());
+                } else {
+                    showNotification("All games already in queue", NotificationPanel.NotificationType.INFO);
+                }
+            } catch (IOException e) {
+                showNotification("Failed to import queue: " + e.getMessage(), 
+                    NotificationPanel.NotificationType.ERROR);
+                log.error("Error importing queue", e);
+            } catch (com.google.gson.JsonSyntaxException e) {
+                showNotification("Invalid JSON format", NotificationPanel.NotificationType.ERROR);
+                log.error("Invalid JSON in import file", e);
+            }
+        }
     }
 
     private void jbResumeAndPauseActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jbResumeAndPauseActionPerformed
@@ -1350,12 +1479,20 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             } else {
                 speedStr = String.format("%.2f MiB/s", current);
             }
+            // Check if retrying
+            String retryInfo = "";
+            if (downloadService.isRetrying(game.getPkgUrl())) {
+                int retryCount = downloadService.getRetryCount(game.getPkgUrl());
+                retryInfo = String.format(" 🔄 Retrying (%d/%d)", retryCount + 1, 4); // MAX_RETRIES + 1
+            }
+            
             String base;
             if (bar.isIndeterminate()) {
-                base = String.format("%s – %d bytes – %s – %s", game.getTitle(), bytesDownloaded, game.getConsole(), speedStr);
+                base = String.format("%s – %d bytes – %s – %s%s", 
+                    game.getTitle(), bytesDownloaded, game.getConsole(), speedStr, retryInfo);
             } else {
-                base = String.format("%s – %d%% – %s – ETA: %s – %s", 
-                    game.getTitle(), progressPercent, game.getConsole(), etaStr, speedStr);
+                base = String.format("%s – %d%% – %s – ETA: %s – %s%s", 
+                    game.getTitle(), progressPercent, game.getConsole(), etaStr, speedStr, retryInfo);
             }
             if (downloadService.isPaused(game.getPkgUrl())) base += " (Paused)";
             bar.setString(base);
@@ -1373,7 +1510,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         if (bar != null) {
             bar.setIndeterminate(false);
             bar.setValue(100);
-            bar.setString(game.getTitle() + " – Completed – " + game.getConsole());
+            bar.setString("✓ " + game.getTitle() + " – Completed – " + game.getConsole());
+            bar.setForeground(COLOR_COMPLETED);
         }
         
         // Save to download history
@@ -1401,7 +1539,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         javax.swing.JProgressBar bar = progressBarsByUrl.get(game.getPkgUrl());
         if (bar != null) {
             bar.setIndeterminate(false);
-            bar.setString(game.getTitle() + " – Error – " + game.getConsole());
+            bar.setString("⚠ " + game.getTitle() + " – Error – " + game.getConsole());
         }
         
         // Save to download history
@@ -1428,7 +1566,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         javax.swing.JProgressBar bar = progressBarsByUrl.get(game.getPkgUrl());
         if (bar != null) {
             bar.setIndeterminate(false);
-            bar.setString(game.getTitle() + " – Cancelled – " + game.getConsole());
+            bar.setString("✖ " + game.getTitle() + " – Cancelled – " + game.getConsole());
             bar.setForeground(Color.GRAY);
         }
         selectedUrls.remove(game.getPkgUrl());
@@ -1459,10 +1597,17 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             if (s == null) continue;
             boolean paused = downloadService.isPaused(url);
             if (paused) {
-                if (!s.endsWith("(Paused)")) bar.setString(s + " (Paused)");
+                if (!s.endsWith("(Paused)")) bar.setString("⏸ " + s + " (Paused)");
                 bar.setForeground(Color.GRAY);
             } else {
-                if (s.endsWith("(Paused)")) bar.setString(s.substring(0, s.length() - 9));
+                if (s.endsWith("(Paused)")) {
+                    // Remove both pause icon and "(Paused)" text
+                    String cleanText = s.substring(0, s.length() - 9);
+                    if (cleanText.startsWith("⏸ ")) {
+                        cleanText = cleanText.substring(2);
+                    }
+                    bar.setString(cleanText);
+                }
                 Color orig = originalBarColorByUrl.get(url);
                 if (orig != null) bar.setForeground(orig);
             }
@@ -1995,6 +2140,48 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 }
             }
         });
+    }
+    
+    /**
+     * Apply dark mode theme if enabled in configuration
+     */
+    private void applyDarkModeIfEnabled() {
+        String darkMode = configManager.getProperty("darkMode");
+        if (darkMode != null && Boolean.parseBoolean(darkMode)) {
+            try {
+                // Dark mode colors
+                Color bgDark = new Color(43, 43, 43);
+                Color fgLight = new Color(187, 187, 187);
+                Color selectionBg = new Color(75, 110, 175);
+                
+                // Apply to main frame
+                getContentPane().setBackground(bgDark);
+                jPanel1.setBackground(bgDark);
+                downloadsPanel.setBackground(bgDark);
+                
+                // Apply to labels
+                jLabel1.setForeground(fgLight);
+                jLabel2.setForeground(fgLight);
+                jlFileSize.setForeground(fgLight);
+                jbsearch.setForeground(fgLight);
+                
+                // Apply to table
+                jtData.setBackground(new Color(60, 63, 65));
+                jtData.setForeground(fgLight);
+                jtData.setSelectionBackground(selectionBg);
+                jtData.setSelectionForeground(Color.WHITE);
+                jtData.setGridColor(new Color(80, 80, 80));
+                
+                // Apply to input components
+                jtfSearch.setBackground(new Color(60, 63, 65));
+                jtfSearch.setForeground(fgLight);
+                jtfSearch.setCaretColor(fgLight);
+                
+                log.info("Dark mode applied");
+            } catch (Exception e) {
+                log.warn("Failed to apply dark mode", e);
+            }
+        }
     }
     
     /**

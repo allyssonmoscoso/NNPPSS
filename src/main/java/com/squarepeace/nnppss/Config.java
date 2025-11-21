@@ -49,6 +49,7 @@ public class Config extends javax.swing.JFrame {
         jSpinner_download_speed.setModel(new javax.swing.SpinnerNumberModel(0, 0, null, 50));
         ((javax.swing.JSpinner.DefaultEditor)jSpinner_download_speed.getEditor()).getTextField().setColumns(8);
         jCheckBoxAutoCleanup = new javax.swing.JCheckBox();
+        jCheckBoxDarkMode = new javax.swing.JCheckBox();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Configuration");
@@ -89,6 +90,14 @@ public class Config extends javax.swing.JFrame {
         jCheckBoxAutoCleanup.setText("Auto-delete .pkg files after extraction");
         jCheckBoxAutoCleanup.setToolTipText("Automatically delete package files after successful extraction to save disk space");
 
+        jCheckBoxDarkMode.setText("Enable Dark Mode (Experimental)");
+        jCheckBoxDarkMode.setToolTipText("Toggle dark theme for the application - requires restart");
+        jCheckBoxDarkMode.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBoxDarkModeActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -126,7 +135,8 @@ public class Config extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel5)
-                    .addComponent(jCheckBoxAutoCleanup))
+                    .addComponent(jCheckBoxAutoCleanup)
+                    .addComponent(jCheckBoxDarkMode))
                 .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -154,6 +164,8 @@ public class Config extends javax.swing.JFrame {
                     .addComponent(jSpinner_download_speed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addComponent(jCheckBoxAutoCleanup)
+                .addGap(8, 8, 8)
+                .addComponent(jCheckBoxDarkMode)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 19, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jbSave)
@@ -200,6 +212,7 @@ public class Config extends javax.swing.JFrame {
         configManager.setProperty("simultaneousDownloads", jSpinner_simultaneous_downloads.getValue().toString());
         configManager.setProperty("downloadSpeedLimit", jSpinner_download_speed.getValue().toString());
         configManager.setProperty("autoCleanupPkg", String.valueOf(jCheckBoxAutoCleanup.isSelected()));
+        configManager.setProperty("darkMode", String.valueOf(jCheckBoxDarkMode.isSelected()));
         configManager.saveConfig();
         if (configListener != null) {
             configListener.onConfigSaved();
@@ -209,6 +222,16 @@ public class Config extends javax.swing.JFrame {
 
     private void jbCloseActionPerformed(java.awt.event.ActionEvent evt) {
         this.dispose();
+    }
+    
+    private void jCheckBoxDarkModeActionPerformed(java.awt.event.ActionEvent evt) {
+        // Dark mode will be applied on next restart
+        if (jCheckBoxDarkMode.isSelected()) {
+            JOptionPane.showMessageDialog(this, 
+                "Dark mode will be enabled after restarting the application.",
+                "Dark Mode", 
+                JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     public void loadValues() {
@@ -232,6 +255,9 @@ public class Config extends javax.swing.JFrame {
         jSpinner_download_speed.setValue(downloadSpeedLimit);
         
         jCheckBoxAutoCleanup.setSelected(autoCleanup != null && Boolean.parseBoolean(autoCleanup));
+        
+        String darkMode = configManager.getProperty("darkMode");
+        jCheckBoxDarkMode.setSelected(darkMode != null && Boolean.parseBoolean(darkMode));
     }
 
     
@@ -272,6 +298,7 @@ public class Config extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JCheckBox jCheckBoxAutoCleanup;
+    private javax.swing.JCheckBox jCheckBoxDarkMode;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;

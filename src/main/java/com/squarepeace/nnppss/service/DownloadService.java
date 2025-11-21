@@ -1,8 +1,5 @@
 package com.squarepeace.nnppss.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -12,6 +9,9 @@ import java.net.URL;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DownloadService {
     private static final Logger log = LoggerFactory.getLogger(DownloadService.class);
@@ -222,5 +222,23 @@ public class DownloadService {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("HEAD");
         return conn.getContentLengthLong();
+    }
+    
+    /**
+     * Get the current retry count for a download
+     * @param fileURL The download URL
+     * @return Current retry count (0 if first attempt or not found)
+     */
+    public int getRetryCount(String fileURL) {
+        return retryCountByUrl.getOrDefault(fileURL, 0);
+    }
+    
+    /**
+     * Check if a download is currently retrying (attempt > 0)
+     * @param fileURL The download URL
+     * @return true if retrying, false if first attempt
+     */
+    public boolean isRetrying(String fileURL) {
+        return getRetryCount(fileURL) > 0;
     }
 }
