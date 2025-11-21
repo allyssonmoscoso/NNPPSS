@@ -75,6 +75,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     private final DownloadHistoryManager historyManager;
     private final SystemValidator systemValidator;
     private final com.squarepeace.nnppss.service.DatabaseManager databaseManager;
+    private final com.squarepeace.nnppss.service.DownloadQueueManager queueManager;
     private javax.swing.SwingWorker<java.util.List<Game>, Void> currentLoadWorker;
 
     private boolean downloadPaused = false; // deprecated global; kept for compatibility, not used
@@ -113,15 +114,28 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         this.historyManager = new DownloadHistoryManager();
         this.systemValidator = new SystemValidator(configManager);
         this.databaseManager = databaseManager;
+        this.queueManager = new com.squarepeace.nnppss.service.DownloadQueueManager();
         
         initComponents();
         setupDatabaseManager();
         jbResumeAndPause.setEnabled(false);
         
+        // Restore download queue from previous session
+        restoreDownloadQueue();
+        
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-                saveDownloadState();
+                if (downloading) {
+                    // Save in-progress downloads state
+                    saveDownloadState();
+                } else {
+                    // Save pending queue only if not downloading
+                    saveDownloadQueue();
+                    // Clear any old download state
+                    downloadStateManager.clearStates();
+                }
+                System.exit(0);
             }
         });
 
@@ -173,7 +187,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         downloadsScroll = new JScrollPane(downloadsPanel);
         downloadsScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         setTitle("NNPPSS");
 
         jPanel1.setName("NNPPSS"); // NOI18N
@@ -962,7 +976,15 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     }
 
     private void startDownloads() {
-        if (downloadList.isEmpty()) {
+        startDownloads(new ArrayList<>(downloadList));
+    }
+
+    /**
+     * Start downloads for specific games
+     * @param gamesToDownload List of games to download
+     */
+    private void startDownloads(List<Game> gamesToDownload) {
+        if (gamesToDownload.isEmpty()) {
             JOptionPane.showMessageDialog(this, "The download list is empty.");
             return;
         }
@@ -973,7 +995,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         }
 
         // Validate disk space before starting downloads
-        long totalSize = downloadList.stream().mapToLong(Game::getFileSize).sum();
+        long totalSize = gamesToDownload.stream().mapToLong(Game::getFileSize).sum();
         SystemValidator.ValidationResult validationResult = systemValidator.validateTotalDiskSpace(totalSize, "games");
         if (!validationResult.isValid()) {
             JOptionPane.showMessageDialog(this, validationResult.getMessage(), 
@@ -983,13 +1005,16 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
 
         downloading = true;
         jbResumeAndPause.setEnabled(true);
+        
+        // Clear queue since downloads are starting
+        queueManager.clearQueue();
 
-        resetDownloadUI(downloadList);
+        resetDownloadUI(gamesToDownload);
 
         final int concurrency = Math.max(1, configManager.getSimultaneousDownloads());
         ExecutorService executor = Executors.newFixedThreadPool(concurrency);
 
-        for (Game game : new ArrayList<>(downloadList)) {
+        for (Game game : gamesToDownload) {
             executor.submit(() -> {
                 String fileName = game.getFileName();
                 String destPath = "games/" + fileName;
@@ -1496,7 +1521,57 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     }
 
     /**
-     * Restore downloads from saved state
+     * Save the download queue to disk
+     */
+    private void saveDownloadQueue() {
+        if (!downloadList.isEmpty() && !downloading) {
+            queueManager.saveQueue(new ArrayList<>(downloadList));
+            log.info("Saved {} games to download queue", downloadList.size());
+        } else if (downloadList.isEmpty()) {
+            queueManager.clearQueue();
+        }
+    }
+
+    /**
+     * Restore the download queue from previous session
+     * Restores silently if there are in-progress downloads (will be added to the list)
+     * Shows notification if only pending queue exists
+     */
+    private void restoreDownloadQueue() {
+        List<Game> savedQueue = queueManager.loadQueue();
+        if (savedQueue.isEmpty()) {
+            return;
+        }
+        
+        boolean hasInProgressDownloads = downloadStateManager.hasStates();
+        
+        if (hasInProgressDownloads) {
+            // Silently restore queue - it will be added to the list after in-progress downloads
+            downloadList.addAll(savedQueue);
+            log.info("Silently restored {} pending games to queue (in-progress downloads will be handled separately)", savedQueue.size());
+        } else {
+            // No in-progress downloads, show notification about pending queue
+            downloadList.addAll(savedQueue);
+            log.info("Restored {} games to download queue", savedQueue.size());
+            
+            // Show notification to user
+            SwingUtilities.invokeLater(() -> {
+                int response = JOptionPane.showConfirmDialog(this,
+                    "Found " + savedQueue.size() + " game(s) in download queue from previous session.\n\n" +
+                    "Do you want to view the queue?",
+                    "Queue Restored",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE);
+                    
+                if (response == JOptionPane.YES_OPTION) {
+                    showDownloadListDialog();
+                }
+            });
+        }
+    }
+
+    /**
+     * Restore downloads from saved state (IN-PROGRESS downloads, not pending queue)
      * Call this after Frame is initialized
      */
     public void restoreDownloads(List<DownloadState> savedStates) {
@@ -1504,10 +1579,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             return;
         }
         
-        // Convert DownloadState → Game objects
-        downloadList.clear();
-        
-        // Store pause states to restore after starting downloads
+        // These are downloads that were IN PROGRESS when app closed
+        // They should be resumed automatically, not just added to queue
+        List<Game> inProgressGames = new ArrayList<>();
         Map<String, Boolean> pauseStatesByUrl = new LinkedHashMap<>();
         
         for (DownloadState state : savedStates) {
@@ -1519,21 +1593,42 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             game.setzRif(state.getzRif());
             game.setFileSize(state.getTotalBytes());
             
-            downloadList.add(game);
+            inProgressGames.add(game);
             pauseStatesByUrl.put(state.getPkgUrl(), state.isPaused());
         }
         
+        // Check if there are pending games in the queue
+        int pendingCount = downloadList.size();
+        boolean hasPendingGames = pendingCount > 0;
+        
         // Show confirmation dialog to user
-        int count = downloadList.size();
+        int count = inProgressGames.size();
         if (count > 0) {
-            String message = String.format("Se encontraron %d descarga%s pendiente%s de la sesión anterior.\n¿Deseas reanudarlas ahora?",
+            String message = String.format("Se encontraron %d descarga%s EN PROGRESO de la sesión anterior.\n¿Deseas reanudarlas ahora?",
                     count, count == 1 ? "" : "s", count == 1 ? "" : "s");
-            int option = JOptionPane.showConfirmDialog(this, message, "Restaurar Descargas", 
+            
+            if (hasPendingGames) {
+                message += String.format("\n\nNota: También tienes %d juego%s pendiente%s en la cola que no se iniciarán automáticamente.",
+                        pendingCount, pendingCount == 1 ? "" : "s", pendingCount == 1 ? "" : "s");
+            }
+            
+            int option = JOptionPane.showConfirmDialog(this, message, "Restaurar Descargas en Progreso", 
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             
             if (option == JOptionPane.YES_OPTION) {
-                // Start downloads immediately
-                startDownloads();
+                // Start ONLY the in-progress downloads
+                // Pending games stay in downloadList but are NOT started
+                startDownloads(new ArrayList<>(inProgressGames));
+                
+                // Remove in-progress games from downloadList since they're now downloading
+                for (Game inProgressGame : inProgressGames) {
+                    downloadList.removeIf(g -> g.getPkgUrl().equals(inProgressGame.getPkgUrl()));
+                }
+                
+                // Save the remaining pending queue if any
+                if (!downloadList.isEmpty()) {
+                    saveDownloadQueue();
+                }
                 
                 // Restore pause states after a short delay to allow downloads to initialize
                 SwingUtilities.invokeLater(() -> {
@@ -1553,10 +1648,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                     updatePauseButtonText();
                 });
             } else {
-                // User declined, clear the download list
-                downloadList.clear();
-                // Also clear the saved state file
+                // User declined, just clear the saved state file
                 downloadStateManager.clearStates();
+                // Keep pending queue intact (already in downloadList)
             }
         }
     }

@@ -1,13 +1,5 @@
 package com.squarepeace.nnppss.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import com.squarepeace.nnppss.model.DownloadState;
-
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -16,6 +8,14 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import com.squarepeace.nnppss.model.DownloadState;
 
 public class DownloadStateManager {
     private static final Logger log = LoggerFactory.getLogger(DownloadStateManager.class);
@@ -103,5 +103,19 @@ public class DownloadStateManager {
                 log.warn("Failed to delete download state file: {}", STATE_FILE);
             }
         }
+    }
+
+    /**
+     * Check if there are any saved states (in-progress downloads)
+     * @return true if state file exists and contains valid states
+     */
+    public boolean hasStates() {
+        File file = new File(STATE_FILE);
+        if (!file.exists() || file.length() == 0) {
+            return false;
+        }
+        
+        List<DownloadState> states = loadStates();
+        return !states.isEmpty();
     }
 }
