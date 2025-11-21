@@ -174,6 +174,26 @@ public class Config extends javax.swing.JFrame {
     }
 
     private void jbSaveActionPerformed(java.awt.event.ActionEvent evt) {
+        // Validate download speed limit
+        int speedLimit = (Integer) jSpinner_download_speed.getValue();
+        if (speedLimit < 0) {
+            JOptionPane.showMessageDialog(this, 
+                "Download speed limit cannot be negative. Use 0 for unlimited.", 
+                "Invalid Value", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Validate simultaneous downloads
+        int simDownloads = (Integer) jSpinner_simultaneous_downloads.getValue();
+        if (simDownloads < 1 || simDownloads > 10) {
+            JOptionPane.showMessageDialog(this, 
+                "Simultaneous downloads must be between 1 and 10", 
+                "Invalid Value", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
         configManager.setProperty("psvita.url", jtfUrlPsvita.getText());
         configManager.setProperty("psp.url", jtfUrlPsp.getText());
         configManager.setProperty("psx.url", jtfUrlPsx.getText());

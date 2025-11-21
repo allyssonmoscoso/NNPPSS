@@ -23,14 +23,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.ArrayList;
 import java.awt.Color;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -63,6 +63,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     private static final Color COLOR_PAUSED = new Color(255, 165, 0);     // Orange
     private static final Color COLOR_FAILED = new Color(220, 20, 60);     // Red
     private static final Color COLOR_DEFAULT = Color.BLACK;                // Black
+    private static final long DOWNLOAD_START_DELAY_MS = 500; // Delay before starting downloads
 
     private DefaultTableModel originalModel;
     private TableRowSorter<DefaultTableModel> rowSorter;
@@ -77,13 +78,13 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     private final com.squarepeace.nnppss.service.DatabaseManager databaseManager;
     private final com.squarepeace.nnppss.service.DownloadQueueManager queueManager;
     private javax.swing.SwingWorker<java.util.List<Game>, Void> currentLoadWorker;
+    private ExecutorService downloadExecutor;
 
-    private boolean downloadPaused = false; // deprecated global; kept for compatibility, not used
     private boolean downloading = false;
     private long lastStateSaveMs = 0;
     private static final long STATE_SAVE_INTERVAL_MS = 10_000; // 10 seconds
 
-    private List<Game> downloadList = new ArrayList<>();
+    private final List<Game> downloadList = new CopyOnWriteArrayList<>();
     private final Set<String> selectedUrls = new LinkedHashSet<>();
     private final Map<String, Color> originalBarColorByUrl = new LinkedHashMap<>();
     private List<String> downloadOrderUrls = new ArrayList<>();
@@ -138,6 +139,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                     // Clear any old download state
                     downloadStateManager.clearStates();
                 }
+                // Shutdown executor if running
+                shutdownDownloadExecutor();
                 System.exit(0);
             }
         });
@@ -1029,10 +1032,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         resetDownloadUI(gamesToDownload);
 
         final int concurrency = Math.max(1, configManager.getSimultaneousDownloads());
-        ExecutorService executor = Executors.newFixedThreadPool(concurrency);
+        downloadExecutor = Executors.newFixedThreadPool(concurrency);
 
         for (Game game : gamesToDownload) {
-            executor.submit(() -> {
+            downloadExecutor.submit(() -> {
                 String fileName = game.getFileName();
                 String destPath = "games/" + fileName;
                 downloadService.downloadFile(game.getPkgUrl(), destPath, new DownloadService.DownloadListener() {
@@ -1079,9 +1082,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         }
 
         new Thread(() -> {
-            executor.shutdown();
+            downloadExecutor.shutdown();
             try {
-                executor.awaitTermination(Long.MAX_VALUE, java.util.concurrent.TimeUnit.NANOSECONDS);
+                downloadExecutor.awaitTermination(Long.MAX_VALUE, java.util.concurrent.TimeUnit.NANOSECONDS);
             } catch (InterruptedException e) {
                 log.warn("Download executor termination interrupted", e);
                 Thread.currentThread().interrupt();
@@ -1652,7 +1655,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 // Restore pause states after a short delay to allow downloads to initialize
                 SwingUtilities.invokeLater(() -> {
                     try {
-                        Thread.sleep(500); // Give downloads time to start
+                        Thread.sleep(DOWNLOAD_START_DELAY_MS); // Give downloads time to start
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
@@ -1855,6 +1858,24 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         boolean hasFailedDownloads = history.stream()
                 .anyMatch(h -> "failed".equals(h.getStatus()));
         jbRetryFailed.setEnabled(hasFailedDownloads);
+    }
+
+    /**
+     * Shutdown download executor gracefully
+     */
+    private void shutdownDownloadExecutor() {
+        if (downloadExecutor != null && !downloadExecutor.isShutdown()) {
+            log.info("Shutting down download executor");
+            downloadExecutor.shutdownNow();
+            try {
+                if (!downloadExecutor.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                    log.warn("Download executor did not terminate in time");
+                }
+            } catch (InterruptedException e) {
+                log.warn("Executor shutdown interrupted", e);
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     /**
