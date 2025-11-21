@@ -1,39 +1,72 @@
 # NNPPSS
 
-A tool designed for the management and download of files related to PlayStation Vita. It is developed in Java and uses the Swing graphical library for the user interface.
-NNPPSS is compatible with Windows, macOS, and Linux or Unix Based Operating System.
+A tool for managing and downloading "Magic packages".    Built with Java, NNPPSS provides a robust download manager with persistence, retry capabilities, and automated package extraction.
 
-## Prerequisites/Requirements
+NNPPSS is compatible with Windows, macOS, and Linux/Unix-based operating systems.
 
-1. You will need Java, I recommend Java 8+
-2. If you are building from source, maven is required.
-3. For non-NT (windows) based systems, you will need [pkg2zip](https://github.com/mmozeiko/pkg2zip)
+## Prerequisites
+
+- **Java 17+** (required)
+- **[pkg2zip](https://github.com/mmozeiko/pkg2zip)** (required for non-Windows systems, included for Windows)
 
 ## Installation
 
-1. Clone the Repository `git clone https://github.com/SquarePeace/NNPPSS.git`
-2. Compile with Maven `mvn compile`
-3. Package with Mavem `mvn package`
-Jar File should now be in `/target/NNPPSS-x.x.jar`
+### Easiest (Download release)
 
-Run Jar File using `java -jar NPPSS-x.x.jar`
+The simplest way to install or run NNPPSS is to download the latest release from the project's GitHub Releases page:
 
-## Main Features
+https://github.com/allyssonmoscoso/NNPPSS/releases
 
-1. **File Download**: The application allows the download of files from a remote URL in the background, avoiding user interface blocking during the process. Downloaded files can be both databases and game files.
+Release assets include a pre-built `NNPPSS.jar` (all dependencies bundled). Download the release archive, extract (if needed) and run:
 
-2. **Filtering and Searching**: Users can filter and search for games in the loaded database. Filtering can be done by text and by region.
+```bash
+java -jar NNPPSS.jar
+```
 
-3. **Interaction with Data Table**: Users can select games from a data table to view detailed information about them and, in some cases, download the game directly from the application.
+### Development Mode
 
-4. **Interaction with Downloaded Files**: After downloading a game, the application can execute commands in the background to perform actions such as decompressing files or other specific operations for the downloaded game.
+For quick compilation and testing:
+```bash
+./run-dev.sh          # Compile and run
+./run-dev.sh compile  # Compile only
+./run-dev.sh run      # Run without recompiling
+./run-dev.sh clean    # Clean build artifacts
+```
 
-## Advantages
+### Configuration
 
-- **User-Friendly Interface**: The application uses Swing to provide an intuitive and user-friendly interface, allowing users to navigate and operate the application with ease.
+- **Persistent Settings**: Configuration saved in `config.properties`
+- **Customizable Options**:
+  - Database URLs for each console
+  - Simultaneous download limit (1-4)
+- **Easy Setup**: Configuration wizard on first launch
 
-- **Background Download**: The background download feature allows users to perform other tasks while files are being downloaded, improving the user experience by avoiding interface locks.
 
-- **Advanced Filtering**: The ability to filter and search for games in the database provides users with an efficient way to find the games they want, even in large databases.
+- **Language selection**: change UI language; the choice is saved to `config.properties` and requires application restart to apply.
+- **Dark Mode (experimental)**: an experimental dark theme can be enabled in Settings; the theme is applied after restart.
+- **Download speed limit**: set an approximate download speed limit (KB/s). `0` means unlimited. The limiter works by throttling write loops and may be approximate.
+- **Auto-cleanup**: enable or disable automatic deletion of `.pkg` files after extraction.
 
-- **Interaction with Downloaded Files**: The application offers additional functionalities, such as executing commands in the background to manipulate downloaded files, expanding the application's usability.
+## Usage Tips
+
+1. **First Launch**: Configure database URLs when prompted
+2. **Adding Downloads**: Select games from table → "Add to Download List" button
+3. **Managing Downloads**: Right-click on progress bars for pause/resume/cancel options
+4. **Resuming Sessions**: Close and reopen app - downloads automatically resume
+5. **Disk Space**: Ensure at least 5GB free space plus download size
+6. **Extraction**: Games auto-extract after download
+
+Notes on resume behavior:
+- On startup the app detects previously in-progress downloads and will prompt the user to resume them — it does not silently resume everything without user confirmation.
+- Download states older than a configured stale threshold (24 hours by default) are treated as stale and typically ignored to avoid attempting to resume very old partial downloads.
+
+Notifications and UI tips:
+- The app uses in-window toast-style notifications for success/error/info messages (auto-dismiss by default).
+- Exported queue JSON follows the internal `Game` model structure (fields such as `title`, `region`, `console`, `pkgUrl`, `zRif`, `contentId`, `fileSize`). Import validates JSON and reports invalid files.
+
+## Troubleshooting
+
+- **Downloads won't start**: Check disk space and configuration
+- **Extraction fails**: Ensure pkg2zip is installed (non-Windows)
+- **Database empty**: Click "Refresh" button or check database URLs in settings
+- **Logs**: Check `logs/nnppss-error.log` for detailed error information

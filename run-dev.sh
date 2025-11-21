@@ -24,10 +24,25 @@ TMP_DIR="$ROOT_DIR/.build_tmp"
 
 MAIN_CLASS="com.squarepeace.nnppss.NNPPSS"
 
-# dependencia jsoup (según pom.xml)
+# dependencias (según pom.xml)
 JSOUP_VERSION="1.15.3"
 JSOUP_JAR="jsoup-${JSOUP_VERSION}.jar"
 JSOUP_URL="https://repo1.maven.org/maven2/org/jsoup/jsoup/${JSOUP_VERSION}/${JSOUP_JAR}"
+
+GSON_VERSION="2.10.1"
+GSON_JAR="gson-${GSON_VERSION}.jar"
+GSON_URL="https://repo1.maven.org/maven2/com/google/code/gson/gson/${GSON_VERSION}/${GSON_JAR}"
+
+SLF4J_VERSION="2.0.9"
+SLF4J_JAR="slf4j-api-${SLF4J_VERSION}.jar"
+SLF4J_URL="https://repo1.maven.org/maven2/org/slf4j/slf4j-api/${SLF4J_VERSION}/${SLF4J_JAR}"
+
+LOGBACK_VERSION="1.4.11"
+LOGBACK_CLASSIC_JAR="logback-classic-${LOGBACK_VERSION}.jar"
+LOGBACK_CLASSIC_URL="https://repo1.maven.org/maven2/ch/qos/logback/logback-classic/${LOGBACK_VERSION}/${LOGBACK_CLASSIC_JAR}"
+
+LOGBACK_CORE_JAR="logback-core-${LOGBACK_VERSION}.jar"
+LOGBACK_CORE_URL="https://repo1.maven.org/maven2/ch/qos/logback/logback-core/${LOGBACK_VERSION}/${LOGBACK_CORE_JAR}"
 
 JAVAC_FLAGS="--release 17"
 
@@ -149,6 +164,10 @@ case "${1:-}" in
   compile)
     ensure_dirs
     _download_dep "$JSOUP_JAR" "$JSOUP_URL"
+    _download_dep "$GSON_JAR" "$GSON_URL"
+    _download_dep "$SLF4J_JAR" "$SLF4J_URL"
+    _download_dep "$LOGBACK_CLASSIC_JAR" "$LOGBACK_CLASSIC_URL"
+    _download_dep "$LOGBACK_CORE_JAR" "$LOGBACK_CORE_URL"
     compile_all
     copy_resources
     info "Listo. Ejecuta './run-dev.sh run' o './run-dev.sh' para ejecutar."
@@ -157,6 +176,10 @@ case "${1:-}" in
   run)
     ensure_dirs
     _download_dep "$JSOUP_JAR" "$JSOUP_URL"
+    _download_dep "$GSON_JAR" "$GSON_URL"
+    _download_dep "$SLF4J_JAR" "$SLF4J_URL"
+    _download_dep "$LOGBACK_CLASSIC_JAR" "$LOGBACK_CLASSIC_URL"
+    _download_dep "$LOGBACK_CORE_JAR" "$LOGBACK_CORE_URL"
     # si no hay clases compiladas, compilar
     if [ ! -d "$CLASSES_DIR" ] || [ -z "$(ls -A "$CLASSES_DIR" 2>/dev/null || true)" ]; then
       compile_all
@@ -171,6 +194,10 @@ case "${1:-}" in
     fi
     ensure_dirs
     _download_dep "$JSOUP_JAR" "$JSOUP_URL"
+    _download_dep "$GSON_JAR" "$GSON_URL"
+    _download_dep "$SLF4J_JAR" "$SLF4J_URL"
+    _download_dep "$LOGBACK_CLASSIC_JAR" "$LOGBACK_CLASSIC_URL"
+    _download_dep "$LOGBACK_CORE_JAR" "$LOGBACK_CORE_URL"
     compile_file "$2"
     copy_resources
     info "Archivo compilado. Ejecuta './run-dev.sh' para correr la app completa."
@@ -180,6 +207,10 @@ case "${1:-}" in
     # default: compile + run
     ensure_dirs
     _download_dep "$JSOUP_JAR" "$JSOUP_URL"
+    _download_dep "$GSON_JAR" "$GSON_URL"
+    _download_dep "$SLF4J_JAR" "$SLF4J_URL"
+    _download_dep "$LOGBACK_CLASSIC_JAR" "$LOGBACK_CLASSIC_URL"
+    _download_dep "$LOGBACK_CORE_JAR" "$LOGBACK_CORE_URL"
     compile_all
     copy_resources
     run_app
