@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.squarepeace.nnppss.model.Console;
 import com.squarepeace.nnppss.model.Game;
+import com.squarepeace.nnppss.util.I18n;
 import com.squarepeace.nnppss.model.DownloadState;
 import com.squarepeace.nnppss.model.DownloadHistory;
 import com.squarepeace.nnppss.service.ConfigManager;
@@ -126,6 +127,12 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     public Frame(ConfigManager configManager, GameRepository gameRepository, DownloadService downloadService,
                  PackageService packageService, DownloadStateManager downloadStateManager, 
                  com.squarepeace.nnppss.service.DatabaseManager databaseManager) {
+        // Initialize I18n with saved language preference
+        String languageCode = configManager.getProperty("language");
+        if (languageCode != null) {
+            I18n.setLocale(languageCode);
+        }
+        
         this.configManager = configManager;
         this.gameRepository = gameRepository;
         this.downloadService = downloadService;
@@ -240,7 +247,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             }
         });
 
-        jlFileSize.setText("File Size:");
+        jlFileSize.setText(I18n.get("label.filesize"));
         
         jcbFileSize.addItem("All sizes");
         jcbFileSize.addItem("< 1GB");
@@ -272,7 +279,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         });
 
         bgConsoles.add(jrbPsvita);
-        jrbPsvita.setText("Psvita");
+        jrbPsvita.setText(I18n.get("console.psvita"));
         jrbPsvita.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jrbPsvitaActionPerformed(evt);
@@ -280,14 +287,14 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         });
 
         bgConsoles.add(jrbPsp);
-        jrbPsp.setText("Psp");
+        jrbPsp.setText(I18n.get("console.psp"));
         jrbPsp.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jrbPspActionPerformed(evt);
             }
         });
 
-        jbDownloadList.setText("Download list");
+        jbDownloadList.setText(I18n.get("button.downloadlist"));
         jbDownloadList.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jbDownloadListActionPerformed(evt);
@@ -295,7 +302,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         });
 
         bgConsoles.add(jrbPsx);
-        jrbPsx.setText("Psx");
+        jrbPsx.setText(I18n.get("console.psx"));
         jrbPsx.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jrbPsxActionPerformed(evt);
@@ -361,7 +368,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 .addContainerGap())
         );
 
-        jbResumeAndPause.setText("Pause");
+        jbResumeAndPause.setText(I18n.get("button.pause"));
         jbResumeAndPause.setActionCommand(":p");
         jbResumeAndPause.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -369,7 +376,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             }
         });
 
-        jbRetryFailed.setText("Retry Failed");
+        jbRetryFailed.setText(I18n.get("button.retryfailed"));
         jbRetryFailed.setToolTipText("Retry downloads that previously failed");
         jbRetryFailed.setEnabled(false);
         jbRetryFailed.addActionListener(new java.awt.event.ActionListener() {
@@ -421,13 +428,13 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             String pkgUrl = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("PKG direct link"));
             
             if ("MISSING".equals(pkgUrl)) {
-                showNotification("Download link not registered for this game", NotificationPanel.NotificationType.ERROR);
+                showNotification(I18n.get("notify.missing"), NotificationPanel.NotificationType.ERROR);
                 return;
             } else if ("CART ONLY".equals(pkgUrl)) {
-                showNotification("This game is cart only", NotificationPanel.NotificationType.INFO);
+                showNotification(I18n.get("notify.cartonly"), NotificationPanel.NotificationType.INFO);
                 return;
             } else if ("NOT REQUIRED".equals(pkgUrl)) {
-                showNotification("No download required", NotificationPanel.NotificationType.INFO);
+                showNotification(I18n.get("notify.notrequired"), NotificationPanel.NotificationType.INFO);
                 return;
             }
 
@@ -440,8 +447,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             // Check if already downloaded
             if (historyManager.isDownloaded(pkgUrl)) {
                 int redownloadOption = JOptionPane.showConfirmDialog(this,
-                        name + " has already been downloaded before.\n\nDo you want to download it again?",
-                        "Already Downloaded",
+                        I18n.get("dialog.redownload.message", name),
+                        I18n.get("dialog.redownload.title"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE);
                 
@@ -451,13 +458,13 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             }
 
             int option = JOptionPane.showConfirmDialog(this,
-                    "Do you want to add " + name + " (" + fileSize + ") to download list?",
-                    "Download List",
+                    I18n.get("dialog.addtolist.message", name, fileSize),
+                    I18n.get("dialog.addtolist.title"),
                     JOptionPane.YES_NO_OPTION);
 
             if (option == JOptionPane.YES_OPTION) {
                 if (downloadList.stream().anyMatch(g -> g.getPkgUrl().equals(pkgUrl))) {
-                    showNotification("Game already in download list", NotificationPanel.NotificationType.WARNING);
+                    showNotification(I18n.get("notify.alreadyinlist"), NotificationPanel.NotificationType.WARNING);
                     return;
                 }
 
@@ -501,7 +508,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
      */
     private void showDownloadListDialog() {
         // Create dialog
-        javax.swing.JDialog dialog = new javax.swing.JDialog(this, "Download Queue", true);
+        javax.swing.JDialog dialog = new javax.swing.JDialog(this, I18n.get("dialog.downloadqueue.title"), true);
         dialog.setSize(900, 500);
         dialog.setLocationRelativeTo(this);
         
@@ -540,32 +547,32 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 10, 10));
         
         // Select All button
-        JButton selectAllButton = new JButton("Select All");
+        JButton selectAllButton = new JButton(I18n.get("button.selectall"));
         selectAllButton.setToolTipText("Select all items in queue");
         selectAllButton.addActionListener(e -> {
             table.selectAll();
         });
         
         // Deselect All button
-        JButton deselectAllButton = new JButton("Deselect All");
+        JButton deselectAllButton = new JButton(I18n.get("button.deselectall"));
         deselectAllButton.setToolTipText("Clear selection");
         deselectAllButton.addActionListener(e -> {
             table.clearSelection();
         });
         
         // Export Queue button
-        JButton exportButton = new JButton("📤 Export");
+        JButton exportButton = new JButton("📤 " + I18n.get("button.export"));
         exportButton.setToolTipText("Export queue to JSON file");
         exportButton.addActionListener(e -> {
             if (downloadList.isEmpty()) {
-                showNotification("Queue is empty, nothing to export", NotificationPanel.NotificationType.WARNING);
+                showNotification(I18n.get("notify.queueemptynoexport"), NotificationPanel.NotificationType.WARNING);
                 return;
             }
             exportQueueToFile();
         });
         
         // Import Queue button
-        JButton importButton = new JButton("📥 Import");
+        JButton importButton = new JButton("📥 " + I18n.get("button.import"));
         importButton.setToolTipText("Import queue from JSON file");
         importButton.addActionListener(e -> {
             importQueueFromFile();
@@ -574,7 +581,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         });
         
         // Move Up button
-        JButton moveUpButton = new JButton("▲ Move Up");
+        JButton moveUpButton = new JButton("▲ " + I18n.get("button.moveup"));
         moveUpButton.setToolTipText("Move selected items up in the queue");
         moveUpButton.addActionListener(e -> {
             int[] selectedRows = table.getSelectedRows();
@@ -597,7 +604,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         });
         
         // Move Down button
-        JButton moveDownButton = new JButton("▼ Move Down");
+        JButton moveDownButton = new JButton("▼ " + I18n.get("button.movedown"));
         moveDownButton.setToolTipText("Move selected items down in the queue");
         moveDownButton.addActionListener(e -> {
             int[] selectedRows = table.getSelectedRows();
@@ -621,19 +628,19 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         });
         
         // Remove button
-        JButton removeButton = new JButton("✖ Remove Selected");
+        JButton removeButton = new JButton("✖ " + I18n.get("button.removeselected"));
         removeButton.setForeground(new Color(200, 50, 50));
         removeButton.setToolTipText("Remove selected games from queue");
         removeButton.addActionListener(e -> {
             int[] selectedRows = table.getSelectedRows();
             if (selectedRows.length == 0) {
-                showNotification("Please select items to remove", NotificationPanel.NotificationType.WARNING);
+                showNotification(I18n.get("notify.selecttoremove"), NotificationPanel.NotificationType.WARNING);
                 return;
             }
             
             int confirm = JOptionPane.showConfirmDialog(dialog, 
-                "Remove " + selectedRows.length + " item(s) from queue?",
-                "Confirm Removal", 
+                I18n.get("dialog.confirmremove.message", selectedRows.length),
+                I18n.get("dialog.confirmremove.title"), 
                 JOptionPane.YES_NO_OPTION);
                 
             if (confirm == JOptionPane.YES_OPTION) {
@@ -647,14 +654,14 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         });
         
         // Clear button
-        JButton clearButton = new JButton("Clear All");
+        JButton clearButton = new JButton(I18n.get("button.clearall"));
         clearButton.setToolTipText("Remove all games from queue");
         clearButton.addActionListener(e -> {
             if (downloadList.isEmpty()) return;
             
             int confirm = JOptionPane.showConfirmDialog(dialog,
-                "Clear all " + downloadList.size() + " item(s) from queue?",
-                "Confirm Clear",
+                I18n.get("dialog.confirmclear.message", downloadList.size()),
+                I18n.get("dialog.confirmclear.title"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
                 
@@ -666,13 +673,13 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         });
         
         // Start Download button
-        JButton downloadButton = new JButton("▶ Start Downloads");
+        JButton downloadButton = new JButton("▶ " + I18n.get("button.startdownloads"));
         downloadButton.setForeground(new Color(34, 139, 34));
         downloadButton.setFont(downloadButton.getFont().deriveFont(java.awt.Font.BOLD));
         downloadButton.setToolTipText("Start downloading all queued games");
         downloadButton.addActionListener(e -> {
             if (downloadList.isEmpty()) {
-                showNotification("The download queue is empty", NotificationPanel.NotificationType.INFO);
+                showNotification(I18n.get("notify.queueempty"), NotificationPanel.NotificationType.INFO);
                 return;
             }
             dialog.dispose();
@@ -680,7 +687,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         });
         
         // Close button
-        JButton closeButton = new JButton("Close");
+        JButton closeButton = new JButton(I18n.get("button.close"));
         closeButton.addActionListener(e -> dialog.dispose());
         
         // Add buttons to panel
@@ -732,7 +739,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
      */
     private void updateDownloadListInfo(javax.swing.JLabel label) {
         if (downloadList.isEmpty()) {
-            label.setText("Queue is empty. Add games from the table above.");
+            label.setText(I18n.get("label.queueempty"));
             return;
         }
         
@@ -779,11 +786,11 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             try (FileWriter writer = new FileWriter(file)) {
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 gson.toJson(downloadList, writer);
-                showNotification("Queue exported successfully to " + file.getName(), 
+                showNotification(I18n.get("notify.queueexported", file.getName()), 
                     NotificationPanel.NotificationType.SUCCESS);
                 log.info("Queue exported to: {}", file.getAbsolutePath());
             } catch (IOException e) {
-                showNotification("Failed to export queue: " + e.getMessage(), 
+                showNotification(I18n.get("notify.exportfailed", e.getMessage()), 
                     NotificationPanel.NotificationType.ERROR);
                 log.error("Error exporting queue", e);
             }
@@ -808,7 +815,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 List<Game> importedGames = gson.fromJson(reader, listType);
                 
                 if (importedGames == null || importedGames.isEmpty()) {
-                    showNotification("No games found in file", NotificationPanel.NotificationType.WARNING);
+                    showNotification(I18n.get("notify.nogamesinfile"), NotificationPanel.NotificationType.WARNING);
                     return;
                 }
                 
@@ -822,18 +829,18 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 }
                 
                 if (addedCount > 0) {
-                    showNotification(addedCount + " game(s) imported successfully", 
+                    showNotification(I18n.get("notify.queueimported", addedCount), 
                         NotificationPanel.NotificationType.SUCCESS);
                     log.info("Imported {} games from: {}", addedCount, file.getAbsolutePath());
                 } else {
-                    showNotification("All games already in queue", NotificationPanel.NotificationType.INFO);
+                    showNotification(I18n.get("notify.alreadyinqueue"), NotificationPanel.NotificationType.INFO);
                 }
             } catch (IOException e) {
-                showNotification("Failed to import queue: " + e.getMessage(), 
+                showNotification(I18n.get("notify.importfailed", e.getMessage()), 
                     NotificationPanel.NotificationType.ERROR);
                 log.error("Error importing queue", e);
             } catch (com.google.gson.JsonSyntaxException e) {
-                showNotification("Invalid JSON format", NotificationPanel.NotificationType.ERROR);
+                showNotification(I18n.get("notify.invalidjson"), NotificationPanel.NotificationType.ERROR);
                 log.error("Invalid JSON in import file", e);
             }
         }
@@ -930,7 +937,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                     Thread.currentThread().interrupt();
                 } catch (java.util.concurrent.ExecutionException e) {
                     log.error("Error loading games for console: {}", consoleName, e.getCause());
-                    showNotification("Error loading games: " + e.getCause().getMessage(), 
+                    showNotification(I18n.get("notify.errorloading", e.getCause().getMessage()), 
                         NotificationPanel.NotificationType.ERROR);
                 } finally {
                     // Restore cursor and enable buttons
@@ -1147,12 +1154,12 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
      */
     private void startDownloads(List<Game> gamesToDownload) {
         if (gamesToDownload.isEmpty()) {
-            showNotification("The download list is empty", NotificationPanel.NotificationType.INFO);
+            showNotification(I18n.get("notify.queueempty"), NotificationPanel.NotificationType.INFO);
             return;
         }
 
         if (downloading) {
-            showNotification("Downloads already in progress", NotificationPanel.NotificationType.WARNING);
+            showNotification(I18n.get("notify.downloadsinprogress"), NotificationPanel.NotificationType.WARNING);
             return;
         }
 
@@ -1160,7 +1167,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         long totalSize = gamesToDownload.stream().mapToLong(Game::getFileSize).sum();
         SystemValidator.ValidationResult validationResult = systemValidator.validateTotalDiskSpace(totalSize, "games");
         if (!validationResult.isValid()) {
-            showNotification(validationResult.getMessage(), NotificationPanel.NotificationType.WARNING);
+            showNotification(I18n.get("notify.insufficientspace"), NotificationPanel.NotificationType.WARNING);
             return;
         }
 
@@ -1377,10 +1384,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     private void cancelDownloads(java.util.Set<String> targets, boolean removeBars, boolean confirmAlways) {
         if (targets == null || targets.isEmpty()) return;
         if (confirmAlways || targets.size() > 1) {
-            String action = removeBars ? "cancel and remove" : "cancel";
+            String messageKey = removeBars ? "dialog.confirmcancel.messageremove" : "dialog.confirmcancel.message";
             int r = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to " + action + " " + targets.size() + " download(s)?",
-                "Confirm Cancel",
+                I18n.get(messageKey, targets.size()),
+                I18n.get("dialog.confirmcancel.title"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
             if (r != JOptionPane.YES_OPTION) return;
@@ -1510,7 +1517,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         if (bar != null) {
             bar.setIndeterminate(false);
             bar.setValue(100);
-            bar.setString("✓ " + game.getTitle() + " – Completed – " + game.getConsole());
+            bar.setString("✓ " + game.getTitle() + " – " + I18n.get("status.completed") + " – " + game.getConsole());
             bar.setForeground(COLOR_COMPLETED);
         }
         
@@ -1539,7 +1546,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         javax.swing.JProgressBar bar = progressBarsByUrl.get(game.getPkgUrl());
         if (bar != null) {
             bar.setIndeterminate(false);
-            bar.setString("⚠ " + game.getTitle() + " – Error – " + game.getConsole());
+            bar.setString("⚠ " + game.getTitle() + " – " + I18n.get("status.error") + " – " + game.getConsole());
         }
         
         // Save to download history
@@ -1566,7 +1573,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         javax.swing.JProgressBar bar = progressBarsByUrl.get(game.getPkgUrl());
         if (bar != null) {
             bar.setIndeterminate(false);
-            bar.setString("✖ " + game.getTitle() + " – Cancelled – " + game.getConsole());
+            bar.setString("✖ " + game.getTitle() + " – " + I18n.get("status.cancelled") + " – " + game.getConsole());
             bar.setForeground(Color.GRAY);
         }
         selectedUrls.remove(game.getPkgUrl());
@@ -1597,7 +1604,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             if (s == null) continue;
             boolean paused = downloadService.isPaused(url);
             if (paused) {
-                if (!s.endsWith("(Paused)")) bar.setString("⏸ " + s + " (Paused)");
+                if (!s.endsWith("(" + I18n.get("status.paused") + ")")) bar.setString("⏸ " + s + " (" + I18n.get("status.paused") + ")");
                 bar.setForeground(Color.GRAY);
             } else {
                 if (s.endsWith("(Paused)")) {
@@ -1630,7 +1637,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         Set<String> targets = selectedUrls.isEmpty() ? progressBarsByUrl.keySet() : selectedUrls;
         boolean anyPaused = false;
         for (String url : targets) { if (downloadService.isPaused(url)) { anyPaused = true; break; } }
-        jbResumeAndPause.setText(anyPaused ? "Continue" : "Pause");
+        jbResumeAndPause.setText(anyPaused ? I18n.get("button.resume") : I18n.get("button.pause"));
     }
 
     /**
@@ -1756,9 +1763,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             // Show notification to user
             SwingUtilities.invokeLater(() -> {
                 int response = JOptionPane.showConfirmDialog(this,
-                    "Found " + savedQueue.size() + " game(s) in download queue from previous session.\n\n" +
-                    "Do you want to view the queue?",
-                    "Queue Restored",
+                    I18n.get("dialog.queuerestored.message", savedQueue.size()),
+                    I18n.get("dialog.queuerestored.title"),
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.INFORMATION_MESSAGE);
                     
@@ -1803,15 +1809,13 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         // Show confirmation dialog to user
         int count = inProgressGames.size();
         if (count > 0) {
-            String message = String.format("Se encontraron %d descarga%s EN PROGRESO de la sesión anterior.\n¿Deseas reanudarlas ahora?",
-                    count, count == 1 ? "" : "s", count == 1 ? "" : "s");
+            String message = I18n.get("dialog.restoredownloads.message", count);
             
             if (hasPendingGames) {
-                message += String.format("\n\nNota: También tienes %d juego%s pendiente%s en la cola que no se iniciarán automáticamente.",
-                        pendingCount, pendingCount == 1 ? "" : "s", pendingCount == 1 ? "" : "s");
+                message += "\n\n" + I18n.get("dialog.restoredownloads.pending", pendingCount);
             }
             
-            int option = JOptionPane.showConfirmDialog(this, message, "Restaurar Descargas en Progreso", 
+            int option = JOptionPane.showConfirmDialog(this, message, I18n.get("dialog.restoredownloads.title"), 
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             
             if (option == JOptionPane.YES_OPTION) {
@@ -1917,15 +1921,15 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 .toList();
 
         if (failedDownloads.isEmpty()) {
-            showNotification("No failed downloads found in history", 
+            showNotification(I18n.get("notify.nofailed"), 
                 NotificationPanel.NotificationType.INFO);
             return;
         }
 
         // Confirm retry
         int result = JOptionPane.showConfirmDialog(this,
-                "Found " + failedDownloads.size() + " failed download(s).\nDo you want to retry all of them?",
-                "Retry Failed Downloads",
+                I18n.get("dialog.retryfailed.message", failedDownloads.size()),
+                I18n.get("dialog.retryfailed.title"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE);
 
@@ -1960,10 +1964,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         updateRetryFailedButton();
 
         if (addedCount > 0) {
-            showNotification(addedCount + " failed download(s) added to queue", 
+            showNotification(I18n.get("notify.failedadded", addedCount), 
                 NotificationPanel.NotificationType.SUCCESS);
         } else {
-            showNotification("No failed downloads could be added (games may no longer be available)", 
+            showNotification(I18n.get("notify.nofailedadded"), 
                 NotificationPanel.NotificationType.WARNING);
         }
     }
@@ -2126,15 +2130,15 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                     if (gameToCancel != null) {
                         int confirm = JOptionPane.showConfirmDialog(
                             Frame.this,
-                            "Cancel download for: " + name + "?",
-                            "Cancel Download",
+                            I18n.get("dialog.canceldownload.message", name),
+                            I18n.get("dialog.canceldownload.title"),
                             JOptionPane.YES_NO_OPTION,
                             JOptionPane.WARNING_MESSAGE
                         );
                         if (confirm == JOptionPane.YES_OPTION) {
                             downloadList.remove(gameToCancel);
                             markDownloadCancelled(gameToCancel);
-                            showNotification("Download cancelled: " + name, NotificationPanel.NotificationType.WARNING);
+                            showNotification(I18n.get("notify.downloadcancelled", name), NotificationPanel.NotificationType.WARNING);
                         }
                     }
                 }

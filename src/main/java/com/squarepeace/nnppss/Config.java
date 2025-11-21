@@ -6,6 +6,7 @@ package com.squarepeace.nnppss;
 
 import com.squarepeace.nnppss.service.ConfigManager;
 import com.squarepeace.nnppss.service.ConfigListener;
+import com.squarepeace.nnppss.util.I18n;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -50,51 +51,66 @@ public class Config extends javax.swing.JFrame {
         ((javax.swing.JSpinner.DefaultEditor)jSpinner_download_speed.getEditor()).getTextField().setColumns(8);
         jCheckBoxAutoCleanup = new javax.swing.JCheckBox();
         jCheckBoxDarkMode = new javax.swing.JCheckBox();
+        jLabel6 = new javax.swing.JLabel();
+        jComboBoxLanguage = new javax.swing.JComboBox<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Configuration");
         setUndecorated(true);
 
-        jLabel1.setText("PSVITA URL:");
+        jLabel1.setText(I18n.get("config.label.psvitaurl"));
 
-        jLabel2.setText("PSP URL:");
+        jLabel2.setText(I18n.get("config.label.pspurl"));
 
-        jbSave.setText("Save");
+        jbSave.setText(I18n.get("button.save"));
         jbSave.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jbSaveActionPerformed(evt);
             }
         });
 
-        jbClear.setText("Clear");
+        jbClear.setText(I18n.get("button.clear"));
         jbClear.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jbClearActionPerformed(evt);
             }
         });
 
-        jbClose.setText("Close");
+        jbClose.setText(I18n.get("button.close"));
         jbClose.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jbCloseActionPerformed(evt);
             }
         });
 
-        jLabel3.setText("PSX URL:");
+        jLabel3.setText(I18n.get("config.label.psxurl"));
 
-        jLabel4.setText("simultaneous downloads:");
+        jLabel4.setText(I18n.get("config.label.simultaneous"));
 
-        jLabel5.setText("Download Speed Limit (KB/s):");
+        jLabel5.setText(I18n.get("config.label.speedlimit"));
         jSpinner_download_speed.setToolTipText("0 for unlimited");
 
-        jCheckBoxAutoCleanup.setText("Auto-delete .pkg files after extraction");
+        jCheckBoxAutoCleanup.setText(I18n.get("config.label.autocleanup"));
         jCheckBoxAutoCleanup.setToolTipText("Automatically delete package files after successful extraction to save disk space");
 
-        jCheckBoxDarkMode.setText("Enable Dark Mode (Experimental)");
+        jCheckBoxDarkMode.setText(I18n.get("config.label.darkmode"));
         jCheckBoxDarkMode.setToolTipText("Toggle dark theme for the application - requires restart");
         jCheckBoxDarkMode.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jCheckBoxDarkModeActionPerformed(evt);
+            }
+        });
+
+        jLabel6.setText(I18n.get("config.label.language"));
+        
+        jComboBoxLanguage.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "English", "Español" }));
+        jComboBoxLanguage.setToolTipText("Select application language");
+        jComboBoxLanguage.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                JOptionPane.showMessageDialog(Config.this,
+                    I18n.get("config.language.message"),
+                    I18n.get("config.language.title"),
+                    JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
@@ -131,12 +147,16 @@ public class Config extends javax.swing.JFrame {
                             .addComponent(jSpinner_download_speed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
+                .addGap(10, 10, 10)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel5)
                     .addComponent(jCheckBoxAutoCleanup)
-                    .addComponent(jCheckBoxDarkMode))
+                    .addComponent(jCheckBoxDarkMode)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel6)
+                        .addGap(10, 10, 10)
+                        .addComponent(jComboBoxLanguage, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -162,6 +182,10 @@ public class Config extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
                     .addComponent(jSpinner_download_speed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel6)
+                    .addComponent(jComboBoxLanguage, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addComponent(jCheckBoxAutoCleanup)
                 .addGap(8, 8, 8)
@@ -190,8 +214,8 @@ public class Config extends javax.swing.JFrame {
         int speedLimit = (Integer) jSpinner_download_speed.getValue();
         if (speedLimit < 0) {
             JOptionPane.showMessageDialog(this, 
-                "Download speed limit cannot be negative. Use 0 for unlimited.", 
-                "Invalid Value", 
+                I18n.get("config.error.speedlimit"), 
+                I18n.get("config.error.title"), 
                 JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -200,8 +224,8 @@ public class Config extends javax.swing.JFrame {
         int simDownloads = (Integer) jSpinner_simultaneous_downloads.getValue();
         if (simDownloads < 1 || simDownloads > 10) {
             JOptionPane.showMessageDialog(this, 
-                "Simultaneous downloads must be between 1 and 10", 
-                "Invalid Value", 
+                I18n.get("config.error.simultaneous"), 
+                I18n.get("config.error.title"), 
                 JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -213,11 +237,17 @@ public class Config extends javax.swing.JFrame {
         configManager.setProperty("downloadSpeedLimit", jSpinner_download_speed.getValue().toString());
         configManager.setProperty("autoCleanupPkg", String.valueOf(jCheckBoxAutoCleanup.isSelected()));
         configManager.setProperty("darkMode", String.valueOf(jCheckBoxDarkMode.isSelected()));
+        
+        // Save language preference
+        String selectedLanguage = (String) jComboBoxLanguage.getSelectedItem();
+        String languageCode = selectedLanguage.equals("English") ? "en" : "es";
+        configManager.setProperty("language", languageCode);
+        
         configManager.saveConfig();
         if (configListener != null) {
             configListener.onConfigSaved();
         }
-        JOptionPane.showMessageDialog(null, "Configuration saved successfully");
+        JOptionPane.showMessageDialog(null, I18n.get("config.saved"));
     }
 
     private void jbCloseActionPerformed(java.awt.event.ActionEvent evt) {
@@ -228,8 +258,8 @@ public class Config extends javax.swing.JFrame {
         // Dark mode will be applied on next restart
         if (jCheckBoxDarkMode.isSelected()) {
             JOptionPane.showMessageDialog(this, 
-                "Dark mode will be enabled after restarting the application.",
-                "Dark Mode", 
+                I18n.get("config.darkmode.message"),
+                I18n.get("config.darkmode.title"), 
                 JOptionPane.INFORMATION_MESSAGE);
         }
     }
@@ -258,6 +288,13 @@ public class Config extends javax.swing.JFrame {
         
         String darkMode = configManager.getProperty("darkMode");
         jCheckBoxDarkMode.setSelected(darkMode != null && Boolean.parseBoolean(darkMode));
+        
+        // Load language preference
+        String languageCode = configManager.getProperty("language");
+        if (languageCode == null) {
+            languageCode = "en";
+        }
+        jComboBoxLanguage.setSelectedItem(languageCode.equals("es") ? "Español" : "English");
     }
 
     
@@ -299,11 +336,13 @@ public class Config extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JCheckBox jCheckBoxAutoCleanup;
     private javax.swing.JCheckBox jCheckBoxDarkMode;
+    private javax.swing.JComboBox<String> jComboBoxLanguage;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JSpinner jSpinner_simultaneous_downloads;
     private javax.swing.JSpinner jSpinner_download_speed;
