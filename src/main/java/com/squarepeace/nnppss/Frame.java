@@ -18,6 +18,8 @@ import com.squarepeace.nnppss.service.DownloadHistoryManager;
 import com.squarepeace.nnppss.service.GameRepository;
 import com.squarepeace.nnppss.service.PackageService;
 import com.squarepeace.nnppss.service.SystemValidator;
+import com.squarepeace.nnppss.ui.NotificationPanel;
+import com.squarepeace.nnppss.ui.GlobalProgressPanel;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -31,10 +33,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.border.LineBorder;
+import javax.swing.GroupLayout;
+import javax.swing.JLayeredPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JMenuItem;
 
@@ -53,6 +59,9 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import javax.swing.SwingWorker;
+import javax.swing.KeyStroke;
+import javax.swing.AbstractAction;
+import java.awt.event.KeyEvent;
 import java.awt.Cursor;
 
 public class Frame extends javax.swing.JFrame implements ActionListener, com.squarepeace.nnppss.service.ConfigListener {
@@ -94,6 +103,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
     private final Map<String, javax.swing.JProgressBar> progressBarsByUrl = new LinkedHashMap<>();
     private JPanel downloadsPanel;
     private JScrollPane downloadsScroll;
+    private NotificationPanel notificationPanel;
+    private GlobalProgressPanel globalProgressPanel;
     private int activeDownloadCount = 0;
     // Tracking for speed calculation per download
     private final Map<String, Long> lastBytesByUrl = new LinkedHashMap<>();
@@ -119,6 +130,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         
         initComponents();
         setupDatabaseManager();
+        setupNotificationAndProgressPanels();
         jbResumeAndPause.setEnabled(false);
         
         // Update Retry Failed button state based on history
@@ -144,6 +156,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 System.exit(0);
             }
         });
+        
+        // Setup keyboard shortcuts
+        setupKeyboardShortcuts();
 
         // Debounced search filtering using DocumentListener + Swing Timer
         final Timer debounceTimer = new Timer(250, e -> {
@@ -397,13 +412,13 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             String pkgUrl = (String) model.getValueAt(modelRowIndex, getColumnIndexByName("PKG direct link"));
             
             if ("MISSING".equals(pkgUrl)) {
-                JOptionPane.showMessageDialog(this, "You cannot download this game because the download link is not registered.", "Error", JOptionPane.ERROR_MESSAGE);
+                showNotification("Download link not registered for this game", NotificationPanel.NotificationType.ERROR);
                 return;
             } else if ("CART ONLY".equals(pkgUrl)) {
-                JOptionPane.showMessageDialog(this, "This game is available in cart only.", "Information", JOptionPane.INFORMATION_MESSAGE);
+                showNotification("This game is cart only", NotificationPanel.NotificationType.INFO);
                 return;
             } else if ("NOT REQUIRED".equals(pkgUrl)) {
-                JOptionPane.showMessageDialog(this, "No download required", "Information", JOptionPane.INFORMATION_MESSAGE);
+                showNotification("No download required", NotificationPanel.NotificationType.INFO);
                 return;
             }
 
@@ -433,7 +448,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
 
             if (option == JOptionPane.YES_OPTION) {
                 if (downloadList.stream().anyMatch(g -> g.getPkgUrl().equals(pkgUrl))) {
-                    JOptionPane.showMessageDialog(this, "The game is already in the download list.");
+                    showNotification("Game already in download list", NotificationPanel.NotificationType.WARNING);
                     return;
                 }
 
@@ -569,7 +584,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         removeButton.addActionListener(e -> {
             int[] selectedRows = table.getSelectedRows();
             if (selectedRows.length == 0) {
-                JOptionPane.showMessageDialog(dialog, "Please select items to remove.", "No Selection", JOptionPane.INFORMATION_MESSAGE);
+                showNotification("Please select items to remove", NotificationPanel.NotificationType.WARNING);
                 return;
             }
             
@@ -614,7 +629,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         downloadButton.setToolTipText("Start downloading all queued games");
         downloadButton.addActionListener(e -> {
             if (downloadList.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "The download queue is empty.", "Empty Queue", JOptionPane.INFORMATION_MESSAGE);
+                showNotification("The download queue is empty", NotificationPanel.NotificationType.INFO);
                 return;
             }
             dialog.dispose();
@@ -786,10 +801,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                     Thread.currentThread().interrupt();
                 } catch (java.util.concurrent.ExecutionException e) {
                     log.error("Error loading games for console: {}", consoleName, e.getCause());
-                    JOptionPane.showMessageDialog(Frame.this, 
-                        "Error loading games: " + e.getCause().getMessage(),
-                        "Loading Error", 
-                        JOptionPane.ERROR_MESSAGE);
+                    showNotification("Error loading games: " + e.getCause().getMessage(), 
+                        NotificationPanel.NotificationType.ERROR);
                 } finally {
                     // Restore cursor and enable buttons
                     setCursor(Cursor.getDefaultCursor());
@@ -1005,12 +1018,12 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
      */
     private void startDownloads(List<Game> gamesToDownload) {
         if (gamesToDownload.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "The download list is empty.");
+            showNotification("The download list is empty", NotificationPanel.NotificationType.INFO);
             return;
         }
 
         if (downloading) {
-            JOptionPane.showMessageDialog(this, "Downloads in progress.");
+            showNotification("Downloads already in progress", NotificationPanel.NotificationType.WARNING);
             return;
         }
 
@@ -1018,8 +1031,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         long totalSize = gamesToDownload.stream().mapToLong(Game::getFileSize).sum();
         SystemValidator.ValidationResult validationResult = systemValidator.validateTotalDiskSpace(totalSize, "games");
         if (!validationResult.isValid()) {
-            JOptionPane.showMessageDialog(this, validationResult.getMessage(), 
-                "Insufficient Disk Space", JOptionPane.WARNING_MESSAGE);
+            showNotification(validationResult.getMessage(), NotificationPanel.NotificationType.WARNING);
             return;
         }
 
@@ -1030,6 +1042,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         queueManager.clearQueue();
 
         resetDownloadUI(gamesToDownload);
+        
+        // Start global progress tracking
+        globalProgressPanel.startDownloads(gamesToDownload.size(), totalSize);
 
         final int concurrency = Math.max(1, configManager.getSimultaneousDownloads());
         downloadExecutor = Executors.newFixedThreadPool(concurrency);
@@ -1270,6 +1285,12 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         if (bar == null) return;
         long now = System.currentTimeMillis();
         
+        // Update global progress with current total downloaded bytes
+        long totalDownloaded = progressBarsByUrl.values().stream()
+            .mapToLong(b -> (long)((b.getValue() / 100.0) * b.getMaximum()))
+            .sum();
+        globalProgressPanel.updateProgress(totalDownloaded);
+        
         // Initialize start time if first call
         downloadStartTimeByUrl.putIfAbsent(game.getPkgUrl(), now);
         
@@ -1366,6 +1387,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         historyManager.addEntry(entry);
         log.info("Download completed and saved to history: {}", game.getTitle());
         
+        // Update global progress
+        globalProgressPanel.gameCompleted();
+        showNotification(game.getTitle() + " downloaded successfully", NotificationPanel.NotificationType.SUCCESS);
+        
         activeDownloadCount--;
         checkAllDownloadsFinished();
         saveDownloadState(); // Save state after completion
@@ -1389,6 +1414,9 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         entry.setFilePath("");
         historyManager.addEntry(entry);
         log.warn("Download failed and saved to history: {}", game.getTitle());
+        
+        // Show error notification
+        showNotification(game.getTitle() + " download failed", NotificationPanel.NotificationType.ERROR);
         
         activeDownloadCount--;
         checkAllDownloadsFinished();
@@ -1416,6 +1444,10 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             downloading = false;
             jbResumeAndPause.setEnabled(false);
             downloadList.clear();
+            
+            // Reset global progress panel
+            globalProgressPanel.reset();
+            showNotification("All downloads completed", NotificationPanel.NotificationType.SUCCESS);
         }
     }
 
@@ -1740,10 +1772,8 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 .toList();
 
         if (failedDownloads.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "No failed downloads found in history.",
-                    "No Failed Downloads",
-                    JOptionPane.INFORMATION_MESSAGE);
+            showNotification("No failed downloads found in history", 
+                NotificationPanel.NotificationType.INFO);
             return;
         }
 
@@ -1785,15 +1815,11 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         updateRetryFailedButton();
 
         if (addedCount > 0) {
-            JOptionPane.showMessageDialog(this,
-                    addedCount + " failed download(s) added to queue.",
-                    "Downloads Added",
-                    JOptionPane.INFORMATION_MESSAGE);
+            showNotification(addedCount + " failed download(s) added to queue", 
+                NotificationPanel.NotificationType.SUCCESS);
         } else {
-            JOptionPane.showMessageDialog(this,
-                    "No failed downloads could be added (games may no longer be available).",
-                    "No Downloads Added",
-                    JOptionPane.WARNING_MESSAGE);
+            showNotification("No failed downloads could be added (games may no longer be available)", 
+                NotificationPanel.NotificationType.WARNING);
         }
     }
 
@@ -1878,6 +1904,132 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         }
     }
 
+    /**
+     * Setup keyboard shortcuts for quick actions
+     */
+    private void setupKeyboardShortcuts() {
+        // Ctrl+F: Focus search field
+        getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_F, java.awt.event.InputEvent.CTRL_DOWN_MASK), "focusSearch");
+        getRootPane().getActionMap().put("focusSearch", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jtfSearch.requestFocusInWindow();
+                jtfSearch.selectAll();
+            }
+        });
+        
+        // Ctrl+D: Add selected game to download queue (simulates double-click)
+        getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_D, java.awt.event.InputEvent.CTRL_DOWN_MASK), "addToQueue");
+        getRootPane().getActionMap().put("addToQueue", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = jtData.getSelectedRow();
+                if (selectedRow != -1) {
+                    // Trigger the same logic as double-clicking the row
+                    jtDataMousePressed(null);
+                }
+            }
+        });
+        
+        // Ctrl+L: View download list
+        getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_L, java.awt.event.InputEvent.CTRL_DOWN_MASK), "viewDownloadList");
+        getRootPane().getActionMap().put("viewDownloadList", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jbDownloadListActionPerformed(null);
+            }
+        });
+        
+        // Space: Pause/Resume downloads (only when downloads are active)
+        getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "togglePauseResume");
+        getRootPane().getActionMap().put("togglePauseResume", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Only trigger if not focused on a text component or table
+                Component focused = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+                if (!(focused instanceof javax.swing.text.JTextComponent) && 
+                    !(focused instanceof javax.swing.JTable) &&
+                    jbResumeAndPause.isEnabled()) {
+                    jbResumeAndPauseActionPerformed(null);
+                }
+            }
+        });
+        
+        // Delete: Cancel selected download (when download list is visible)
+        jtData.getInputMap(javax.swing.JComponent.WHEN_FOCUSED)
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "cancelDownload");
+        jtData.getActionMap().put("cancelDownload", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = jtData.getSelectedRow();
+                if (selectedRow != -1 && downloading) {
+                    int modelRow = jtData.convertRowIndexToModel(selectedRow);
+                    DefaultTableModel model = (DefaultTableModel) jtData.getModel();
+                    String pkgUrl = (String) model.getValueAt(modelRow, getColumnIndexByName("PKG direct link"));
+                    String name = (String) model.getValueAt(modelRow, getColumnIndexByName("Name"));
+                    
+                    // Find the game in download list
+                    Game gameToCancel = downloadList.stream()
+                        .filter(g -> g.getPkgUrl().equals(pkgUrl))
+                        .findFirst()
+                        .orElse(null);
+                    
+                    if (gameToCancel != null) {
+                        int confirm = JOptionPane.showConfirmDialog(
+                            Frame.this,
+                            "Cancel download for: " + name + "?",
+                            "Cancel Download",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.WARNING_MESSAGE
+                        );
+                        if (confirm == JOptionPane.YES_OPTION) {
+                            downloadList.remove(gameToCancel);
+                            markDownloadCancelled(gameToCancel);
+                            showNotification("Download cancelled: " + name, NotificationPanel.NotificationType.WARNING);
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    /**
+     * Setup notification and progress panels
+     */
+    private void setupNotificationAndProgressPanels() {
+        // Initialize notification panel
+        notificationPanel = new NotificationPanel();
+        notificationPanel.setBounds(10, 10, 420, 200);
+        
+        // Initialize global progress panel
+        globalProgressPanel = new GlobalProgressPanel();
+        
+        // Add as layered components
+        JLayeredPane layeredPane = getRootPane().getLayeredPane();
+        layeredPane.add(notificationPanel, JLayeredPane.PALETTE_LAYER);
+        
+        // Add global progress to main content
+        Container contentPane = getContentPane();
+        if (contentPane.getLayout() instanceof GroupLayout) {
+            // Will be added to layout in initComponents
+        } else {
+            contentPane.add(globalProgressPanel, BorderLayout.SOUTH);
+        }
+    }
+    
+    /**
+     * Show a notification message
+     */
+    private void showNotification(String message, NotificationPanel.NotificationType type) {
+        if (notificationPanel != null) {
+            notificationPanel.showNotification(message, type);
+        }
+    }
+    
     /**
      * Setup DatabaseManager listeners and check initial availability
      */
