@@ -15,6 +15,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.squarepeace.nnppss.model.DownloadHistory;
+import com.squarepeace.nnppss.util.PathResolver;
 
 public class DownloadHistoryManager {
     private static final Logger log = LoggerFactory.getLogger(DownloadHistoryManager.class);
@@ -26,7 +27,7 @@ public class DownloadHistoryManager {
     }
 
     public List<DownloadHistory> loadHistory() {
-        File file = new File(HISTORY_FILE);
+        File file = PathResolver.getFile(HISTORY_FILE);
         if (!file.exists()) {
             //log.debug("No download history file found: {}", HISTORY_FILE);
             return new ArrayList<>();
@@ -54,7 +55,7 @@ public class DownloadHistoryManager {
             history = new ArrayList<>();
         }
 
-        try (FileWriter writer = new FileWriter(HISTORY_FILE)) {
+        try (FileWriter writer = new FileWriter(PathResolver.getFile(HISTORY_FILE))) {
             gson.toJson(history, writer);
             log.debug("Saved {} download history entries to: {}", history.size(), HISTORY_FILE);
         } catch (IOException e) {

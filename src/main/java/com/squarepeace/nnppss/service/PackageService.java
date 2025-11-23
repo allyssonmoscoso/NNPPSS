@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.squarepeace.nnppss.model.Console;
+import com.squarepeace.nnppss.util.PathResolver;
 
 public class PackageService {
     private static final Logger log = LoggerFactory.getLogger(PackageService.class);
@@ -49,21 +50,21 @@ public class PackageService {
         log.debug("Building extraction command for OS: {}", os);
 
         if (os.contains("win")) {
-            String exePath = "lib" + fileSeparator + "pkg2zip.exe";
-            String pkgPath = "games" + fileSeparator + pkgName;
+            String exePath = PathResolver.getFile("lib" + fileSeparator + "pkg2zip.exe").getAbsolutePath();
+            String pkgPath = PathResolver.getFile("packages" + fileSeparator + pkgName).getAbsolutePath();
             
             if (console == Console.PSVITA) {
-                command = exePath + " -x " + pkgPath + " " + zRifKey;
+                command = "\"" + exePath + "\" -x \"" + pkgPath + "\" " + zRifKey;
             } else {
-                command = exePath + " " + pkgPath;
+                command = "\"" + exePath + "\" \"" + pkgPath + "\"";
             }
         } else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
             if (isCommandInstalled("pkg2zip")) {
-                String pkgPath = "games" + fileSeparator + pkgName;
+                String pkgPath = PathResolver.getFile("packages" + fileSeparator + pkgName).getAbsolutePath();
                 if (console == Console.PSVITA) {
-                    command = "pkg2zip -x " + pkgPath + " " + zRifKey;
+                    command = "pkg2zip -x \"" + pkgPath + "\" " + zRifKey;
                 } else {
-                    command = "pkg2zip " + pkgPath;
+                    command = "pkg2zip \"" + pkgPath + "\"";
                 }
             } else {
                 log.error("pkg2zip is not installed on system");
@@ -164,8 +165,8 @@ public class PackageService {
     
     private void cleanupPkgFile(String pkgName) {
         String fileSeparator = System.getProperty("file.separator");
-        String pkgPath = "games" + fileSeparator + pkgName;
-        File pkgFile = new File(pkgPath);
+        String pkgPath = "packages" + fileSeparator + pkgName;
+        File pkgFile = PathResolver.getFile(pkgPath);
         
         if (pkgFile.exists()) {
             boolean deleted = pkgFile.delete();

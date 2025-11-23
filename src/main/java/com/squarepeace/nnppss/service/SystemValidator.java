@@ -1,9 +1,11 @@
 package com.squarepeace.nnppss.service;
 
+import java.io.File;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import com.squarepeace.nnppss.util.PathResolver;
 
 /**
  * Service for validating system resources before downloads
@@ -25,12 +27,12 @@ public class SystemValidator {
      * @return ValidationResult with status and message
      */
     public ValidationResult validateDiskSpace(long downloadSizeBytes, String destinationPath) {
-        File destination = new File(destinationPath);
+        File destination = PathResolver.getFile(destinationPath);
         File parentDir = destination.getParentFile();
         
-        // If parent dir doesn't exist or is null, use current directory
+        // If parent dir doesn't exist or is null, use base directory
         if (parentDir == null || !parentDir.exists()) {
-            parentDir = new File(".");
+            parentDir = PathResolver.getFile(".");
         }
         
         long usableSpace = parentDir.getUsableSpace();
@@ -64,9 +66,9 @@ public class SystemValidator {
      * Get formatted free space string
      */
     public String getFreeDiskSpaceFormatted(String path) {
-        File dir = new File(path);
+        File dir = PathResolver.getFile(path);
         if (!dir.exists()) {
-            dir = new File(".");
+            dir = PathResolver.getFile(".");
         }
         
         long freeSpace = dir.getUsableSpace();

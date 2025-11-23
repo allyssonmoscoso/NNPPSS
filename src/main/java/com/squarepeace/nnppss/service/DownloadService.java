@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.squarepeace.nnppss.util.PathResolver;
+
 public class DownloadService {
     private static final Logger log = LoggerFactory.getLogger(DownloadService.class);
     private static final int MAX_RETRIES = 3;
@@ -82,7 +84,7 @@ public class DownloadService {
     }
 
     private void downloadFileWithRetry(String fileURL, String destinationPath, DownloadListener listener, int attempt) {
-        File destinationFile = new File(destinationPath);
+        File destinationFile = PathResolver.getFile(destinationPath);
         File parentDir = destinationFile.getParentFile();
         if (!parentDir.exists()) {
             parentDir.mkdirs();

@@ -15,6 +15,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.squarepeace.nnppss.model.Game;
+import com.squarepeace.nnppss.util.PathResolver;
 
 /**
  * Manager for persisting the download queue (pending downloads)
@@ -32,7 +33,7 @@ public class DownloadQueueManager {
      * Load the download queue from disk
      */
     public List<Game> loadQueue() {
-        File file = new File(QUEUE_FILE);
+        File file = PathResolver.getFile(QUEUE_FILE);
         if (!file.exists()) {
             log.debug("No download queue file found: {}", QUEUE_FILE);
             return new ArrayList<>();
@@ -63,7 +64,7 @@ public class DownloadQueueManager {
             queue = new ArrayList<>();
         }
 
-        try (FileWriter writer = new FileWriter(QUEUE_FILE)) {
+        try (FileWriter writer = new FileWriter(PathResolver.getFile(QUEUE_FILE))) {
             gson.toJson(queue, writer);
             log.debug("Saved {} games to download queue: {}", queue.size(), QUEUE_FILE);
         } catch (IOException e) {
@@ -83,7 +84,7 @@ public class DownloadQueueManager {
      * Check if queue file exists and has content
      */
     public boolean hasQueuedDownloads() {
-        File file = new File(QUEUE_FILE);
+        File file = PathResolver.getFile(QUEUE_FILE);
         return file.exists() && file.length() > 0;
     }
 }
