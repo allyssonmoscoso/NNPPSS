@@ -21,6 +21,7 @@ import com.squarepeace.nnppss.service.PackageService;
 import com.squarepeace.nnppss.service.SystemValidator;
 import com.squarepeace.nnppss.ui.NotificationPanel;
 import com.squarepeace.nnppss.ui.GlobalProgressPanel;
+import com.squarepeace.nnppss.util.PathResolver;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -762,7 +763,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             downloadList.size(), totalGB);
         
         // Check available disk space
-        File gamesDir = new File("games");
+        File gamesDir = PathResolver.getFile("packages");
         if (gamesDir.exists()) {
             long freeSpace = gamesDir.getFreeSpace();
             double freeGB = freeSpace / (1024.0 * 1024.0 * 1024.0);
@@ -1177,7 +1178,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
 
         // Validate disk space before starting downloads
         long totalSize = gamesToDownload.stream().mapToLong(Game::getFileSize).sum();
-        SystemValidator.ValidationResult validationResult = systemValidator.validateTotalDiskSpace(totalSize, "games");
+        SystemValidator.ValidationResult validationResult = systemValidator.validateTotalDiskSpace(totalSize, "packages");
         if (!validationResult.isValid()) {
             showNotification(I18n.get("notify.insufficientspace"), NotificationPanel.NotificationType.WARNING);
             return;
@@ -1200,7 +1201,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         for (Game game : gamesToDownload) {
             downloadExecutor.submit(() -> {
                 String fileName = game.getFileName();
-                String destPath = "games/" + fileName;
+                String destPath = "packages/" + fileName;
                 downloadService.downloadFile(game.getPkgUrl(), destPath, new DownloadService.DownloadListener() {
                     @Override
                     public void onProgress(long bytesDownloaded, long totalBytes) {
@@ -1536,7 +1537,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
         entry.setConsole(game.getConsole().toString());
         entry.setStatus("completed");
         entry.setDownloadDate(System.currentTimeMillis());
-        entry.setFilePath("games/" + game.getConsole().toString());
+        entry.setFilePath("packages/" + game.getConsole().toString());
         historyManager.addEntry(entry);
         log.info("Download completed and saved to history: {}", game.getTitle());
         
@@ -1699,7 +1700,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             state.setTotalBytes(game.getFileSize());
             
             // File path
-            state.setFilePath("games/" + game.getFileName());
+            state.setFilePath("packages/" + game.getFileName());
             
             // State flags
             boolean paused = downloadService.isPaused(url);
