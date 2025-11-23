@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.squarepeace.nnppss.model.Console;
+import com.squarepeace.nnppss.util.PathResolver;
 
 /**
  * Manages database files for game consoles.
@@ -70,26 +71,19 @@ public class DatabaseManager {
     }
     
     /**
-     * Check if a console database is available (exists locally or can be downloaded)
+     * Check if a console database is available (exists locally)
      */
     private boolean checkConsoleAvailability(Console console) {
         String dbFileName = getDbFileName(console);
-        File dbFile = new File(DB_FOLDER, dbFileName);
+        File dbFile = new File(PathResolver.getFile(DB_FOLDER), dbFileName);
         
-        // Check if file exists locally
+        // Only return true if file exists locally
         if (dbFile.exists() && dbFile.length() > 0) {
             log.debug("Database file exists locally: {}", dbFileName);
             return true;
         }
         
-        // Check if URL is available
-        String url = getConsoleUrl(console);
-        if (url == null || url.trim().isEmpty()) {
-            log.warn("No URL configured for console: {}", console);
-            return false;
-        }
-        
-        return isUrlAccessible(url);
+        return false;
     }
     
     /**
@@ -126,18 +120,15 @@ public class DatabaseManager {
         String url = getConsoleUrl(console);
         
         if (url == null || url.trim().isEmpty()) {
-            log.error("No URL configured for console: {}", console);
+            log.warn("No URL configured for console: {}. Please configure it in Settings.", console);
             future.complete(false);
             return future;
         }
         
         String dbFileName = getDbFileName(console);
-        File dbFolder = new File(DB_FOLDER);
-        if (!dbFolder.exists()) {
-            dbFolder.mkdirs();
-        }
+        PathResolver.ensureDirectory(DB_FOLDER);
         
-        String destPath = DB_FOLDER + File.separator + dbFileName;
+        String destPath = PathResolver.getFile(DB_FOLDER).getAbsolutePath() + File.separator + dbFileName;
         notifyDownloadProgress(console, "Starting download for " + console.getDisplayName());
         log.info("Downloading database for {}: {} -> {}", console, url, destPath);
         

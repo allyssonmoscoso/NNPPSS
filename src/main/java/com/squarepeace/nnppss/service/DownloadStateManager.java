@@ -16,6 +16,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.squarepeace.nnppss.model.DownloadState;
+import com.squarepeace.nnppss.util.PathResolver;
 
 public class DownloadStateManager {
     private static final Logger log = LoggerFactory.getLogger(DownloadStateManager.class);
@@ -32,7 +33,7 @@ public class DownloadStateManager {
      * @return List of DownloadState objects, or empty list if file doesn't exist or error occurs
      */
     public List<DownloadState> loadStates() {
-        File file = new File(STATE_FILE);
+        File file = PathResolver.getFile(STATE_FILE);
         if (!file.exists()) {
             log.debug("No download state file found: {}", STATE_FILE);
             return new ArrayList<>();
@@ -72,7 +73,7 @@ public class DownloadStateManager {
             states = new ArrayList<>();
         }
 
-        try (FileWriter writer = new FileWriter(STATE_FILE)) {
+        try (FileWriter writer = new FileWriter(PathResolver.getFile(STATE_FILE))) {
             gson.toJson(states, writer);
             log.debug("Saved {} download states to: {}", states.size(), STATE_FILE);
         } catch (IOException e) {
@@ -94,7 +95,7 @@ public class DownloadStateManager {
      * Delete the state file
      */
     public void clearStates() {
-        File file = new File(STATE_FILE);
+        File file = PathResolver.getFile(STATE_FILE);
         if (file.exists()) {
             boolean deleted = file.delete();
             if (deleted) {
@@ -110,7 +111,7 @@ public class DownloadStateManager {
      * @return true if state file exists and contains valid states
      */
     public boolean hasStates() {
-        File file = new File(STATE_FILE);
+        File file = PathResolver.getFile(STATE_FILE);
         if (!file.exists() || file.length() == 0) {
             return false;
         }

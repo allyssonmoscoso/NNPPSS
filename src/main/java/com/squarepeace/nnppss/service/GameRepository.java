@@ -1,8 +1,5 @@
 package com.squarepeace.nnppss.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -13,8 +10,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.squarepeace.nnppss.model.Console;
 import com.squarepeace.nnppss.model.Game;
+import com.squarepeace.nnppss.util.PathResolver;
 
 public class GameRepository {
     private static final Logger log = LoggerFactory.getLogger(GameRepository.class);
@@ -24,7 +25,13 @@ public class GameRepository {
         List<Game> games = new ArrayList<>();
         String filePath = console.getDbPath();
 
-        try (BufferedReader reader = Files.newBufferedReader(Path.of(filePath), StandardCharsets.UTF_8)) {
+        Path path = PathResolver.resolve(filePath);
+        if (!Files.exists(path)) {
+            log.warn("Database file not found for console: {} at {}", console, path);
+            return games;
+        }
+
+        try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
             String headerLine = reader.readLine();
             if (headerLine == null) {
                 log.warn("Empty database file for console: {}", console);

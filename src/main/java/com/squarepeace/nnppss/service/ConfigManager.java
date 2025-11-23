@@ -1,13 +1,15 @@
 package com.squarepeace.nnppss.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.squarepeace.nnppss.util.PathResolver;
 
 public class ConfigManager {
     private static final Logger log = LoggerFactory.getLogger(ConfigManager.class);
@@ -20,7 +22,7 @@ public class ConfigManager {
     }
 
     private void loadConfig() {
-        File file = new File(CONFIG_FILE);
+        File file = PathResolver.getFile(CONFIG_FILE);
         if (!file.exists()) {
             log.info("Config file not found, creating default configuration");
             createDefaultConfig();
@@ -44,7 +46,7 @@ public class ConfigManager {
     }
 
     public void saveConfig() {
-        try (FileOutputStream fos = new FileOutputStream(CONFIG_FILE)) {
+        try (FileOutputStream fos = new FileOutputStream(PathResolver.getFile(CONFIG_FILE))) {
             properties.store(fos, "NNPPSS Configuration");
             log.info("Configuration saved to {}", CONFIG_FILE);
         } catch (IOException e) {
