@@ -8,11 +8,17 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.squarepeace.nnppss.model.download.DownloadMetadata;
+import com.squarepeace.nnppss.service.download.ResourceAnalyzer;
+import com.squarepeace.nnppss.service.download.SegmentStateManager;
+import com.squarepeace.nnppss.service.download.SegmentedDownloadTask;
 import com.squarepeace.nnppss.util.PathResolver;
 
 public class DownloadService {
@@ -25,6 +31,14 @@ public class DownloadService {
     private final ConcurrentMap<String, AtomicBoolean> cancelledByUrl = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Integer> retryCountByUrl = new ConcurrentHashMap<>();
     private final ConfigManager configManager;
+    
+    // Valid for lifetime of application
+    private final ResourceAnalyzer resourceAnalyzer = new ResourceAnalyzer();
+    private final SegmentStateManager segmentStateManager = new SegmentStateManager();
+    private final ExecutorService segmentExecutor = Executors.newCachedThreadPool(); // Manages segment threads
+
+    // Keep track of active tasks to forward pause/cancel events
+    private final ConcurrentMap<String, SegmentedDownloadTask> activeTasks = new ConcurrentHashMap<>();
 
     public DownloadService(ConfigManager configManager) {
         this.configManager = configManager;
@@ -45,6 +59,7 @@ public class DownloadService {
         void onComplete(File file);
         void onError(Exception e);
         default void onCancelled() {}
+        default void onSegmentProgress(java.util.List<com.squarepeace.nnppss.model.download.Segment> segments) {}
     }
 
     public void setPaused(boolean paused) { // legacy global
@@ -57,11 +72,19 @@ public class DownloadService {
 
     public void pauseUrl(String url) {
         pausedByUrl.computeIfAbsent(url, k -> new AtomicBoolean(false)).set(true);
+        SegmentedDownloadTask task = activeTasks.get(url);
+        if (task != null) task.pause();
     }
 
     public void resumeUrl(String url) {
         AtomicBoolean flag = pausedByUrl.get(url);
         if (flag != null) flag.set(false);
+        
+        // Propagate resume to active task if it exists
+        SegmentedDownloadTask task = activeTasks.get(url);
+        if (task != null) {
+            task.resume();
+        }
     }
 
     public boolean isPaused(String url) {
@@ -71,6 +94,8 @@ public class DownloadService {
 
     public void cancelUrl(String url) {
         cancelledByUrl.computeIfAbsent(url, k -> new AtomicBoolean(false)).set(true);
+        SegmentedDownloadTask task = activeTasks.get(url);
+        if (task != null) task.cancel();
     }
 
     public boolean isCancelled(String url) {
@@ -85,6 +110,7 @@ public class DownloadService {
 
     private void downloadFileWithRetry(String fileURL, String destinationPath, DownloadListener listener, int attempt) {
         File destinationFile = PathResolver.getFile(destinationPath);
+        String absoluteDestPath = destinationFile.getAbsolutePath();
         File parentDir = destinationFile.getParentFile();
         if (!parentDir.exists()) {
             parentDir.mkdirs();
@@ -92,9 +118,59 @@ public class DownloadService {
 
         try {
             log.info("Starting download: {} (attempt {}/{})", fileURL, attempt + 1, MAX_RETRIES + 1);
-            URL url = new URL(fileURL);
+            
+            // Initialize flags
             pausedByUrl.computeIfAbsent(fileURL, k -> new AtomicBoolean(false));
             cancelledByUrl.computeIfAbsent(fileURL, k -> new AtomicBoolean(false));
+            
+            // Try Segmented Download first
+            boolean useSegmented = true;
+            DownloadMetadata metadata = segmentStateManager.loadState(absoluteDestPath);
+            
+            if (metadata == null) {
+                try {
+                    metadata = resourceAnalyzer.analyze(fileURL, absoluteDestPath);
+                } catch (IOException e) {
+                    log.warn("Analyzer failed for {}, falling back to legacy", fileURL);
+                    useSegmented = false;
+                }
+            } else {
+                // Verify URL hasn't changed?
+                if (!metadata.getUrl().equals(fileURL)) {
+                    useSegmented = false; // Metadata does not match logic
+                }
+            }
+            
+            if (useSegmented && metadata != null && metadata.isResumable()) {
+                 log.info("Using Segmented Download for {}", fileURL);
+                 SegmentedDownloadTask task = new SegmentedDownloadTask(
+                     metadata, 
+                     listener, 
+                     configManager, 
+                     segmentStateManager, 
+                     segmentExecutor
+                 );
+                 activeTasks.put(fileURL, task);
+                 
+                 // Sync state
+                 if (isPaused(fileURL) || paused.get()) task.pause();
+                 if (isCancelled(fileURL)) task.cancel();
+                 
+                 try {
+                     task.call();
+                     return; // Success
+                 } catch (Exception e) {
+                     log.error("Segmented download failed, falling back to legacy or retry if appropriate", e);
+                     // If segmented failed, should we retry segmented? Usually yes.
+                     // Throwing exception here triggers the retry catch block below.
+                     throw new IOException(e);
+                 } finally {
+                     activeTasks.remove(fileURL);
+                 }
+            }
+            
+            // Legacy implementation begins here
+            URL url = new URL(fileURL);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setInstanceFollowRedirects(true);
             connection.setConnectTimeout(15000);

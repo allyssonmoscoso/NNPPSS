@@ -73,6 +73,7 @@ import com.google.gson.reflect.TypeToken;
 import java.io.FileWriter;
 import java.io.FileReader;
 import java.io.IOException;
+import com.squarepeace.nnppss.ui.SegmentedProgressBar;
 
 public class Frame extends javax.swing.JFrame implements ActionListener, com.squarepeace.nnppss.service.ConfigListener {
     private static final Logger log = LoggerFactory.getLogger(Frame.class);
@@ -1207,6 +1208,17 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                     public void onProgress(long bytesDownloaded, long totalBytes) {
                         SwingUtilities.invokeLater(() -> updateDownloadProgress(game, bytesDownloaded, totalBytes));
                     }
+
+                    @Override
+                    public void onSegmentProgress(java.util.List<com.squarepeace.nnppss.model.download.Segment> segments) {
+                        SwingUtilities.invokeLater(() -> {
+                            javax.swing.JProgressBar bar = progressBarsByUrl.get(game.getPkgUrl());
+                            if (bar instanceof SegmentedProgressBar) {
+                                ((SegmentedProgressBar) bar).setSegments(segments, game.getFileSize());
+                            }
+                        });
+                    }
+
                     @Override
                     public void onComplete(File file) {
                         SwingUtilities.invokeLater(() -> {
@@ -1271,7 +1283,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             activeDownloadCount = games.size();
             java.util.HashSet<String> newUrls = new java.util.HashSet<>();
             for (Game g : games) {
-                javax.swing.JProgressBar bar = new javax.swing.JProgressBar();
+                SegmentedProgressBar bar = new SegmentedProgressBar();
                 bar.setStringPainted(true);
                 bar.setIndeterminate(true);
                 bar.setString(g.getTitle() + " – Starting… – " + g.getConsole());
@@ -1282,6 +1294,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 lastProgressPercentByUrl.put(g.getPkgUrl(), -1);
                 originalBarColorByUrl.put(g.getPkgUrl(), bar.getForeground());
                 bar.putClientProperty("url", g.getPkgUrl());
+                bar.putClientProperty("filePath", "packages/" + g.getFileName());
                 newUrls.add(g.getPkgUrl());
                 downloadOrderUrls.add(g.getPkgUrl());
                 bar.addMouseListener(new MouseAdapter() {
@@ -1362,11 +1375,13 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             for (String url : targets) downloadService.pauseUrl(url);
             refreshPauseVisualsPerBar();
             updatePauseButtonText();
+            saveDownloadState(); // Save state after pause
         });
         continueItem.addActionListener(ae -> {
             for (String url : targets) if (downloadService.isPaused(url)) downloadService.resumeUrl(url);
             refreshPauseVisualsPerBar();
             updatePauseButtonText();
+            saveDownloadState(); // Save state after resume
         });
         clearSel.addActionListener(ae -> {
             selectedUrls.clear();
@@ -1410,6 +1425,27 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             if (removeBars) {
                 javax.swing.JProgressBar bar = progressBarsByUrl.remove(url);
                 if (bar != null) {
+                    // Logic to remove physical files
+                    Object destPathObj = bar.getClientProperty("filePath");
+                    if (destPathObj instanceof String) {
+                        String destPath = (String) destPathObj;
+                        try {
+                            File file = PathResolver.getFile(destPath);
+                            File partFile = PathResolver.getFile(destPath + ".part.json");
+                            
+                            // 1. Delete partial file (.pkg)
+                            if (file.exists() && file.delete()) {
+                                log.info("Deleted partial file: {}", file.getAbsolutePath());
+                            }
+                            
+                            // 2. Delete state file (.part.json)
+                            if (partFile.exists() && partFile.delete()) {
+                                log.info("Deleted state file: {}", partFile.getAbsolutePath());
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to clean up files for cancelled download: {}", destPath, e);
+                        }
+                    }
                     downloadsPanel.remove(bar);
                 }
                 originalBarColorByUrl.remove(url);
