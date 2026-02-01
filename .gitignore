@@ -165,3 +165,4 @@ config.properties
 .classpath
 .project
 .settings/*
+.github/*
