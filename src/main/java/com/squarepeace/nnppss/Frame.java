@@ -1294,6 +1294,7 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
                 lastProgressPercentByUrl.put(g.getPkgUrl(), -1);
                 originalBarColorByUrl.put(g.getPkgUrl(), bar.getForeground());
                 bar.putClientProperty("url", g.getPkgUrl());
+                bar.putClientProperty("filePath", "packages/" + g.getFileName());
                 newUrls.add(g.getPkgUrl());
                 downloadOrderUrls.add(g.getPkgUrl());
                 bar.addMouseListener(new MouseAdapter() {
@@ -1424,6 +1425,27 @@ public class Frame extends javax.swing.JFrame implements ActionListener, com.squ
             if (removeBars) {
                 javax.swing.JProgressBar bar = progressBarsByUrl.remove(url);
                 if (bar != null) {
+                    // Logic to remove physical files
+                    Object destPathObj = bar.getClientProperty("filePath");
+                    if (destPathObj instanceof String) {
+                        String destPath = (String) destPathObj;
+                        try {
+                            File file = PathResolver.getFile(destPath);
+                            File partFile = PathResolver.getFile(destPath + ".part.json");
+                            
+                            // 1. Delete partial file (.pkg)
+                            if (file.exists() && file.delete()) {
+                                log.info("Deleted partial file: {}", file.getAbsolutePath());
+                            }
+                            
+                            // 2. Delete state file (.part.json)
+                            if (partFile.exists() && partFile.delete()) {
+                                log.info("Deleted state file: {}", partFile.getAbsolutePath());
+                            }
+                        } catch (Exception e) {
+                            log.warn("Failed to clean up files for cancelled download: {}", destPath, e);
+                        }
+                    }
                     downloadsPanel.remove(bar);
                 }
                 originalBarColorByUrl.remove(url);
