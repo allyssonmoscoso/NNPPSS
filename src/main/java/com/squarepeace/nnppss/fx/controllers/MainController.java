@@ -109,17 +109,24 @@ public class MainController {
 
             @Override
             public void onDownloadProgress(Console console, String message) {
-                Platform.runLater(() -> notificationPane.showNotification(message, NotificationPane.NotificationType.INFO, 1000));
+                // Log progress instead of showing notification for every update
+                log.debug("Database download progress for {}: {}", console, message);
             }
         });
         
-        // Initial load after services are set: Check availability first
+        // Initial load using availability check
         databaseManager.checkAllConsolesAvailability().thenRun(() -> {
              Platform.runLater(() -> {
                  // Trigger download for missing databases
                  databaseManager.downloadAllDatabases();
-                 // Load initial view
-                 loadGames(Console.PSVITA);
+                 
+                 // If PSVITA is available, load it immediately.
+                 // Otherwise, wait for the onDownloadComplete listener to fire.
+                 if (databaseManager.isConsoleAvailable(Console.PSVITA)) {
+                    loadGames(Console.PSVITA);
+                 } else {
+                    notificationPane.showNotification("Downloading game database...", NotificationPane.NotificationType.INFO);
+                 }
              });
         });
     }
