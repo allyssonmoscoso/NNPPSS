@@ -161,7 +161,7 @@ url.txt
 .vscode/
 
 .build_tmp/*
-config.properties
+*.properties
 .classpath
 .project
 .settings/*
