@@ -54,7 +54,7 @@ public class MainController {
     @FXML private TableColumn<Game, String> colTitle;
     @FXML private TableColumn<Game, String> colRegion;
     @FXML private TableColumn<Game, String> colId;
-    @FXML private TableColumn<Game, String> colSize; // Will need custom cell factory for formatting
+    @FXML private TableColumn<Game, Long> colSize; // Will need custom cell factory for formatting
     @FXML private TableColumn<Game, String> colConsole;
     
     @FXML private Button btnResumePause;
@@ -83,9 +83,45 @@ public class MainController {
         this.packageService = packageService;
         this.downloadStateManager = downloadStateManager;
         this.databaseManager = databaseManager;
+
+        // Setup Database Manager Listener
+        databaseManager.addListener(new DatabaseManager.DatabaseListener() {
+            @Override
+            public void onAvailabilityChanged(Console console, boolean available) {
+                // Should update UI indicators if we had them (e.g. enable/disable radio buttons?)
+            }
+
+            @Override
+            public void onDownloadComplete(Console console, boolean success) {
+                Platform.runLater(() -> {
+                    if (success) {
+                        notificationPane.showNotification("Database for " + console + " downloaded.", NotificationPane.NotificationType.SUCCESS);
+                        // Reload if this is the current console
+                        Console selected = rbVita.isSelected() ? Console.PSVITA : (rbPsp.isSelected() ? Console.PSP : Console.PSX);
+                        if (console == selected) {
+                            loadGames(console);
+                        }
+                    } else {
+                        notificationPane.showNotification("Failed to download database for " + console, NotificationPane.NotificationType.ERROR);
+                    }
+                });
+            }
+
+            @Override
+            public void onDownloadProgress(Console console, String message) {
+                Platform.runLater(() -> notificationPane.showNotification(message, NotificationPane.NotificationType.INFO, 1000));
+            }
+        });
         
-        // Initial load after services are set
-        Platform.runLater(() -> loadGames(Console.PSVITA));
+        // Initial load after services are set: Check availability first
+        databaseManager.checkAllConsolesAvailability().thenRun(() -> {
+             Platform.runLater(() -> {
+                 // Trigger download for missing databases
+                 databaseManager.downloadAllDatabases();
+                 // Load initial view
+                 loadGames(Console.PSVITA);
+             });
+        });
     }
 
     @FXML
@@ -131,19 +167,14 @@ public class MainController {
         
         // Custom cell for Size
         colSize.setCellValueFactory(new PropertyValueFactory<>("fileSize"));
-        colSize.setCellFactory(column -> new TableCell<Game, String>() {
+        colSize.setCellFactory(column -> new TableCell<Game, Long>() {
             @Override
-            protected void updateItem(String item, boolean empty) {
+            protected void updateItem(Long item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
+                if (empty || item == null) {
                     setText(null);
                 } else {
-                    if (getTableRow() != null && getTableRow().getItem() != null) {
-                        Game game = (Game) getTableRow().getItem();
-                        setText(formatSize(game.getFileSize()));
-                    } else {
-                        setText(item);
-                    }
+                    setText(formatSize(item));
                 }
             }
         });
