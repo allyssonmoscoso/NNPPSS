@@ -1,6 +1,7 @@
 package com.squarepeace.nnppss.fx.controllers;
 
 import com.squarepeace.nnppss.fx.components.GlobalProgressIndicator;
+import com.squarepeace.nnppss.fx.components.DownloadProgressItem;
 import com.squarepeace.nnppss.fx.components.NotificationPane;
 import com.squarepeace.nnppss.model.Console;
 import com.squarepeace.nnppss.model.Game;
@@ -376,38 +377,44 @@ public class MainController {
         List<Game> gamesToStart = new java.util.ArrayList<>(downloadQueue);
         int count = gamesToStart.size();
         
-        // Calculate total bytes
-        long totalBytes = gamesToStart.stream().mapToLong(Game::getFileSize).sum();
-        
-        // Initialize Global Progress
-        globalProgress.startDownloads(count, totalBytes);
-        
-        // Track progress per URL for global calculation
-        java.util.Map<String, Long> progressMap = new java.util.concurrent.ConcurrentHashMap<>();
-        
         for (Game game : gamesToStart) {
              String destPath = "packages/" + game.getFileName();
              String url = game.getPkgUrl();
+             
+             // Create individual progress bar
+             DownloadProgressItem progressItem = new DownloadProgressItem(game.getTitle(), game.getFileSize());
+             progressItem.setOnCancel(() -> {
+                 downloadService.cancelUrl(url);
+                 progressItem.setCancelled();
+             });
+             Platform.runLater(() -> progressContainer.getChildren().add(progressItem));
              
              downloadExecutor.submit(() -> {
                  downloadService.downloadFile(url, destPath, new DownloadService.DownloadListener() {
                     @Override
                     public void onProgress(long bytesDownloaded, long totalBytes) {
-                        progressMap.put(url, bytesDownloaded);
-                        long globalDownloaded = progressMap.values().stream().mapToLong(Long::longValue).sum();
-                        globalProgress.updateProgress(globalDownloaded);
+                        progressItem.updateProgress(bytesDownloaded, totalBytes);
                     }
     
                     @Override
                     public void onComplete(java.io.File file) {
-                        globalProgress.gameCompleted();
-                        notificationPane.showNotification("Download Complete: " + game.getTitle(), NotificationPane.NotificationType.SUCCESS);
+                        progressItem.setCompleted();
                     }
     
                     @Override
                     public void onError(Exception e) {
-                        notificationPane.showNotification("Download Failed: " + game.getTitle(), NotificationPane.NotificationType.ERROR);
+                        progressItem.setFailed(e.getMessage());
                         log.error("Download failed for {}", game.getTitle(), e);
+                    }
+                    
+                    @Override
+                    public void onCancelled() {
+                        progressItem.setCancelled();
+                    }
+                    
+                    @Override
+                    public void onSegmentProgress(java.util.List<com.squarepeace.nnppss.model.download.Segment> segments) {
+                        progressItem.updateSegments(segments);
                     }
                  });
              });
