@@ -220,6 +220,7 @@ public class MainController {
         comboSize.valueProperty().addListener((obs, oldVal, newVal) -> updateFilter());
     }
     
+
     private void updateFilter() {
         if (filteredData == null) return;
         
@@ -265,7 +266,8 @@ public class MainController {
         
         loadTask.setOnSucceeded(e -> {
             masterData.setAll(loadTask.getValue());
-            notificationPane.showNotification("Loaded " + masterData.size() + " games for " + console, NotificationPane.NotificationType.INFO);
+            updateRegionCombo();
+            log.info("Loaded {} games for {}", masterData.size(), console);
         });
         
         loadTask.setOnFailed(e -> {
@@ -276,6 +278,32 @@ public class MainController {
         Thread thread = new Thread(loadTask);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void updateRegionCombo() {
+        // Capture current selection to restore if still valid
+        String currentSelection = comboRegion.getValue();
+        
+        // Collect unique regions from data, preserving order or sorting
+        java.util.Set<String> regions = new java.util.TreeSet<>();
+        for (Game game : masterData) {
+            String r = game.getRegion();
+            if (r != null && !r.isEmpty()) {
+                regions.add(r);
+            }
+        }
+        
+        // Update items on UI thread (already here since called from setOnSucceeded)
+        comboRegion.getItems().clear();
+        comboRegion.getItems().add("All");
+        comboRegion.getItems().addAll(regions);
+        
+        // Restore selection or select first
+        if (currentSelection != null && comboRegion.getItems().contains(currentSelection)) {
+             comboRegion.setValue(currentSelection);
+        } else {
+             comboRegion.getSelectionModel().selectFirst();
+        }
     }
     
     private void handleGameSelection(Game game) {
