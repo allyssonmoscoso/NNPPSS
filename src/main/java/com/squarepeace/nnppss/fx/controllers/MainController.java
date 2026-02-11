@@ -70,19 +70,26 @@ public class MainController {
     private PackageService packageService;
     private DownloadStateManager downloadStateManager;
     private DatabaseManager databaseManager;
+    private DownloadQueueManager downloadQueueManager;
     
     private ObservableList<Game> masterData = FXCollections.observableArrayList();
+    private ObservableList<Game> downloadQueue;
     private FilteredList<Game> filteredData;
     
     public void setServices(ConfigManager configManager, GameRepository gameRepository, 
                           DownloadService downloadService, PackageService packageService, 
-                          DownloadStateManager downloadStateManager, DatabaseManager databaseManager) {
+                          DownloadStateManager downloadStateManager, DatabaseManager databaseManager,
+                          DownloadQueueManager downloadQueueManager) {
         this.configManager = configManager;
         this.gameRepository = gameRepository;
         this.downloadService = downloadService;
         this.packageService = packageService;
         this.downloadStateManager = downloadStateManager;
         this.databaseManager = databaseManager;
+        this.downloadQueueManager = downloadQueueManager;
+        
+        // Initialize queue
+        this.downloadQueue = FXCollections.observableArrayList(downloadQueueManager.loadQueue());
 
         // Setup Database Manager Listener
         databaseManager.addListener(new DatabaseManager.DatabaseListener() {
@@ -307,8 +314,68 @@ public class MainController {
     }
     
     private void handleGameSelection(Game game) {
-        notificationPane.showNotification("Selected: " + game.getTitle(), NotificationPane.NotificationType.INFO);
-        // Add to download queue logic
+        if (downloadQueue == null) {
+            notificationPane.showNotification("Download service not ready", NotificationPane.NotificationType.ERROR);
+            return;
+        }
+        
+        // Check if already in queue
+        boolean alreadyInQueue = downloadQueue.stream().anyMatch(g -> g.getPkgUrl().equals(game.getPkgUrl()));
+        if (alreadyInQueue) {
+            notificationPane.showNotification("Game already in download queue", NotificationPane.NotificationType.WARNING);
+            return;
+        }
+        
+        downloadQueue.add(game);
+        downloadQueueManager.saveQueue(new java.util.ArrayList<>(downloadQueue));
+        notificationPane.showNotification("Added to Download List: " + game.getTitle(), NotificationPane.NotificationType.SUCCESS);
+    }
+    
+    @FXML
+    private void handleOpenDownloadList() {
+        if (downloadQueue == null) return;
+        
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/DownloadListView.fxml"));
+            Parent root = loader.load();
+            
+            DownloadListController controller = loader.getController();
+            controller.setQueueData(downloadQueue, downloadQueueManager);
+            controller.setOnStartDownloads(this::startDownloadsFromQueue);
+            
+            Stage stage = new Stage();
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Download List");
+            stage.setScene(new Scene(root));
+            stage.showAndWait();
+            
+        } catch (IOException e) {
+            log.error("Failed to open download list", e);
+            notificationPane.showNotification("Error opening download list", NotificationPane.NotificationType.ERROR);
+        }
+    }
+    
+    private void startDownloadsFromQueue() {
+        if (downloadQueue.isEmpty()) return;
+        
+        List<Game> gamesToStart = new java.util.ArrayList<>(downloadQueue);
+        int count = gamesToStart.size();
+        
+        for (Game game : gamesToStart) {
+             // In a real app we might want to verify destination path, etc.
+             // Using default logic from Frame.java (simplified)
+             String destPath = "packages/" + game.getFileName();
+             
+             // Check if already downloading? (DownloadService handles this somewhat)
+             // We just fire them off. DownloadService manages the queue/threads.
+             downloadService.downloadFile(game.getPkgUrl(), destPath, null); // Listener is handled globally or we could add one here
+        }
+        
+        // Clear queue after starting
+        downloadQueue.clear();
+        downloadQueueManager.clearQueue();
+        
+        notificationPane.showNotification("Started " + count + " downloads", NotificationPane.NotificationType.SUCCESS);
     }
 
     @FXML
@@ -316,40 +383,32 @@ public class MainController {
         Console selected = rbVita.isSelected() ? Console.PSVITA : (rbPsp.isSelected() ? Console.PSP : Console.PSX);
         loadGames(selected);
     }
-    
+
     @FXML
     private void handleOpenSettings() {
         if (configManager == null) return;
-         try {
+        
+        try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ConfigView.fxml"));
             Parent root = loader.load();
             
             ConfigController controller = loader.getController();
             controller.setConfigManager(configManager);
             controller.setOnSaveCallback(() -> {
-                // Refresh logic if settings change (e.g. URLs)
                 handleRefresh();
             });
             
             Stage stage = new Stage();
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setTitle("Configuration");
+            stage.setTitle("Settings");
             stage.setScene(new Scene(root));
             stage.showAndWait();
             
         } catch (IOException e) {
             log.error("Failed to open settings", e);
-            if (notificationPane != null)
-                notificationPane.showNotification("Error opening settings", NotificationPane.NotificationType.ERROR);
+            notificationPane.showNotification("Error opening settings", NotificationPane.NotificationType.ERROR);
         }
     }
-    
-    @FXML
-    private void handleOpenDownloadList() {
-        if (notificationPane != null)
-            notificationPane.showNotification("Download List not implemented yet", NotificationPane.NotificationType.WARNING);
-    }
-    
     @FXML
     private void handleResumePause() {
         // Implementation

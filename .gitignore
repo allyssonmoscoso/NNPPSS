@@ -166,3 +166,4 @@ url.txt
 .project
 .settings/*
 .github/*
+*.json

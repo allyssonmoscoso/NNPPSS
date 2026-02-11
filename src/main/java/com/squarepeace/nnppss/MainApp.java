@@ -12,6 +12,7 @@ import com.squarepeace.nnppss.service.ConfigManager;
 import com.squarepeace.nnppss.service.DatabaseManager;
 import com.squarepeace.nnppss.service.DownloadService;
 import com.squarepeace.nnppss.service.DownloadStateManager;
+import com.squarepeace.nnppss.service.DownloadQueueManager;
 import com.squarepeace.nnppss.service.GameRepository;
 import com.squarepeace.nnppss.service.PackageService;
 import com.squarepeace.nnppss.fx.controllers.MainController;
@@ -26,6 +27,7 @@ public class MainApp extends Application {
     private DownloadService downloadService;
     private PackageService packageService;
     private DownloadStateManager downloadStateManager;
+    private DownloadQueueManager downloadQueueManager;
     private DatabaseManager databaseManager;
 
     @Override
@@ -36,6 +38,7 @@ public class MainApp extends Application {
         downloadService = new DownloadService(configManager);
         packageService = new PackageService(configManager);
         downloadStateManager = new DownloadStateManager();
+        downloadQueueManager = new DownloadQueueManager();
         databaseManager = new DatabaseManager(configManager, downloadService);
     }
 
@@ -48,12 +51,13 @@ public class MainApp extends Application {
         
         MainController controller = loader.getController();
         controller.setServices(configManager, gameRepository, downloadService, 
-                               packageService, downloadStateManager, databaseManager);
+                               packageService, downloadStateManager, databaseManager,
+                               downloadQueueManager);
         
         Scene scene = new Scene(root);
         // scene.getStylesheets().add(getClass().getResource("/styles/styles.css").toExternalForm());
         
-        primaryStage.setTitle("NNPPSS - JavaFX");
+        primaryStage.setTitle("NNPPSS");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
