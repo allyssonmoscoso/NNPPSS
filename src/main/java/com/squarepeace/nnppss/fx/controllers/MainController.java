@@ -71,6 +71,7 @@ public class MainController {
     private DownloadStateManager downloadStateManager;
     private DatabaseManager databaseManager;
     private DownloadQueueManager downloadQueueManager;
+    private java.util.concurrent.ExecutorService downloadExecutor;
     
     private ObservableList<Game> masterData = FXCollections.observableArrayList();
     private ObservableList<Game> downloadQueue;
@@ -90,6 +91,20 @@ public class MainController {
         
         // Initialize queue
         this.downloadQueue = FXCollections.observableArrayList(downloadQueueManager.loadQueue());
+        
+        // Initialize download executor
+        int threads = 1;
+        try {
+            threads = Integer.parseInt(configManager.getProperty("simultaneousDownloads"));
+            if (threads < 1) threads = 1;
+        } catch (NumberFormatException e) {
+            threads = 1;
+        }
+        this.downloadExecutor = java.util.concurrent.Executors.newFixedThreadPool(threads, r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            return t;
+        });
 
         // Setup Database Manager Listener
         databaseManager.addListener(new DatabaseManager.DatabaseListener() {
@@ -361,14 +376,41 @@ public class MainController {
         List<Game> gamesToStart = new java.util.ArrayList<>(downloadQueue);
         int count = gamesToStart.size();
         
+        // Calculate total bytes
+        long totalBytes = gamesToStart.stream().mapToLong(Game::getFileSize).sum();
+        
+        // Initialize Global Progress
+        globalProgress.startDownloads(count, totalBytes);
+        
+        // Track progress per URL for global calculation
+        java.util.Map<String, Long> progressMap = new java.util.concurrent.ConcurrentHashMap<>();
+        
         for (Game game : gamesToStart) {
-             // In a real app we might want to verify destination path, etc.
-             // Using default logic from Frame.java (simplified)
              String destPath = "packages/" + game.getFileName();
+             String url = game.getPkgUrl();
              
-             // Check if already downloading? (DownloadService handles this somewhat)
-             // We just fire them off. DownloadService manages the queue/threads.
-             downloadService.downloadFile(game.getPkgUrl(), destPath, null); // Listener is handled globally or we could add one here
+             downloadExecutor.submit(() -> {
+                 downloadService.downloadFile(url, destPath, new DownloadService.DownloadListener() {
+                    @Override
+                    public void onProgress(long bytesDownloaded, long totalBytes) {
+                        progressMap.put(url, bytesDownloaded);
+                        long globalDownloaded = progressMap.values().stream().mapToLong(Long::longValue).sum();
+                        globalProgress.updateProgress(globalDownloaded);
+                    }
+    
+                    @Override
+                    public void onComplete(java.io.File file) {
+                        globalProgress.gameCompleted();
+                        notificationPane.showNotification("Download Complete: " + game.getTitle(), NotificationPane.NotificationType.SUCCESS);
+                    }
+    
+                    @Override
+                    public void onError(Exception e) {
+                        notificationPane.showNotification("Download Failed: " + game.getTitle(), NotificationPane.NotificationType.ERROR);
+                        log.error("Download failed for {}", game.getTitle(), e);
+                    }
+                 });
+             });
         }
         
         // Clear queue after starting
