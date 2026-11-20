@@ -127,7 +127,7 @@ Leyenda: ❌ falta · 🟡 parcial · ✅ OK. Severidad: **B** bloqueante, **A**
 | F5 | ✅ | Diálogo de cola completo: índice, estadísticas y espacio libre, seleccionar/deseleccionar, reordenar, quitar, limpiar, exportar/importar JSON y validación al iniciar; 33 tests |
 | F6 | ✅ | Defaults y getters tipados en `ConfigManager`, validación 1–4, tema oscuro en caliente, aviso de reinicio para idioma y tooltips |
 | F7 | ✅ | `jpackage` app-image verificado en Windows, scripts por SO, manifiesto con `Class-Path`, `Launcher` para classpath y CI con matriz de 3 sistemas |
-| F8 | ✅ | Swing eliminado por completo, gate `javax.swing/java.awt` limpio, versión 1.0.0 y documentación final; 34 tests |
+| F8 | ✅ | Swing eliminado por completo, gate `javax.swing/java.awt` limpio, versión 1.0.0 y documentación final; 35 tests |
 
 ---
 
@@ -432,7 +432,7 @@ com.squarepeace.nnppss
 
 | Comprobación | Resultado |
 |---|---|
-| `mvn clean verify` | ✅ 34 tests, 0 fallos |
+| `mvn clean verify` | ✅ 35 tests, 0 fallos |
 | Gate `javax.swing`/`java.awt` en `src/main/java` | ✅ sin coincidencias |
 | Archivos `.form` | ✅ eliminados |
 | Manifiesto del JAR | ✅ `Main-Class: com.squarepeace.nnppss.Launcher`, `Class-Path: lib/...` |

@@ -1,9 +1,15 @@
 package com.squarepeace.nnppss.fx;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.stage.Stage;
+import javafx.stage.Window;
+import javafx.util.Duration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,6 +29,7 @@ import com.squarepeace.nnppss.util.I18n;
 import javafx.collections.FXCollections;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -85,6 +93,62 @@ class FxmlSmokeTest {
 
         assertEquals(1, queue.size());
         assertNotNull(view.root());
+    }
+
+    @Test
+    void opensDownloadListDialogWithCurrentControllerSignatures() throws Exception {
+        AppContext context = AppContext.create();
+        Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        AtomicReference<Stage> ownerRef = new AtomicReference<>();
+        try {
+            LoadedView view = load("/fxml/MainView.fxml");
+            MainController controller = (MainController) view.controller();
+            controller.setContext(context);
+
+            Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> error.set(throwable));
+            CountDownLatch closed = new CountDownLatch(1);
+            Platform.runLater(() -> {
+                Stage owner = new Stage();
+                ownerRef.set(owner);
+                try {
+                    owner.setScene(new Scene(view.root()));
+                    owner.show();
+
+                    Timeline closer = new Timeline(new KeyFrame(Duration.millis(800), event -> {
+                        for (Window window : new ArrayList<>(Window.getWindows())) {
+                            if (window != owner && window.isShowing()) {
+                                window.hide();
+                            }
+                        }
+                    }));
+                    closer.play();
+
+                    Button downloadList = (Button) view.root().lookup("#btnDownloadList");
+                    assertNotNull(downloadList, "download list button is missing");
+                    downloadList.fire();
+                } finally {
+                    closed.countDown();
+                    owner.close();
+                }
+            });
+
+            assertTrue(closed.await(20, TimeUnit.SECONDS), "download list dialog did not close");
+            if (error.get() != null) {
+                error.get().printStackTrace();
+            }
+            assertNull(error.get(), () -> "Exception opening the download list: " + error.get());
+            controller.shutdown();
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previous);
+            Platform.runLater(() -> {
+                Stage owner = ownerRef.get();
+                if (owner != null) {
+                    owner.close();
+                }
+            });
+            context.shutdown();
+        }
     }
 
     @Test
