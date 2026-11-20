@@ -152,19 +152,24 @@ nbdist/
 .nb-gradle/
 
 # End of https://www.toptal.com/developers/gitignore/api/java,netbeans,intellij
-db/
-games/
-target/
-lib/
-app/
+/db/
+/games/
+/target/
+/lib/
+/app/
 url.txt
 .vscode/
 .agents/
+# Local GitHub Actions runner artifacts
+.act-artifacts/
 
 .build_tmp/*
 .local/
-*.properties
+/config.properties
 .classpath
 .project
 .settings/*
-*.json
+# Local editor/harness files
+.zed/
+skills-lock.json
+/download-queue.json

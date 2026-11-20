@@ -1,0 +1,4 @@
+# Local act defaults. Linux is the only runner that act can emulate.
+# Host-reaching flags (artifact server path, network) belong in scripts/act-local.*.
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+--pull=false

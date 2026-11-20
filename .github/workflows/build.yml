@@ -21,9 +21,12 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Install xvfb (Linux)
+      - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb maven libgtk-3-0t64 libxtst6 libasound2t64 \
+            || sudo apt-get install -y xvfb maven libgtk-3-0 libxtst6 libasound2
 
       - name: Test
         shell: bash

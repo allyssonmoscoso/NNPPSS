@@ -126,6 +126,15 @@ coordinator (start, progress, pause/resume, cancel, history, extraction,
 restart persistence), queue persistence and a real segmented download against a
 local HTTP server.
 
+To run the Linux GitHub workflow locally with `act`:
+
+```powershell
+pwsh -NoProfile -File scripts/act-local.ps1
+```
+
+See [docs/ACT_LOCAL.md](docs/ACT_LOCAL.md) for requirements and limitations
+(Windows/macOS runners cannot be emulated by act).
+
 ## Troubleshooting
 
 - **Downloads do not start:** check free disk space (the app requires the

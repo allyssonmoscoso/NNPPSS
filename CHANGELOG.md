@@ -59,6 +59,10 @@ All notable changes to NNPPSS are documented here.
 - pkg2zip is auto-detected from configuration, the bundled `lib` folder or
   `PATH`; users can pick the folder containing it. When missing, downloads are
   blocked unless “Download without extracting” is chosen explicitly.
+- Added local `act` support (`scripts/act-local.ps1`, `scripts/act-local.sh`,
+  `.actrc` and `docs/ACT_LOCAL.md`), Linux workflow dependencies, and a
+  gitignore fix so `src/main/java/.../app` and message bundles are not omitted
+  when reproducing the workflow locally.
 - The download dock can be collapsed to “Show downloads” from the status bar
   and expands again automatically when a new session starts.
 - Content ID moved out of the table into the detail pane; console names are
