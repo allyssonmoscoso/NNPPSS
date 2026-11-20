@@ -28,7 +28,7 @@ public class SystemValidator {
      */
     public ValidationResult validateDiskSpace(long downloadSizeBytes, String destinationPath) {
         File destination = PathResolver.getFile(destinationPath);
-        File parentDir = destination.getParentFile();
+        File parentDir = destination.isDirectory() ? destination : destination.getParentFile();
         
         // If parent dir doesn't exist or is null, use base directory
         if (parentDir == null || !parentDir.exists()) {

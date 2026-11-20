@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConfigManagerTest {
@@ -49,6 +50,27 @@ class ConfigManagerTest {
         assertEquals(1, manager.getSimultaneousDownloads());
         assertEquals(0, manager.getDownloadSpeedLimit());
         assertEquals(false, manager.isDarkModeEnabled());
+    }
+
+    @Test
+    void usesLegacyStorageDefaultsAndPersistsCustomPaths() {
+        ConfigManager manager = new ConfigManager();
+        assertEquals(tempDir.resolve("packages"), manager.getDownloadsDirectory());
+        assertEquals(tempDir.resolve("extracted"), manager.getExtractionDirectory());
+        assertNull(manager.getPkg2zipPath());
+
+        Path downloads = tempDir.resolve("mis-descargas");
+        Path extraction = tempDir.resolve("mis-extracciones");
+        Path pkg2zip = tempDir.resolve("tools").resolve("pkg2zip.exe");
+        manager.setDownloadsDirectory(downloads);
+        manager.setExtractionDirectory(extraction);
+        manager.setPkg2zipPath(pkg2zip);
+        manager.saveConfig();
+
+        ConfigManager reloaded = new ConfigManager();
+        assertEquals(downloads.toAbsolutePath().normalize(), reloaded.getDownloadsDirectory());
+        assertEquals(extraction.toAbsolutePath().normalize(), reloaded.getExtractionDirectory());
+        assertEquals(pkg2zip.toAbsolutePath().normalize(), reloaded.getPkg2zipPath());
     }
 
     @Test

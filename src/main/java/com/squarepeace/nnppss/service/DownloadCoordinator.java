@@ -13,6 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -156,8 +159,17 @@ public class DownloadCoordinator {
             }
 
             long totalBytes = games.stream().mapToLong(Game::getFileSize).sum();
+            Path downloadsDirectory = configManager.getDownloadsDirectory();
+            try {
+                Files.createDirectories(downloadsDirectory);
+            } catch (IOException e) {
+                lastStartError = "Could not create download directory: " + downloadsDirectory;
+                log.error(lastStartError, e);
+                return false;
+            }
             SystemValidator.ValidationResult validation =
-                    systemValidator.validateTotalDiskSpace(totalBytes, "packages");
+                    systemValidator.validateTotalDiskSpace(
+                            totalBytes, downloadsDirectory.toString());
             if (!validation.isValid()) {
                 lastStartError = validation.getMessage();
                 log.warn("Download rejected: {}", validation.getMessage());
@@ -174,7 +186,8 @@ public class DownloadCoordinator {
                         || !seen.add(game.getPkgUrl())) {
                     continue;
                 }
-                String destinationPath = "packages/" + game.getFileName();
+                String destinationPath = downloadsDirectory.resolve(game.getFileName())
+                        .toAbsolutePath().normalize().toString();
                 DownloadTaskState task = new DownloadTaskState(game, destinationPath);
                 tasks.put(task.getUrl(), task);
                 newTasks.add(task);
@@ -282,24 +295,26 @@ public class DownloadCoordinator {
 
     private void extractIfNeeded(DownloadTaskState task) {
         Game game = task.getGame();
-        String pkgName = game.getFileName();
-        if (pkgName == null || pkgName.isBlank()) {
+        if (game == null || task.getDestinationPath() == null) {
             return;
         }
 
+        Path pkgPath = Path.of(task.getDestinationPath());
+        Path extractionDirectory = configManager.getExtractionDirectory();
         if (game.getConsole() == Console.PSVITA) {
             if (game.getzRif() == null || game.getzRif().isBlank()) {
                 log.info("PSVITA package {} has no zRIF; skipping extraction", game.getTitle());
                 return;
             }
-            extract(task, pkgName, game.getzRif(), Console.PSVITA);
+            extract(task, pkgPath, extractionDirectory, game.getzRif(), Console.PSVITA);
         } else if (game.getConsole() != null) {
-            extract(task, pkgName, null, game.getConsole());
+            extract(task, pkgPath, extractionDirectory, null, game.getConsole());
         }
     }
 
-    private void extract(DownloadTaskState task, String pkgName, String zRif, Console console) {
-        packageExtractor.extractPackage(pkgName, zRif, console, success -> {
+    private void extract(DownloadTaskState task, Path pkgPath, Path extractionDirectory,
+                         String zRif, Console console) {
+        packageExtractor.extractPackage(pkgPath, extractionDirectory, zRif, console, success -> {
             if (success) {
                 log.info("Extraction completed for {}", task.getGame().getTitle());
             } else {

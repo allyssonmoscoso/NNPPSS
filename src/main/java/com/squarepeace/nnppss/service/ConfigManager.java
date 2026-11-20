@@ -4,11 +4,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.squarepeace.nnppss.app.AppPaths;
 import com.squarepeace.nnppss.util.PathResolver;
 
 public class ConfigManager {
@@ -46,6 +50,9 @@ public class ConfigManager {
         properties.setProperty("autoCleanupPkg", "false");
         properties.setProperty("darkMode", "false");
         properties.setProperty("language", "en");
+        properties.setProperty("downloads.directory", "");
+        properties.setProperty("extraction.directory", "");
+        properties.setProperty("pkg2zip.path", "");
         saveConfig();
     }
 
@@ -58,6 +65,9 @@ public class ConfigManager {
         putIfMissing("autoCleanupPkg", "false");
         putIfMissing("darkMode", "false");
         putIfMissing("language", "en");
+        putIfMissing("downloads.directory", "");
+        putIfMissing("extraction.directory", "");
+        putIfMissing("pkg2zip.path", "");
     }
 
     private void putIfMissing(String key, String value) {
@@ -135,5 +145,64 @@ public class ConfigManager {
     public String getLanguage() {
         String value = getProperty("language");
         return value == null || value.isBlank() ? "en" : value.trim();
+    }
+
+    /** Folder where .pkg files are stored; legacy default is {@code dataDir/packages}. */
+    public Path getDownloadsDirectory() {
+        return resolveDirectory("downloads.directory", "packages");
+    }
+
+    /** Folder where pkg2zip writes its output; default is {@code dataDir/extracted}. */
+    public Path getExtractionDirectory() {
+        return resolveDirectory("extraction.directory", "extracted");
+    }
+
+    /** Configured pkg2zip executable, or null when automatic detection should run. */
+    public Path getPkg2zipPath() {
+        String value = getProperty("pkg2zip.path");
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            Path path = Paths.get(value.trim());
+            return path.isAbsolute() ? path.normalize() : AppPaths.dataDir().resolve(path).normalize();
+        } catch (InvalidPathException e) {
+            log.warn("Invalid pkg2zip.path, falling back to automatic detection: {}", value);
+            return null;
+        }
+    }
+
+    public void setDownloadsDirectory(Path directory) {
+        setProperty("downloads.directory", toStoredPath(directory));
+    }
+
+    public void setExtractionDirectory(Path directory) {
+        setProperty("extraction.directory", toStoredPath(directory));
+    }
+
+    public void setPkg2zipPath(Path executable) {
+        setProperty("pkg2zip.path", executable == null ? "" : toStoredPath(executable));
+    }
+
+    private Path resolveDirectory(String key, String defaultName) {
+        Path fallback = AppPaths.dataDir().resolve(defaultName).normalize();
+        String value = getProperty(key);
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        try {
+            Path path = Paths.get(value.trim());
+            if (!path.isAbsolute()) {
+                path = AppPaths.dataDir().resolve(path);
+            }
+            return path.normalize();
+        } catch (InvalidPathException e) {
+            log.warn("Invalid {} value, using default: {}", key, value);
+            return fallback;
+        }
+    }
+
+    private String toStoredPath(Path path) {
+        return path.toAbsolutePath().normalize().toString();
     }
 }

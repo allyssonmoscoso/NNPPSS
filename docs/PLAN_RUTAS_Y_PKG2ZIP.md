@@ -28,18 +28,33 @@ En este entorno **no hay binario `pkg2zip` incluido**; por eso el estado “no e
 
 Referencia de uso de pkg2zip: [pkg2zip (mmozeiko)](https://context7.com/mmozeiko/pkg2zip). La invocación `-x` y los argumentos se validarán contra el binario real antes de cerrar R3.
 
-## 3. Decisiones de producto propuestas
+## 3. Decisiones de producto confirmadas
 
-| Decisión | Propuesta |
+| Decisión | Elección |
 |---|---|
-| Carpetas | Dos rutas independientes: **Descargas** y **Extracción**. Se recomienda no usar la misma carpeta, pero se permite con advertencia. |
+| Carpetas | **Dos rutas independientes**: Descargas y Extracción. Se permite la misma carpeta con advertencia. |
 | Valores por defecto | Descargas: `<dataDir>/packages` (compatibilidad). Extracción: `<dataDir>/extracted`. |
 | pkg2zip | Orden: ruta configurada → binario incluido con la app → comando en `PATH`. |
 | Disponible en `PATH` | Se informa “Detectado en el sistema” y se usa automáticamente; el usuario puede cambiarlo. |
-| No disponible | Aviso no bloqueante + botón para elegir la carpeta que contiene `pkg2zip.exe`/`pkg2zip`. |
+| No disponible | **Bloquear el inicio de descargas** hasta configurarlo, salvo que el usuario elija explícitamente **“Descargar sin extraer”**. |
+| Dónde se exige | En la primera ejecución y otra vez antes de iniciar una descarga si la herramienta desapareció. |
 | Cambio de rutas con descargas activas | Se aplica a las próximas descargas; no se mueven archivos ni se alteran tareas en curso. |
 | Archivos existentes | No se mueven ni se borran. Las rutas antiguas siguen siendo legibles. |
-| Selector | Selector de **carpeta** para pkg2zip (busca dentro el ejecutable), para que coincida con “elegir el directorio”. Si no se encuentra, error inline sin cerrar el diálogo. |
+| Selector | Selector de **carpeta** para pkg2zip (busca dentro el ejecutable), tal como se pidió. |
+| Misma carpeta | Se permite con advertencia inline; no se bloquea el guardado. |
+
+## 3.1 Estado de implementación (fundación)
+
+Completado en la primera iteración:
+
+- Claves `downloads.directory`, `extraction.directory` y `pkg2zip.path` en `ConfigManager`, con defaults y persistencia.
+- `Pkg2zipResolver` con orden configurado → incluido → `PATH` y estados `CONFIGURED`, `BUNDLED`, `PATH`, `NOT_FOUND`, `INVALID`.
+- `DownloadCoordinator` usa la carpeta de descargas configurada y guarda rutas absolutas.
+- `PackageService` recibe ruta absoluta del `.pkg`, carpeta de salida y usa `ProcessBuilder.directory(...)` con argumentos separados.
+- `SystemValidator` valida espacio sobre la carpeta elegida.
+- Tests: 44 verdes (incluye `Pkg2zipResolverTest` y persistencia de rutas).
+
+Pendiente para las siguientes iteraciones: UI de almacenamiento/pkg2zip, bloqueo de descargas con excepción “Descargar sin extraer”, primera ejecución, notificaciones y pruebas manuales.
 
 ## 4. Modelo de configuración
 
@@ -192,9 +207,9 @@ Estados visuales:
 ### 7.3 Primera ejecución
 
 - En el paso 2 del asistente se añade un bloque compacto “Almacenamiento” con las rutas por defecto y el estado de pkg2zip.
-- No se bloquea “Guardar” si pkg2zip no está: se puede configurar después.
+- **pkg2zip es requisito para terminar el asistente** si se va a descargar: se muestra el estado y la acción para elegirlo.
+- “Configurar después” sigue disponible, pero la pantalla principal bloqueará el inicio de descargas hasta configurarlo, salvo la excepción “Descargar sin extraer”.
 - Si está en `PATH`, se muestra el aviso informativo sin pedir nada.
-- “Configurar después” sigue disponible.
 
 ### 7.4 Flujo principal
 
@@ -202,8 +217,8 @@ Estados visuales:
   - notificación con acción **Abrir ajustes**;
   - no se inicia la descarga.
 - Si pkg2zip no está disponible:
-  - la descarga continúa;
-  - al terminar, notificación persistente: “pkg2zip no está configurado. El archivo se descargó, pero no se extrajo.” con **Configurar**.
+  - **no se inicia la descarga**; se muestra un aviso con **Configurar** y una acción secundaria **Descargar sin extraer**.
+  - “Descargar sin extraer” pide confirmación explícita y continúa solo esa sesión; no cambia la configuración.
 - Al completar una descarga/extracción:
   - acción **Abrir carpeta de descargas** o **Abrir carpeta de extracción**.
 - Los errores de extracción no borran el `.pkg` automáticamente.
@@ -302,7 +317,7 @@ notify.downloadpath.invalid
 1. Elegir carpetas nuevas, guardar, reiniciar y comprobar persistencia.
 2. Descargar un juego pequeño y verificar `.pkg` en Descargas.
 3. Verificar extracción en Extracción.
-4. Quitar `pkg2zip` del `PATH` y de `lib/`: aparece “No encontrado”; la descarga sigue.
+4. Quitar `pkg2zip` del `PATH` y de `lib/`: aparece “No encontrado”; el inicio de descarga se bloquea y se ofrece “Configurar” o “Descargar sin extraer”.
 5. Elegir carpeta con `pkg2zip`; se detecta y extrae.
 6. Poner `pkg2zip` en `PATH`: se informa y se usa.
 7. Ruta de solo lectura: error inline, no se guarda.
@@ -330,16 +345,22 @@ notify.downloadpath.invalid
 - [ ] La extracción escribe en la carpeta elegida.
 - [ ] Si `pkg2zip` está en `PATH`, la UI lo informa y lo usa.
 - [ ] Si no está, la UI permite elegir la carpeta y valida el ejecutable.
-- [ ] La falta de pkg2zip no bloquea la descarga; el aviso ofrece “Configurar”.
+- [ ] Si falta pkg2zip, la descarga se bloquea y se ofrecen “Configurar” y “Descargar sin extraer” (con confirmación).
+- [ ] La misma carpeta para descargas y extracción se permite con advertencia.
 - [ ] Los errores de ruta son inline y accionables.
 - [ ] El flujo funciona con teclado y en tema claro/oscuro.
 - [ ] Tests y build verdes; sin regresiones en cola, pausa ni restauración.
 - [ ] No se registra el zRIF en logs ni se concatenan comandos de shell.
 
-## 14. Decisiones pendientes de confirmar
+## 14. Decisiones confirmadas
 
-1. ¿Dos carpetas independientes (recomendado) o una carpeta base con subcarpetas `packages/` y `extracted/`?
-2. ¿El selector de pkg2zip debe pedir la **carpeta** (propuesto, coincide con tu petición) o directamente el ejecutable?
-3. ¿La carpeta de extracción por defecto debe ser `<dataDir>/extracted` o conservar el comportamiento actual basado en el directorio de trabajo?
+El 2026-11-20 el usuario confirmó:
 
-Con estas tres respuestas se puede pasar a R0/R1 sin rehacer UI.
+1. Dos carpetas independientes: Descargas y Extracción.
+2. Selector de **carpeta** que contiene pkg2zip.
+3. Extracción por defecto en `<dataDir>/extracted`.
+4. Bloquear descargas si falta pkg2zip, con excepción explícita “Descargar sin extraer”.
+5. Exigir pkg2zip en primera ejecución y antes de descargar.
+6. Permitir la misma carpeta para descargas y extracción, con advertencia.
+
+Con esto se puede iniciar R0/R1 sin más preguntas de producto.

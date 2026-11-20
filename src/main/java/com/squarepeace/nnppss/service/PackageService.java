@@ -1,17 +1,17 @@
 package com.squarepeace.nnppss.service;
 
+import com.squarepeace.nnppss.model.Console;
+
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.squarepeace.nnppss.app.AppPaths;
-import com.squarepeace.nnppss.model.Console;
-import com.squarepeace.nnppss.util.PathResolver;
 
 /**
  * Runs pkg2zip and reports the result through a callback. This service is
@@ -20,96 +20,82 @@ import com.squarepeace.nnppss.util.PathResolver;
  */
 public class PackageService implements PackageExtractor {
     private static final Logger log = LoggerFactory.getLogger(PackageService.class);
+
     private final ConfigManager configManager;
+    private final Pkg2zipResolver resolver;
 
     public interface ExtractionListener {
         void onExtractionComplete(boolean success);
     }
 
     public PackageService(ConfigManager configManager) {
-        this.configManager = configManager;
+        this(configManager, new Pkg2zipResolver(configManager));
     }
 
-    public void extractPackage(String pkgName, String zRifKey, Console console) {
-        extractPackage(pkgName, zRifKey, console, null);
+    PackageService(ConfigManager configManager, Pkg2zipResolver resolver) {
+        this.configManager = configManager;
+        this.resolver = resolver;
     }
 
     @Override
-    public void extractPackage(String pkgName, String zRifKey, Console console, ExtractionListener listener) {
-        log.info("Starting package extraction: {} (console: {})", pkgName, console);
-        String command = buildCommand(pkgName, zRifKey, console);
-        if (command == null || command.isEmpty()) {
-            log.warn("No command generated for package extraction: {}", pkgName);
+    public void extractPackage(Path pkgPath, Path outputDirectory, String zRifKey,
+                               Console console, ExtractionListener listener) {
+        if (pkgPath == null || !Files.isRegularFile(pkgPath)) {
+            log.warn("Package file does not exist: {}", pkgPath);
             notifyComplete(listener, false);
             return;
         }
-        runCommand(command, pkgName, listener);
-    }
-
-    private String buildCommand(String pkgName, String zRifKey, Console console) {
-        String fileSeparator = System.getProperty("file.separator");
-        String os = System.getProperty("os.name").toLowerCase();
-        log.debug("Building extraction command for OS: {}", os);
-
-        if (os.contains("win")) {
-            String exePath = AppPaths.appDir().resolve("lib").resolve("pkg2zip.exe").toString();
-            String pkgPath = PathResolver.getFile("packages" + fileSeparator + pkgName).getAbsolutePath();
-
-            if (console == Console.PSVITA) {
-                return "\"" + exePath + "\" -x \"" + pkgPath + "\" " + zRifKey;
-            }
-            return "\"" + exePath + "\" \"" + pkgPath + "\"";
+        if (outputDirectory == null) {
+            log.warn("No extraction directory configured");
+            notifyComplete(listener, false);
+            return;
         }
-
-        if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
-            if (!isCommandInstalled("pkg2zip")) {
-                log.error("pkg2zip is not installed on the system PATH");
-                return null;
-            }
-            String pkgPath = PathResolver.getFile("packages" + fileSeparator + pkgName).getAbsolutePath();
-            if (console == Console.PSVITA) {
-                return "pkg2zip -x \"" + pkgPath + "\" " + zRifKey;
-            }
-            return "pkg2zip \"" + pkgPath + "\"";
-        }
-
-        log.error("Unsupported operating system: {}", os);
-        return null;
-    }
-
-    private boolean isCommandInstalled(String command) {
-        String checkCommand = System.getProperty("os.name").toLowerCase().contains("win")
-                ? "where " + command
-                : "which " + command;
         try {
-            Process process = Runtime.getRuntime().exec(checkCommand);
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (!line.isEmpty()) {
-                        process.waitFor();
-                        return true;
-                    }
-                }
-            }
-            process.waitFor();
-        } catch (IOException | InterruptedException e) {
-            log.warn("Error checking if command is installed: {}", command, e);
-            Thread.currentThread().interrupt();
+            Files.createDirectories(outputDirectory);
+        } catch (IOException e) {
+            log.error("Could not create extraction directory: {}", outputDirectory, e);
+            notifyComplete(listener, false);
+            return;
         }
-        return false;
+
+        Pkg2zipResolver.Resolution resolution = resolver.resolve();
+        if (resolution.source() == Pkg2zipResolver.Source.NOT_FOUND
+                || resolution.source() == Pkg2zipResolver.Source.INVALID) {
+            log.warn("pkg2zip is not available: {}", resolution.detail());
+            notifyComplete(listener, false);
+            return;
+        }
+
+        List<String> command = buildCommand(
+                resolution.executable(), pkgPath, console, zRifKey);
+        log.info("Starting package extraction with {} in {}",
+                resolution.source(), outputDirectory);
+        runCommand(command, outputDirectory, pkgPath, listener);
     }
 
-    private void runCommand(String command, String pkgName, ExtractionListener listener) {
+    private List<String> buildCommand(Path executable, Path pkgPath,
+                                      Console console, String zRifKey) {
+        List<String> command = new ArrayList<>();
+        command.add(executable.toString());
+        if (console == Console.PSVITA) {
+            command.add("-x");
+            command.add(pkgPath.toAbsolutePath().normalize().toString());
+            if (zRifKey != null && !zRifKey.isBlank()) {
+                command.add(zRifKey);
+            }
+        } else {
+            // Preserve the existing PSP/PSX behaviour: pkg2zip creates a zip.
+            command.add(pkgPath.toAbsolutePath().normalize().toString());
+        }
+        return command;
+    }
+
+    private void runCommand(List<String> command, Path outputDirectory,
+                            Path pkgPath, ExtractionListener listener) {
         Thread worker = new Thread(() -> {
             try {
-                List<String> cmd;
-                if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                    cmd = List.of("cmd", "/c", command);
-                } else {
-                    cmd = List.of("sh", "-lc", command);
-                }
-                ProcessBuilder pb = new ProcessBuilder(cmd);
+                ProcessBuilder pb = new ProcessBuilder(command);
+                pb.directory(outputDirectory.toFile());
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
 
@@ -129,8 +115,8 @@ public class PackageService implements PackageExtractor {
                 }
 
                 log.info("Package extraction completed successfully");
-                if (configManager.isAutoCleanupEnabled()) {
-                    cleanupPkgFile(pkgName);
+                if (configManager != null && configManager.isAutoCleanupEnabled()) {
+                    cleanupPkgFile(pkgPath);
                 }
                 notifyComplete(listener, true);
             } catch (Exception e) {
@@ -148,19 +134,15 @@ public class PackageService implements PackageExtractor {
         }
     }
 
-    private void cleanupPkgFile(String pkgName) {
-        String fileSeparator = System.getProperty("file.separator");
-        String pkgPath = "packages" + fileSeparator + pkgName;
-        File pkgFile = PathResolver.getFile(pkgPath);
-
-        if (pkgFile.exists()) {
-            if (pkgFile.delete()) {
+    private void cleanupPkgFile(Path pkgPath) {
+        try {
+            if (Files.deleteIfExists(pkgPath)) {
                 log.info("Auto-cleanup: deleted package file {}", pkgPath);
             } else {
-                log.warn("Auto-cleanup: could not delete package file {}", pkgPath);
+                log.debug("Auto-cleanup: package file not found: {}", pkgPath);
             }
-        } else {
-            log.debug("Auto-cleanup: package file not found: {}", pkgPath);
+        } catch (IOException e) {
+            log.warn("Auto-cleanup: could not delete package file {}", pkgPath, e);
         }
     }
 }

@@ -292,8 +292,8 @@ class DownloadCoordinatorTest {
         private String lastZRif;
 
         @Override
-        public void extractPackage(String pkgName, String zRifKey, Console console,
-                                   PackageService.ExtractionListener listener) {
+        public void extractPackage(Path pkgPath, Path outputDirectory, String zRifKey,
+                                   Console console, PackageService.ExtractionListener listener) {
             calls++;
             lastZRif = zRifKey;
             if (listener != null) {
