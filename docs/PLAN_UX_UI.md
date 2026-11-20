@@ -419,6 +419,42 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
 
 ---
 
+## 13. Estado de ejecución (primer incremento)
+
+**Fecha:** 2026-11-20 · **Base:** 1.0.0 · **Tests:** 36 verdes (`mvn clean verify`).
+
+### Completado
+
+- **UX0 — decisiones:** se adoptan drawer derecho, detalle de 320 px, “Descargar ahora” como acción primaria, añadir sin confirmación con “Deshacer”, iconos propios y Content ID fuera de la tabla.
+- **UX1 — fundación visual:**
+  - Tokens de color, espaciado, tipografía y radios en `styles/base.css`.
+  - App bar con marca, consola segmentada, búsqueda, tema, ajustes y cola.
+  - Barra de filtros con contador de resultados.
+  - Barra de estado y dock de descargas colapsable.
+  - Tema claro/oscuro coherente en la ventana principal; botón de tema en caliente.
+  - Ventana inicial 1180×760, mínimo 1100×720.
+- **UX3 — parcial:**
+  - Panel de detalle con título, consola, región, tamaño, Content ID y estado.
+  - Botones “Descargar” y “Añadir a la cola” en el detalle.
+  - “Descargar” inicia una sesión individual; si ya hay descargas, encola sin interrumpir.
+  - Content ID y consola se movieron fuera de la tabla (consola con nombre localizado).
+  - Añadir a la cola sin confirmación + snackbar con “Deshacer”.
+  - Cola con contador en el botón (`Cola (N)`).
+  - Notificaciones movidas a la esquina inferior derecha para no tapar la app bar.
+
+![Primer incremento UI](ux/redesign-final.png)
+
+### Pendiente
+
+- **UX2:** asistente de primera ejecución y panel de ajustes por secciones con “Probar” URL.
+- **UX4:** sustituir el diálogo modal de cola por el drawer lateral.
+- **UX5:** estados de carga/vacío/error con acción, accesibilidad por teclado y pluralización.
+- **UX6:** pruebas con usuarios, pulido y validación visual final.
+
+> El diálogo modal de cola y el formulario de ajustes siguen siendo los actuales; se abordan en UX2/UX4. El flujo principal ya permite descargar en tres acciones desde el catálogo.
+
+---
+
 ## Anexo · Checklist de aceptación
 
 - [ ] La primera descarga se inicia en ≤3 acciones.

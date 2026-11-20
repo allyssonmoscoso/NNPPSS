@@ -10,6 +10,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -40,7 +41,7 @@ public class NotificationPane extends StackPane {
     }
 
     private static final int MAX_VISIBLE_NOTIFICATIONS = 3;
-    private static final double NOTIFICATION_WIDTH = 350;
+    private static final double NOTIFICATION_WIDTH = 420;
     private static final Duration ANIMATION_DURATION = Duration.millis(300);
 
     private final VBox container;
@@ -49,11 +50,11 @@ public class NotificationPane extends StackPane {
 
     public NotificationPane() {
         setPickOnBounds(false); // Allow clicks to pass through empty areas
-        setAlignment(Pos.TOP_RIGHT);
-        setPadding(new Insets(20));
+        setAlignment(Pos.BOTTOM_LEFT);
+        setPadding(new Insets(16));
 
         container = new VBox(10); // Spacing between notifications
-        container.setAlignment(Pos.TOP_RIGHT);
+        container.setAlignment(Pos.BOTTOM_LEFT);
         container.setPickOnBounds(false);
         
         getChildren().add(container);
@@ -64,19 +65,33 @@ public class NotificationPane extends StackPane {
     }
 
     public void showNotification(String message, NotificationType type, int durationMs) {
+        showNotification(message, type, null, null, durationMs);
+    }
+
+    /**
+     * Shows a notification with an inline action, typically "Undo".
+     */
+    public void showActionNotification(String message, NotificationType type,
+                                       String actionText, Runnable action, int durationMs) {
+        showNotification(message, type, actionText, action, durationMs);
+    }
+
+    private void showNotification(String message, NotificationType type,
+                                  String actionText, Runnable action, int durationMs) {
         Platform.runLater(() -> {
             if (visibleCount >= MAX_VISIBLE_NOTIFICATIONS) {
-                messageQueue.offer(new NotificationMessage(message, type, durationMs));
+                messageQueue.offer(new NotificationMessage(message, type, actionText, action, durationMs));
             } else {
-                displayNotification(message, type, durationMs);
+                displayNotification(message, type, actionText, action, durationMs);
             }
         });
     }
 
-    private void displayNotification(String message, NotificationType type, int durationMs) {
-        HBox notification = createNotificationNode(message, type);
+    private void displayNotification(String message, NotificationType type,
+                                     String actionText, Runnable action, int durationMs) {
+        HBox notification = createNotificationNode(message, type, actionText, action);
         notification.setOpacity(0);
-        notification.setTranslateX(NOTIFICATION_WIDTH); // Start off-screen
+        notification.setTranslateX(-NOTIFICATION_WIDTH); // Start off-screen on the left
 
         container.getChildren().add(0, notification); // Add to top
         visibleCount++;
@@ -98,7 +113,8 @@ public class NotificationPane extends StackPane {
         }
     }
 
-    private HBox createNotificationNode(String message, NotificationType type) {
+    private HBox createNotificationNode(String message, NotificationType type,
+                                        String actionText, Runnable action) {
         HBox hbox = new HBox(10);
         hbox.setPrefWidth(NOTIFICATION_WIDTH);
         hbox.setMaxWidth(NOTIFICATION_WIDTH);
@@ -118,20 +134,39 @@ public class NotificationPane extends StackPane {
         // Icon
         Label iconLabel = new Label(type.getIcon());
         iconLabel.setStyle("-fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold;");
+        iconLabel.setMinWidth(Region.USE_PREF_SIZE);
         
         // Message
         Label msgLabel = new Label(message);
         msgLabel.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         msgLabel.setWrapText(true);
+        msgLabel.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(msgLabel, Priority.ALWAYS);
+
+        hbox.getChildren().addAll(iconLabel, msgLabel);
+
+        // Optional action, usually "Undo"
+        if (actionText != null && action != null) {
+            Button actionBtn = new Button(actionText);
+            actionBtn.setStyle("-fx-background-color: rgba(255,255,255,0.18); "
+                    + "-fx-text-fill: white; -fx-font-size: 11px; -fx-font-weight: bold; "
+                    + "-fx-background-radius: 4; -fx-padding: 3 8 3 8; -fx-cursor: hand;");
+            actionBtn.setMinWidth(Region.USE_PREF_SIZE);
+            actionBtn.setOnAction(e -> {
+                action.run();
+                dismissNotification(hbox);
+            });
+            hbox.getChildren().add(actionBtn);
+        }
 
         // Close Button
         Button closeBtn = new Button("✕");
         closeBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 16px; -fx-cursor: hand;");
         closeBtn.setPadding(new Insets(0, 5, 0, 5));
+        closeBtn.setMinWidth(Region.USE_PREF_SIZE);
         closeBtn.setOnAction(e -> dismissNotification(hbox));
 
-        hbox.getChildren().addAll(iconLabel, msgLabel, closeBtn);
+        hbox.getChildren().add(closeBtn);
         return hbox;
     }
 
@@ -141,7 +176,7 @@ public class NotificationPane extends StackPane {
         Timeline slideOut = new Timeline(
                 new KeyFrame(ANIMATION_DURATION,
                         new KeyValue(notification.opacityProperty(), 0.0),
-                        new KeyValue(notification.translateXProperty(), NOTIFICATION_WIDTH)
+                        new KeyValue(notification.translateXProperty(), -NOTIFICATION_WIDTH)
                 )
         );
         slideOut.setOnFinished(e -> {
@@ -150,7 +185,8 @@ public class NotificationPane extends StackPane {
 
             NotificationMessage next = messageQueue.poll();
             if (next != null) {
-                displayNotification(next.message, next.type, next.durationMs);
+                displayNotification(next.message, next.type, next.actionText,
+                        next.action, next.durationMs);
             }
         });
         slideOut.play();
@@ -166,11 +202,16 @@ public class NotificationPane extends StackPane {
     private static class NotificationMessage {
         String message;
         NotificationType type;
+        String actionText;
+        Runnable action;
         int durationMs;
 
-        NotificationMessage(String message, NotificationType type, int durationMs) {
+        NotificationMessage(String message, NotificationType type,
+                            String actionText, Runnable action, int durationMs) {
             this.message = message;
             this.type = type;
+            this.actionText = actionText;
+            this.action = action;
             this.durationMs = durationMs;
         }
     }

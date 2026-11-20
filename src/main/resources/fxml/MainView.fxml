@@ -13,90 +13,100 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
 <StackPane fx:id="rootStack"
+           styleClass="app-root"
            xmlns="http://javafx.com/javafx"
            xmlns:fx="http://javafx.com/fxml"
            fx:controller="com.squarepeace.nnppss.fx.controllers.MainController"
-           prefHeight="700.0" prefWidth="1024.0">
+           prefHeight="760.0" prefWidth="1180.0">
 
     <BorderPane fx:id="mainContainer">
         <top>
-            <VBox spacing="10.0" BorderPane.alignment="CENTER">
-                <padding>
-                    <Insets bottom="10.0" left="15.0" right="15.0" top="15.0" />
-                </padding>
-
-                <!-- Toolbar Row 1: Consoles & Actions -->
-                <HBox alignment="CENTER_LEFT" spacing="15.0">
-                    <Label text="%label.console">
-                        <font><Font name="System Bold" size="12.0"/></font>
-                    </Label>
-
-                    <HBox fx:id="consoleBox" spacing="10.0" alignment="CENTER_LEFT">
-                        <RadioButton fx:id="rbVita" text="%console.psvita" selected="true"/>
-                        <RadioButton fx:id="rbPsp" text="%console.psp"/>
-                        <RadioButton fx:id="rbPsx" text="%console.psx"/>
+            <VBox spacing="0.0">
+                <!-- App bar: brand, console switch, search, global actions -->
+                <HBox styleClass="app-bar" alignment="CENTER_LEFT" spacing="12.0">
+                    <Label text="NNPPSS" styleClass="brand" />
+                    <HBox fx:id="consoleBox" styleClass="console-switch" spacing="2.0">
+                        <RadioButton fx:id="rbVita" text="%console.psvita" styleClass="console-toggle" selected="true"/>
+                        <RadioButton fx:id="rbPsp" text="%console.psp" styleClass="console-toggle"/>
+                        <RadioButton fx:id="rbPsx" text="%console.psx" styleClass="console-toggle"/>
                     </HBox>
 
                     <Region HBox.hgrow="ALWAYS" />
 
-                    <Button fx:id="btnAdd" text="%button.add" onAction="#handleAddSelected"/>
-                    <Button fx:id="btnDownloadList" text="%button.downloadlist" onAction="#handleOpenDownloadList"/>
+                    <TextField fx:id="txtSearch" promptText="%search.prompt"
+                               styleClass="search-field" prefWidth="280.0" />
+                    <Button fx:id="btnTheme" text="%button.theme.dark"
+                            styleClass="subtle-button" onAction="#handleToggleTheme"/>
+                    <Button fx:id="btnSettings" text="%button.settings"
+                            styleClass="subtle-button" onAction="#handleOpenSettings"/>
+                    <Button fx:id="btnDownloadList" text="%button.queue"
+                            styleClass="queue-button" onAction="#handleOpenDownloadList"/>
                 </HBox>
 
-                <!-- Toolbar Row 2: Filters & Search -->
-                <HBox alignment="CENTER_LEFT" spacing="10.0">
-                    <Label text="%label.region" />
-                    <ComboBox fx:id="comboRegion" prefWidth="120.0" />
-
-                    <Label text="%label.filesize" />
-                    <ComboBox fx:id="comboSize" prefWidth="120.0" />
+                <!-- Filter bar: filters, result count and the contextual add action -->
+                <HBox styleClass="filter-bar" alignment="CENTER_LEFT" spacing="8.0">
+                    <Label text="%label.region" styleClass="filter-label"/>
+                    <ComboBox fx:id="comboRegion" styleClass="filter-combo" prefWidth="130.0"/>
+                    <Label text="%label.filesize" styleClass="filter-label"/>
+                    <ComboBox fx:id="comboSize" styleClass="filter-combo" prefWidth="130.0"/>
 
                     <Region HBox.hgrow="ALWAYS" />
 
-                    <Label text="%label.search" />
-                    <TextField fx:id="txtSearch" promptText="%search.prompt" prefWidth="200.0" />
-
-                    <Button fx:id="btnRefresh" text="%button.refresh" onAction="#handleRefresh" />
-                    <Button fx:id="btnSettings" text="%button.settings" onAction="#handleOpenSettings" />
+                    <Label fx:id="resultCountLabel" text="%results.count" styleClass="result-count"/>
+                    <Button fx:id="btnRefresh" text="%button.refresh"
+                            styleClass="subtle-button" onAction="#handleRefresh"/>
                 </HBox>
             </VBox>
         </top>
 
         <center>
-            <TableView fx:id="tableGames" BorderPane.alignment="CENTER">
-                <columns>
-                    <TableColumn fx:id="colTitle" text="%table.column.name" prefWidth="400.0" />
-                    <TableColumn fx:id="colRegion" text="%table.column.region" prefWidth="80.0" />
-                    <TableColumn fx:id="colId" text="%table.column.contentid" prefWidth="120.0" />
-                    <TableColumn fx:id="colSize" text="%table.column.size" prefWidth="100.0" />
-                    <TableColumn fx:id="colConsole" text="%table.column.console" prefWidth="80.0" />
-                </columns>
-                <columnResizePolicy>
-                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-                </columnResizePolicy>
-                <placeholder>
-                    <Label text="%table.empty" />
-                </placeholder>
-            </TableView>
+            <HBox styleClass="catalog-area" spacing="0.0">
+                <TableView fx:id="tableGames" styleClass="game-table" HBox.hgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colTitle" text="%table.column.name" prefWidth="460.0"/>
+                        <TableColumn fx:id="colRegion" text="%table.column.region" prefWidth="80.0"/>
+                        <TableColumn fx:id="colSize" text="%table.column.size" prefWidth="110.0"/>
+                        <TableColumn fx:id="colConsole" text="%table.column.console" prefWidth="90.0"/>
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                    </columnResizePolicy>
+                    <placeholder>
+                        <Label text="%table.empty"/>
+                    </placeholder>
+                </TableView>
+
+                <VBox fx:id="detailPane" styleClass="game-detail" prefWidth="320.0" minWidth="300.0" spacing="8.0">
+                    <Label fx:id="detailTitle" styleClass="detail-title" wrapText="true"/>
+                    <Label fx:id="detailMeta" styleClass="detail-meta" wrapText="true"/>
+                    <Label fx:id="detailStatus" styleClass="detail-badge" visible="false" managed="false"/>
+                    <VBox spacing="3.0">
+                        <Label text="%detail.contentid" styleClass="detail-label"/>
+                        <Label fx:id="detailContentId" styleClass="detail-value" wrapText="true"/>
+                    </VBox>
+                    <Region VBox.vgrow="ALWAYS"/>
+                    <Label fx:id="detailHint" text="%detail.none.hint" styleClass="detail-hint" wrapText="true"/>
+                    <Button fx:id="btnDownloadNow" text="%button.downloadnow"
+                            styleClass="primary-button" onAction="#handleDownloadNow"/>
+                    <Button fx:id="btnAddToQueue" text="%button.addtoqueue"
+                            styleClass="subtle-button" onAction="#handleAddToQueue"/>
+                </VBox>
+            </HBox>
         </center>
 
         <bottom>
-            <VBox spacing="5.0" BorderPane.alignment="CENTER">
-                 <padding>
-                    <Insets bottom="5.0" left="10.0" right="10.0" top="5.0" />
-                 </padding>
-
-                 <HBox alignment="CENTER_LEFT" spacing="10.0">
-                    <Label fx:id="statusLabel" text="%status.ready" />
-                    <Region HBox.hgrow="ALWAYS" />
-                    <Button fx:id="btnResumePause" text="%button.pause" disable="true" onAction="#handleResumePause" />
-                    <Button fx:id="btnRetry" text="%button.retryfailed" disable="true" onAction="#handleRetryFailed" />
-                 </HBox>
-
-                 <VBox fx:id="progressContainer" spacing="5.0" maxHeight="250.0" />
+            <VBox spacing="0.0">
+                <VBox fx:id="progressContainer" styleClass="download-dock" spacing="6.0"/>
+                <HBox styleClass="status-bar" alignment="CENTER_LEFT" spacing="8.0">
+                    <Label fx:id="statusLabel" text="%status.ready" styleClass="status-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="btnResumePause" text="%button.pause"
+                            styleClass="subtle-button" disable="true" onAction="#handleResumePause"/>
+                    <Button fx:id="btnRetry" text="%button.retryfailed"
+                            styleClass="subtle-button" disable="true" onAction="#handleRetryFailed"/>
+                </HBox>
             </VBox>
         </bottom>
     </BorderPane>

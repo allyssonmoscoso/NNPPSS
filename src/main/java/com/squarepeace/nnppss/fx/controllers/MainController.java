@@ -94,6 +94,8 @@ public class MainController {
     @FXML private Button btnSettings;
     @FXML private Button btnDownloadList;
     @FXML private Button btnAdd;
+    @FXML private Button btnTheme;
+    @FXML private Label resultCountLabel;
 
     @FXML private TableView<Game> tableGames;
     @FXML private TableColumn<Game, String> colTitle;
@@ -106,6 +108,15 @@ public class MainController {
     @FXML private Button btnRetry;
     @FXML private VBox progressContainer;
     @FXML private Label statusLabel;
+
+    @FXML private VBox detailPane;
+    @FXML private Label detailTitle;
+    @FXML private Label detailMeta;
+    @FXML private Label detailStatus;
+    @FXML private Label detailContentId;
+    @FXML private Label detailHint;
+    @FXML private Button btnDownloadNow;
+    @FXML private Button btnAddToQueue;
 
     private GlobalProgressIndicator globalProgress;
     private NotificationPane notificationPane;
@@ -161,8 +172,16 @@ public class MainController {
         this.downloadCoordinator.setListener(new CoordinatorListener());
 
         this.downloadQueue = FXCollections.observableArrayList(downloadQueueManager.loadQueue());
+        this.downloadQueue.addListener((javafx.collections.ListChangeListener<Game>) change -> {
+            updateQueueButton();
+            Game selected = tableGames.getSelectionModel().getSelectedItem();
+            updateDetailStatus(selected);
+            updateAddToQueueButton(selected);
+        });
         refreshHistoryCache();
         updateRetryButton();
+        updateQueueButton();
+        updateThemeButton();
         log.info("Controller ready; {} game(s) in the saved queue", downloadQueue.size());
     }
 
@@ -222,6 +241,9 @@ public class MainController {
         if (statusLabel != null) {
             statusLabel.setText(I18n.get("status.ready"));
         }
+        if (resultCountLabel != null) {
+            resultCountLabel.setText(I18n.get("results.count", 0));
+        }
     }
 
     private void setupComponents() {
@@ -232,6 +254,9 @@ public class MainController {
 
         globalProgress = new GlobalProgressIndicator();
         progressContainer.getChildren().add(globalProgress);
+        // The download dock only takes space while a session is visible.
+        progressContainer.visibleProperty().bind(globalProgress.visibleProperty());
+        progressContainer.managedProperty().bind(globalProgress.visibleProperty());
 
         notificationPane = new NotificationPane();
         rootStack.getChildren().add(notificationPane);
@@ -245,13 +270,24 @@ public class MainController {
                 I18n.get("filter.size.1to5"),
                 I18n.get("filter.size.gt5"));
         comboSize.getSelectionModel().selectFirst();
+
+        if (btnDownloadNow != null) {
+            btnDownloadNow.setMaxWidth(Double.MAX_VALUE);
+        }
+        if (btnAddToQueue != null) {
+            btnAddToQueue.setMaxWidth(Double.MAX_VALUE);
+        }
     }
 
     private void setupTable() {
         colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
         colRegion.setCellValueFactory(new PropertyValueFactory<>("region"));
-        colId.setCellValueFactory(new PropertyValueFactory<>("contentId"));
-        colConsole.setCellValueFactory(new PropertyValueFactory<>("console"));
+        if (colId != null) {
+            colId.setCellValueFactory(new PropertyValueFactory<>("contentId"));
+        }
+        colConsole.setCellValueFactory(data ->
+                new javafx.beans.property.ReadOnlyStringWrapper(
+                        consoleLabel(data.getValue().getConsole())));
 
         colSize.setCellValueFactory(new PropertyValueFactory<>("fileSize"));
         colSize.setCellFactory(column -> new TableCell<Game, Long>() {
@@ -290,7 +326,7 @@ public class MainController {
             row.setOnMouseClicked(event -> {
                 if (!row.isEmpty() && event.getButton() == MouseButton.PRIMARY
                         && event.getClickCount() == 2) {
-                    handleGameSelection(row.getItem());
+                    downloadNow(row.getItem());
                 }
             });
             return row;
@@ -298,14 +334,19 @@ public class MainController {
 
         tableGames.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
-                handleGameSelection(tableGames.getSelectionModel().getSelectedItem());
+                downloadNow(tableGames.getSelectionModel().getSelectedItem());
             }
         });
+
+        tableGames.getSelectionModel().selectedItemProperty()
+                .addListener((obs, oldGame, newGame) -> showGameDetail(newGame));
 
         if (btnAdd != null) {
             btnAdd.disableProperty().bind(
                     tableGames.getSelectionModel().selectedItemProperty().isNull());
         }
+
+        showGameDetail(null);
     }
 
     private String formatSize(long bytes) {
@@ -341,6 +382,10 @@ public class MainController {
                 I18n.get("filter.size.lt1"),
                 I18n.get("filter.size.1to5"),
                 I18n.get("filter.size.gt5")));
+
+        if (resultCountLabel != null) {
+            resultCountLabel.setText(I18n.get("results.count", filteredData.size()));
+        }
     }
 
     private void loadGames(Console console) {
@@ -375,6 +420,7 @@ public class MainController {
                 return;
             }
             masterData.setAll(loadTask.getValue());
+            tableGames.getSelectionModel().clearSelection();
             refreshHistoryCache();
             updateRegionCombo();
             updateFilter();
@@ -465,74 +511,263 @@ public class MainController {
     }
 
     private void handleGameSelection(Game game) {
+        addToQueue(game);
+    }
+
+    @FXML
+    private void handleAddToQueue() {
+        Game game = tableGames.getSelectionModel().getSelectedItem();
+        if (game == null) {
+            addToQueue(null);
+            return;
+        }
+        if (isQueued(game)) {
+            removeFromQueue(game);
+        } else {
+            addToQueue(game);
+        }
+    }
+
+    @FXML
+    private void handleAddSelected() {
+        addToQueue(tableGames.getSelectionModel().getSelectedItem());
+    }
+
+    @FXML
+    private void handleDownloadNow() {
+        downloadNow(tableGames.getSelectionModel().getSelectedItem());
+    }
+
+    /**
+     * Adds a game to the queue without a confirmation dialog. The action is
+     * reversible from the queue until downloads start.
+     */
+    private boolean addToQueue(Game game) {
+        if (game == null) {
+            notificationPane.showNotification(I18n.get("notify.selectgame"),
+                    NotificationPane.NotificationType.INFO);
+            return false;
+        }
+        if (downloadQueue == null) {
+            notificationPane.showNotification(I18n.get("notify.servicenotready"),
+                    NotificationPane.NotificationType.ERROR);
+            return false;
+        }
+        if (!ensureDownloadable(game)) {
+            return false;
+        }
+
+        boolean alreadyInQueue = downloadQueue.stream()
+                .anyMatch(queued -> Objects.equals(queued.getPkgUrl(), game.getPkgUrl()));
+        if (alreadyInQueue) {
+            notificationPane.showNotification(I18n.get("notify.alreadyinlist"),
+                    NotificationPane.NotificationType.WARNING);
+            return false;
+        }
+
+        downloadQueue.add(game);
+        downloadQueueManager.saveQueue(new ArrayList<>(downloadQueue));
+        notificationPane.showActionNotification(
+                I18n.get("notify.addedtolist", game.getTitle()),
+                NotificationPane.NotificationType.SUCCESS,
+                I18n.get("button.undo"),
+                () -> undoAddToQueue(game),
+                6000);
+        updateDetailStatus(game);
+        updateAddToQueueButton(game);
+        return true;
+    }
+
+    private boolean isQueued(Game game) {
+        return downloadQueue != null && game != null
+                && downloadQueue.stream()
+                .anyMatch(queued -> Objects.equals(queued.getPkgUrl(), game.getPkgUrl()));
+    }
+
+    private void removeFromQueue(Game game) {
+        if (downloadQueue == null || game == null) {
+            return;
+        }
+        boolean removed = downloadQueue.removeIf(
+                queued -> Objects.equals(queued.getPkgUrl(), game.getPkgUrl()));
+        if (removed) {
+            downloadQueueManager.saveQueue(new ArrayList<>(downloadQueue));
+            updateDetailStatus(game);
+            updateAddToQueueButton(game);
+            notificationPane.showNotification(I18n.get("notify.undone"),
+                    NotificationPane.NotificationType.INFO);
+        }
+    }
+
+    private void undoAddToQueue(Game game) {
+        removeFromQueue(game);
+    }
+
+    /**
+     * Starts a single game immediately. If a session is already running, the
+     * game is queued instead so the current downloads are not interrupted.
+     */
+    private void downloadNow(Game game) {
         if (game == null) {
             notificationPane.showNotification(I18n.get("notify.selectgame"),
                     NotificationPane.NotificationType.INFO);
             return;
         }
-        if (downloadQueue == null) {
+        if (downloadCoordinator == null) {
             notificationPane.showNotification(I18n.get("notify.servicenotready"),
                     NotificationPane.NotificationType.ERROR);
             return;
         }
+        if (!ensureDownloadable(game)) {
+            return;
+        }
 
-        String pkgUrl = game.getPkgUrl();
-        if (pkgUrl == null || pkgUrl.isBlank()) {
-            notificationPane.showNotification(I18n.get("notify.missing"),
+        if (downloadCoordinator.isDownloading()) {
+            if (addToQueue(game)) {
+                notificationPane.showNotification(I18n.get("notify.queuedwhilebusy"),
+                        NotificationPane.NotificationType.INFO);
+            }
+            return;
+        }
+
+        downloadQueue.removeIf(queued -> Objects.equals(queued.getPkgUrl(), game.getPkgUrl()));
+        downloadQueueManager.saveQueue(new ArrayList<>(downloadQueue));
+
+        resetDownloadUi();
+        globalProgress.startDownloads(1, game.getFileSize());
+        if (!downloadCoordinator.start(List.of(game), Set.of())) {
+            globalProgress.reset();
+            notificationPane.showNotification(
+                    I18n.get("notify.startfailed", downloadCoordinator.getLastStartError()),
                     NotificationPane.NotificationType.ERROR);
             return;
         }
-        if ("MISSING".equals(pkgUrl)) {
+
+        btnResumePause.setDisable(false);
+        notificationPane.showNotification(I18n.get("notify.started", 1),
+                NotificationPane.NotificationType.SUCCESS);
+        updateDetailStatus(game);
+    }
+
+    /** Returns false and shows the reason when a game cannot be downloaded. */
+    private boolean ensureDownloadable(Game game) {
+        String pkgUrl = game.getPkgUrl();
+        if (pkgUrl == null || pkgUrl.isBlank() || "MISSING".equals(pkgUrl)) {
             notificationPane.showNotification(I18n.get("notify.missing"),
                     NotificationPane.NotificationType.ERROR);
-            return;
+            return false;
         }
         if ("CART ONLY".equals(pkgUrl)) {
             notificationPane.showNotification(I18n.get("notify.cartonly"),
                     NotificationPane.NotificationType.INFO);
-            return;
+            return false;
         }
         if ("NOT REQUIRED".equals(pkgUrl)) {
             notificationPane.showNotification(I18n.get("notify.notrequired"),
                     NotificationPane.NotificationType.INFO);
+            return false;
+        }
+        return true;
+    }
+
+    private void showGameDetail(Game game) {
+        boolean selected = game != null;
+        detailHint.setVisible(!selected);
+        detailHint.setManaged(!selected);
+        detailTitle.setText(selected ? game.getTitle() : I18n.get("detail.none.title"));
+        detailMeta.setText(selected ? formatDetailMeta(game) : "");
+        detailContentId.setText(selected && game.getContentId() != null
+                ? game.getContentId() : I18n.get("misc.na"));
+        detailStatus.setVisible(false);
+        detailStatus.setManaged(false);
+
+        boolean downloadable = selected && isDownloadable(game);
+        btnDownloadNow.setDisable(!downloadable);
+        btnAddToQueue.setDisable(!downloadable);
+        updateAddToQueueButton(game);
+        if (selected) {
+            updateDetailStatus(game);
+        }
+    }
+
+    private void updateAddToQueueButton(Game game) {
+        if (btnAddToQueue == null) {
+            return;
+        }
+        boolean downloadable = game != null && isDownloadable(game);
+        btnAddToQueue.setDisable(!downloadable);
+        btnAddToQueue.setText(I18n.get(
+                downloadable && isQueued(game) ? "button.removefromqueue" : "button.addtoqueue"));
+    }
+
+    private String formatDetailMeta(Game game) {
+        return consoleLabel(game.getConsole()) + " · "
+                + (game.getRegion() == null ? "" : game.getRegion()) + " · "
+                + formatSize(game.getFileSize());
+    }
+
+    private String consoleLabel(Console console) {
+        if (console == null) {
+            return "";
+        }
+        return switch (console) {
+            case PSVITA -> I18n.get("console.psvita");
+            case PSP -> I18n.get("console.psp");
+            case PSX -> I18n.get("console.psx");
+        };
+    }
+
+    private boolean isDownloadable(Game game) {
+        String pkgUrl = game.getPkgUrl();
+        return pkgUrl != null && !pkgUrl.isBlank()
+                && !"MISSING".equals(pkgUrl)
+                && !"CART ONLY".equals(pkgUrl)
+                && !"NOT REQUIRED".equals(pkgUrl);
+    }
+
+    private void updateDetailStatus(Game game) {
+        if (detailStatus == null || game == null) {
+            return;
+        }
+        String status = historyStatus(game.getPkgUrl());
+        if (status == null && downloadQueue != null
+                && downloadQueue.stream().anyMatch(q -> Objects.equals(q.getPkgUrl(), game.getPkgUrl()))) {
+            status = "queued";
+        }
+        if (status == null) {
+            detailStatus.setVisible(false);
+            detailStatus.setManaged(false);
             return;
         }
 
-        if ("completed".equals(historyStatus(pkgUrl))) {
-            if (!confirm("dialog.redownload.title", "dialog.redownload.message", game.getTitle())) {
+        String key;
+        String style;
+        switch (status) {
+            case "completed" -> {
+                key = "detail.status.completed";
+                style = "badge-success";
+            }
+            case "failed" -> {
+                key = "detail.status.failed";
+                style = "badge-danger";
+            }
+            case "paused" -> {
+                key = "detail.status.paused";
+                style = "badge-warning";
+            }
+            case "queued" -> {
+                key = "detail.status.queued";
+                style = "badge-info";
+            }
+            default -> {
                 return;
             }
         }
-
-        if (!confirm("dialog.addtolist.title", "dialog.addtolist.message",
-                game.getTitle(), formatSize(game.getFileSize()))) {
-            return;
-        }
-
-        boolean alreadyInQueue = downloadQueue.stream()
-                .anyMatch(g -> Objects.equals(g.getPkgUrl(), pkgUrl));
-        if (alreadyInQueue) {
-            notificationPane.showNotification(I18n.get("notify.alreadyinlist"),
-                    NotificationPane.NotificationType.WARNING);
-            return;
-        }
-
-        downloadQueue.add(game);
-        downloadQueueManager.saveQueue(new ArrayList<>(downloadQueue));
-        notificationPane.showNotification(
-                I18n.get("notify.addedtolist", game.getTitle()),
-                NotificationPane.NotificationType.SUCCESS);
-    }
-
-    @FXML
-    private void handleAddSelected() {
-        Game selected = tableGames.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            notificationPane.showNotification(I18n.get("notify.selectgame"),
-                    NotificationPane.NotificationType.INFO);
-            return;
-        }
-        handleGameSelection(selected);
+        detailStatus.getStyleClass().removeAll("badge-success", "badge-danger", "badge-warning", "badge-info");
+        detailStatus.getStyleClass().add(style);
+        detailStatus.setText(I18n.get(key));
+        detailStatus.setVisible(true);
+        detailStatus.setManaged(true);
     }
 
     private boolean confirm(String titleKey, String messageKey, Object... args) {
@@ -560,11 +795,10 @@ public class MainController {
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle(I18n.get("dialog.downloadqueue.title"));
             Scene scene = new Scene(root);
-            ThemeManager.apply(scene, Boolean.parseBoolean(configManager.getProperty("darkMode")));
+            ThemeManager.apply(scene, configManager.isDarkModeEnabled());
             stage.setScene(scene);
             stage.setOnCloseRequest(event -> controller.detach());
             stage.showAndWait();
-
         } catch (IOException e) {
             log.error("Failed to open download list", e);
             notificationPane.showNotification(I18n.get("notify.openfailed",
@@ -649,7 +883,7 @@ public class MainController {
             }
             stage.setTitle(I18n.get(firstRun ? "config.firstrun.title" : "dialog.settings.title"));
             Scene scene = new Scene(root);
-            ThemeManager.apply(scene, Boolean.parseBoolean(configManager.getProperty("darkMode")));
+            ThemeManager.apply(scene, configManager.isDarkModeEnabled());
             stage.setScene(scene);
             stage.showAndWait();
 
@@ -663,6 +897,7 @@ public class MainController {
 
     private void handleConfigSaved() {
         applyTheme();
+        updateThemeButton();
         if (!started) {
             start();
             return;
@@ -791,7 +1026,7 @@ public class MainController {
         selectedDownloadUrls.clear();
         lastProgressUiMs.clear();
         lastSelectionAnchor = null;
-        progressContainer.getChildren().clear();
+        progressContainer.getChildren().removeIf(node -> node instanceof DownloadProgressItem);
         btnResumePause.setDisable(true);
         btnResumePause.setText(I18n.get("button.pause"));
     }
@@ -894,6 +1129,35 @@ public class MainController {
         if (btnRetry != null) {
             btnRetry.setDisable(failedHistoryCount() == 0);
         }
+    }
+
+    private void updateQueueButton() {
+        if (btnDownloadList == null) {
+            return;
+        }
+        int count = downloadQueue == null ? 0 : downloadQueue.size();
+        btnDownloadList.setText(I18n.get(
+                count > 0 ? "button.queue.count" : "button.queue", count));
+    }
+
+    private void updateThemeButton() {
+        if (btnTheme == null || configManager == null) {
+            return;
+        }
+        btnTheme.setText(I18n.get(
+                configManager.isDarkModeEnabled() ? "button.theme.light" : "button.theme.dark"));
+    }
+
+    @FXML
+    private void handleToggleTheme() {
+        if (configManager == null) {
+            return;
+        }
+        boolean dark = !configManager.isDarkModeEnabled();
+        configManager.setProperty("darkMode", Boolean.toString(dark));
+        configManager.saveConfig();
+        applyTheme();
+        updateThemeButton();
     }
 
     /** Number of failed entries in the in-memory history cache (no disk IO on FX). */

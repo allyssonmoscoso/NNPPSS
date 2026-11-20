@@ -31,6 +31,11 @@ All notable changes to NNPPSS are documented here.
   uses the in-memory history cache instead of reading JSON on every update.
 - Download row and global progress styling moved from inline styles to CSS
   classes with dark-theme overrides.
+- New application shell: app bar with console switch and queue counter,
+  filter bar with result count, and a detail pane with “Descargar” and
+  “Añadir a la cola”; adding to the queue can be undone from the snackbar.
+- Content ID moved out of the table into the detail pane; console names are
+  localized.
 - Configuration validated (1–4 simultaneous downloads, non-negative speed
   limit) with defaults for every key.
 - Logs are written to the data directory instead of the working directory.

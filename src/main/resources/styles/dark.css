@@ -1,46 +1,64 @@
-/* Dark theme for NNPPSS. Applied by adding the "dark" style class to the root. */
+/* Dark theme: only tokens and state colours; layout comes from base.css. */
 
 .root.dark {
-    -fx-base: #2b2b2b;
-    -fx-background: #1e1e1e;
-    -fx-control-inner-background: #2b2b2b;
-    -fx-control-inner-background-alt: #333333;
-    -fx-text-background-color: #bbbbbb;
-    -fx-accent: #4b6eaf;
-    -fx-focus-color: #4b6eaf;
-    -fx-faint-focus-color: #4b6eaf22;
+    -app-bg: #111318;
+    -surface: #1a1d24;
+    -surface-alt: #22262f;
+    -border-color: #2a2f3a;
+    -text-color: #e6e8ee;
+    -text-muted: #98a2b3;
+    -primary: #60a5fa;
+    -primary-hover: #93c5fd;
+    -success: #4ade80;
+    -warning: #fbbf24;
+    -danger: #f87171;
+    -selected-row: #1e2a44;
+
+    -fx-background-color: -app-bg;
 }
 
-.root.dark .table-view,
-.root.dark .table-view .column-header-background {
-    -fx-background-color: #2b2b2b;
+.root.dark .label {
+    -fx-text-fill: -text-color;
 }
 
-.root.dark .table-view .table-row-cell {
-    -fx-background-color: #2b2b2b;
-    -fx-text-fill: #bbbbbb;
+.root.dark .game-table .table-row-cell,
+.root.dark .game-table .table-row-cell:odd {
+    -fx-background-color: -surface;
 }
 
-.root.dark .table-view .table-row-cell:odd {
-    -fx-background-color: #303030;
+.root.dark .game-table .table-row-cell:hover {
+    -fx-background-color: -surface-alt;
+}
+
+.root.dark .game-table .table-row-cell:selected {
+    -fx-background-color: -selected-row;
+}
+
+.root.dark .game-table .table-row-cell.row-completed .table-cell {
+    -fx-text-fill: #81c784;
+}
+
+.root.dark .game-table .table-row-cell.row-paused .table-cell {
+    -fx-text-fill: #ffb74d;
+}
+
+.root.dark .game-table .table-row-cell.row-failed .table-cell {
+    -fx-text-fill: #ef9a9a;
+}
+
+.root.dark .game-table .table-row-cell.row-completed:selected .table-cell,
+.root.dark .game-table .table-row-cell.row-paused:selected .table-cell,
+.root.dark .game-table .table-row-cell.row-failed:selected .table-cell {
+    -fx-text-fill: -text-color;
 }
 
 .root.dark .download-item {
-    -fx-background-color: #2b2b2b;
-    -fx-border-color: #3c3c3c;
+    -fx-background-color: -surface-alt;
+    -fx-border-color: -border-color;
 }
 
-.root.dark .global-progress {
-    -fx-border-color: #3c3c3c;
-}
-
-.root.dark .download-title {
-    -fx-text-fill: #e0e0e0;
-}
-
-.root.dark .download-meta,
-.root.dark .download-status {
-    -fx-text-fill: #b0b0b0;
+.root.dark .download-item:selected {
+    -fx-border-color: -primary;
 }
 
 .root.dark .download-item.completed {
@@ -72,4 +90,28 @@
 
 .root.dark .stats-warning {
     -fx-text-fill: #ef9a9a;
+}
+
+.root.dark .detail-badge.badge-success {
+    -fx-background-color: #1e3323;
+    -fx-text-fill: #81c784;
+}
+
+.root.dark .detail-badge.badge-danger {
+    -fx-background-color: #3a1f22;
+    -fx-text-fill: #ef9a9a;
+}
+
+.root.dark .detail-badge.badge-warning {
+    -fx-background-color: #3a2a17;
+    -fx-text-fill: #ffb74d;
+}
+
+.root.dark .detail-badge.badge-info {
+    -fx-background-color: #1e2a44;
+    -fx-text-fill: #93c5fd;
+}
+
+.root.dark .scroll-bar {
+    -fx-background-color: -surface;
 }

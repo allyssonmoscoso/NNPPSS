@@ -1,22 +1,450 @@
-/* Base theme for NNPPSS (JavaFX). */
+/* NNPPSS theme tokens and component styles. */
 
 .root {
+    -app-bg: #f7f8fa;
+    -surface: #ffffff;
+    -surface-alt: #f2f4f7;
+    -border-color: #e4e7ec;
+    -text-color: #1d2433;
+    -text-muted: #667085;
+    -primary: #2563eb;
+    -primary-hover: #1d4ed8;
+    -success: #16a34a;
+    -warning: #d97706;
+    -danger: #dc2626;
+    -selected-row: #eff4ff;
+
     -fx-font-family: "System";
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
+    -fx-background-color: -app-bg;
 }
 
 .label {
-    -fx-text-fill: -fx-text-background-color;
+    -fx-text-fill: -text-color;
 }
 
-.table-view .column-header,
-.table-view .column-header-background {
+/* ── Catalog and detail pane ────────────────────────────────────── */
+
+.catalog-area {
+    -fx-background-color: -surface;
+}
+
+.game-detail {
+    -fx-background-color: -surface;
+    -fx-border-color: transparent transparent transparent -border-color;
+    -fx-border-width: 0 0 0 1;
+    -fx-padding: 16;
+}
+
+.detail-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-color;
+}
+
+.detail-meta {
+    -fx-font-size: 12px;
+    -fx-text-fill: -text-muted;
+}
+
+.detail-label {
+    -fx-font-size: 10px;
+    -fx-text-fill: -text-muted;
+}
+
+.detail-value {
+    -fx-font-size: 12px;
+    -fx-text-fill: -text-color;
+}
+
+.detail-hint {
+    -fx-font-size: 12px;
+    -fx-text-fill: -text-muted;
+}
+
+.detail-badge {
+    -fx-background-radius: 10;
+    -fx-padding: 2 8 2 8;
+    -fx-font-size: 11px;
+}
+
+.detail-badge.badge-success {
+    -fx-background-color: #e8f5e9;
+    -fx-text-fill: #2e7d32;
+}
+
+.detail-badge.badge-danger {
+    -fx-background-color: #ffebee;
+    -fx-text-fill: #c62828;
+}
+
+.detail-badge.badge-warning {
+    -fx-background-color: #fff3e0;
+    -fx-text-fill: #e65100;
+}
+
+.detail-badge.badge-info {
+    -fx-background-color: #e8f0fe;
+    -fx-text-fill: #1d4ed8;
+}
+
+/* ── Application shell ───────────────────────────────────────────── */
+
+.app-bar {
+    -fx-background-color: -surface;
+    -fx-border-color: transparent transparent -border-color transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-min-height: 56px;
+    -fx-padding: 10 16 10 16;
+}
+
+.brand {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-color;
+}
+
+.console-switch {
+    -fx-background-color: -surface-alt;
+    -fx-background-radius: 8;
+    -fx-padding: 2;
+}
+
+.console-toggle {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6;
+    -fx-padding: 6 12 6 12;
+    -fx-text-fill: -text-muted;
+    -fx-font-size: 12px;
+}
+
+.console-toggle:hover {
+    -fx-text-fill: -text-color;
+}
+
+.console-toggle:selected {
+    -fx-background-color: -surface;
+    -fx-text-fill: -text-color;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(16, 24, 40, 0.10), 6, 0, 0, 1);
+}
+
+.console-toggle .radio-container,
+.console-toggle .radio,
+.console-toggle .dot {
+    -fx-min-width: 0;
+    -fx-pref-width: 0;
+    -fx-max-width: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+    -fx-max-height: 0;
+    -fx-padding: 0;
+    -fx-opacity: 0;
+}
+
+.search-field {
+    -fx-background-color: -surface-alt;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8;
+    -fx-padding: 8 12 8 12;
+    -fx-text-fill: -text-color;
+    -fx-prompt-text-fill: -text-muted;
+}
+
+.search-field:focused {
+    -fx-border-color: -primary;
+    -fx-border-width: 1;
+}
+
+.subtle-button {
+    -fx-background-color: -surface;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 10 6 10;
+    -fx-text-fill: -text-color;
+    -fx-font-size: 12px;
+}
+
+.subtle-button:hover {
+    -fx-background-color: -surface-alt;
+}
+
+.subtle-button:disabled {
+    -fx-opacity: 0.55;
+}
+
+.primary-button {
+    -fx-background-color: -primary;
+    -fx-background-radius: 6;
+    -fx-padding: 7 14 7 14;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+.primary-button:hover {
+    -fx-background-color: -primary-hover;
+}
+
+.primary-button:disabled {
+    -fx-opacity: 0.55;
+}
+
+.queue-button {
+    -fx-background-color: -surface-alt;
+    -fx-background-radius: 6;
+    -fx-padding: 7 12 7 12;
+    -fx-text-fill: -text-color;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+.queue-button:hover {
+    -fx-background-color: -selected-row;
+}
+
+/* ── Filter bar ──────────────────────────────────────────────────── */
+
+.filter-bar {
+    -fx-background-color: -app-bg;
+    -fx-border-color: transparent transparent -border-color transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 8 16 8 16;
+}
+
+.filter-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-muted;
+}
+
+.filter-combo {
+    -fx-background-color: -surface;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-font-size: 12px;
+}
+
+.filter-combo .list-cell {
+    -fx-text-fill: -text-color;
+    -fx-background-color: transparent;
+    -fx-padding: 0 8 0 8;
+}
+
+.filter-combo .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.filter-combo .arrow {
+    -fx-background-color: -text-muted;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: -surface;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 6;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-text-fill: -text-color;
+    -fx-background-color: -surface;
+    -fx-padding: 6 10 6 10;
+}
+
+.combo-box-popup .list-view .list-cell:hover,
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: -surface-alt;
+    -fx-text-fill: -text-color;
+}
+
+.result-count {
+    -fx-font-size: 12px;
+    -fx-text-fill: -text-muted;
+}
+
+/* ── Catalog table ───────────────────────────────────────────────── */
+
+.game-table {
+    -fx-background-color: -surface;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.game-table .column-header-background {
+    -fx-background-color: -surface-alt;
+    -fx-border-color: transparent transparent -border-color transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.game-table .column-header,
+.game-table .filler {
+    -fx-background-color: transparent;
+    -fx-size: 38px;
+}
+
+.game-table .column-header .label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-muted;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.game-table .table-row-cell {
+    -fx-background-color: -surface;
+    -fx-border-color: transparent transparent -border-color transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-cell-size: 38px;
+}
+
+.game-table .table-row-cell:odd {
+    -fx-background-color: -surface;
+}
+
+.game-table .table-row-cell:hover {
+    -fx-background-color: -surface-alt;
+}
+
+.game-table .table-row-cell:selected {
+    -fx-background-color: -selected-row;
+}
+
+.game-table .table-cell {
+    -fx-padding: 0 12 0 12;
+    -fx-text-fill: -text-color;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.game-table .table-row-cell:selected .table-cell {
+    -fx-text-fill: -text-color;
+}
+
+.game-table .placeholder .label {
+    -fx-text-fill: -text-muted;
+}
+
+/* ── Status and download dock ────────────────────────────────────── */
+
+.status-bar {
+    -fx-background-color: -surface;
+    -fx-border-color: -border-color transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 6 12 6 12;
+}
+
+.status-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-muted;
+}
+
+.download-dock {
+    -fx-background-color: -surface;
+    -fx-border-color: -border-color transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 10 12 10 12;
+}
+
+.global-progress {
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+/* ── Download cards ──────────────────────────────────────────────── */
+
+.download-item {
+    -fx-background-color: -surface-alt;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.download-title {
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+    -fx-text-fill: -text-color;
+}
+
+.download-meta {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-muted;
+}
+
+.download-status {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-muted;
+}
+
+.download-cancel {
+    -fx-font-size: 10px;
+    -fx-padding: 1 5 1 5;
+    -fx-background-color: transparent;
+    -fx-text-fill: -text-muted;
+    -fx-cursor: hand;
+}
+
+.download-item:selected {
+    -fx-border-color: -primary;
+    -fx-border-width: 2;
+}
+
+.download-item:paused {
+    -fx-opacity: 0.85;
+}
+
+.download-item.completed {
+    -fx-background-color: #e8f5e9;
+    -fx-border-color: #a5d6a7;
+}
+
+.download-item.failed {
+    -fx-background-color: #ffebee;
+    -fx-border-color: #ef9a9a;
+}
+
+.download-item.cancelled {
+    -fx-background-color: #fff3e0;
+    -fx-border-color: #ffcc80;
+}
+
+.download-item.completed .download-status {
+    -fx-text-fill: #2e7d32;
+}
+
+.download-item.failed .download-status {
+    -fx-text-fill: #c62828;
+}
+
+.download-item.cancelled .download-status {
+    -fx-text-fill: #e65100;
+}
+
+/* ── History row colours and queue stats ────────────────────────── */
+
+.game-table .table-row-cell.row-completed .table-cell {
+    -fx-text-fill: #2e7d32;
+}
+
+.game-table .table-row-cell.row-paused .table-cell {
+    -fx-text-fill: #ef6c00;
+}
+
+.game-table .table-row-cell.row-failed .table-cell {
+    -fx-text-fill: #c62828;
+}
+
+.game-table .table-row-cell.row-completed:selected .table-cell,
+.game-table .table-row-cell.row-paused:selected .table-cell,
+.game-table .table-row-cell.row-failed:selected .table-cell {
+    -fx-text-fill: -text-color;
+}
+
+.stats-warning {
+    -fx-text-fill: #c62828;
     -fx-font-weight: bold;
 }
 
-.table-view .table-row-cell:empty {
-    -fx-background-color: transparent;
-}
+/* ── Controls ────────────────────────────────────────────────────── */
 
 .button {
     -fx-cursor: hand;
@@ -30,98 +458,6 @@
     -fx-background-radius: 3;
 }
 
-/* Download history colours (F3) */
-.table-row-cell.row-completed .table-cell {
-    -fx-text-fill: #2e7d32;
-}
-
-.table-row-cell.row-paused .table-cell {
-    -fx-text-fill: #ef6c00;
-}
-
-.table-row-cell.row-failed .table-cell {
-    -fx-text-fill: #c62828;
-}
-
-.table-row-cell.row-completed:selected .table-cell,
-.table-row-cell.row-paused:selected .table-cell,
-.table-row-cell.row-failed:selected .table-cell {
-    -fx-text-fill: white;
-}
-
-/* Global download progress */
-.global-progress {
-    -fx-border-color: #c8c8c8;
-    -fx-border-width: 2 0 0 0;
-}
-
-/* Download rows (F4) */
-.download-item {    -fx-background-color: #FAFAFA;
-    -fx-border-color: #E0E0E0;
-    -fx-border-radius: 4;
-    -fx-background-radius: 4;
-}
-
-.download-title {
-    -fx-font-weight: bold;
-    -fx-font-size: 12px;
-}
-
-.download-meta {
+.tooltip {
     -fx-font-size: 11px;
-    -fx-text-fill: #666666;
-}
-
-.download-status {
-    -fx-font-size: 11px;
-    -fx-text-fill: #888888;
-}
-
-.download-cancel {
-    -fx-font-size: 10px;
-    -fx-padding: 1 5 1 5;
-    -fx-background-color: transparent;
-    -fx-text-fill: #999999;
-    -fx-cursor: hand;
-}
-
-.download-item.completed .download-status {
-    -fx-text-fill: #2E7D32;
-}
-
-.download-item.failed .download-status {
-    -fx-text-fill: #C62828;
-}
-
-.download-item.cancelled .download-status {
-    -fx-text-fill: #E65100;
-}
-
-.stats-warning {
-    -fx-text-fill: #c62828;
-    -fx-font-weight: bold;
-}
-
-.download-item:selected {
-    -fx-border-color: #3B82F6;
-    -fx-border-width: 2;
-}
-
-.download-item:paused {
-    -fx-opacity: 0.85;
-}
-
-.download-item.completed {
-    -fx-background-color: #E8F5E9;
-    -fx-border-color: #A5D6A7;
-}
-
-.download-item.failed {
-    -fx-background-color: #FFEBEE;
-    -fx-border-color: #EF9A9A;
-}
-
-.download-item.cancelled {
-    -fx-background-color: #FFF3E0;
-    -fx-border-color: #FFCC80;
 }

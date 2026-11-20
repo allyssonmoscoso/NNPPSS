@@ -59,13 +59,13 @@ public class MainApp extends Application {
         mainController = loader.getController();
         mainController.setContext(context);
 
-        Scene scene = new Scene(root, 1024, 700);
+        Scene scene = new Scene(root, 1180, 760);
         boolean darkMode = context.getConfigManager().isDarkModeEnabled();
         ThemeManager.apply(scene, darkMode);
 
         primaryStage.setTitle("NNPPSS");
-        primaryStage.setMinWidth(900);
-        primaryStage.setMinHeight(600);
+        primaryStage.setMinWidth(1100);
+        primaryStage.setMinHeight(720);
         primaryStage.setScene(scene);
         addIcon(primaryStage);
         primaryStage.show();
