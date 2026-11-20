@@ -63,7 +63,8 @@
 
         <center>
             <HBox styleClass="catalog-area" spacing="0.0">
-                <TableView fx:id="tableGames" styleClass="game-table" HBox.hgrow="ALWAYS">
+                <TableView fx:id="tableGames" styleClass="game-table" HBox.hgrow="ALWAYS"
+                           accessibleText="%table.accessible">
                     <columns>
                         <TableColumn fx:id="colTitle" text="%table.column.name" prefWidth="460.0"/>
                         <TableColumn fx:id="colRegion" text="%table.column.region" prefWidth="80.0"/>
@@ -74,7 +75,14 @@
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
                     </columnResizePolicy>
                     <placeholder>
-                        <Label text="%table.empty"/>
+                        <VBox fx:id="emptyStateBox" alignment="CENTER" spacing="8.0" styleClass="empty-state">
+                            <Label fx:id="emptyStateIcon" text="◇" styleClass="empty-icon"/>
+                            <Label fx:id="emptyStateTitle" text="%empty.nodata.title" styleClass="empty-title"/>
+                            <Label fx:id="emptyStateHint" text="%empty.nodata.hint"
+                                   styleClass="empty-hint" wrapText="true" maxWidth="420.0"/>
+                            <Button fx:id="btnEmptyAction" text="%button.open.settings"
+                                    styleClass="subtle-button" onAction="#handleEmptyAction"/>
+                        </VBox>
                     </placeholder>
                 </TableView>
 

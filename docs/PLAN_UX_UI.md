@@ -457,9 +457,17 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
   - Dock de descargas colapsable con “Ocultar descargas” / “Mostrar descargas”; se expande automáticamente al iniciar una sesión.
 - **UX5 — parcial:**
   - Contadores visibles con singular/plural (`1 resultado` / `N resultados`).
-  - Textos accesibles en botones de icono (cerrar notificación, cerrar cola, pausar/cancelar descarga).
+  - Textos accesibles en botones de icono (cerrar notificación, cerrar cola, pausar/cancelar descarga) y en el catálogo.
   - `Esc` cierra el drawer de cola.
-  - Pending: estados de error/vacío con acción, foco completo por teclado y revisión de contraste.
+  - Estados de vacío y error dentro de la tabla:
+    - sin datos → “Abrir ajustes”;
+    - filtros sin coincidencias → “Limpiar filtros”;
+    - error de carga → “Reintentar”, con el mensaje del problema.
+  - La tabla muestra un estado de carga mientras se lee la biblioteca.
+  - Atajos nuevos: `F5` actualizar, `Ctrl+,` ajustes, `Alt+1/2/3` cambiar de consola.
+  - El foco pasa al catálogo al abrir la cola y vuelve al botón Queue al cerrarla; los ajustes enfocan la primera URL.
+  - Captura: [empty-filtered.png](ux/empty-filtered.png).
+  - Pending: revisión formal de contraste y recorrido completo solo con teclado.
 
 ![Drawer de cola](ux/queue-drawer.png)
 
@@ -468,7 +476,7 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
 ### Pendiente
 
 - **UX2 (resto):** convertir la primera ejecución en un asistente de dos pasos (bibliotecas → preferencias) si la prueba con usuarios lo justifica.
-- **UX5 (resto):** estados de carga/vacío/error con acción, foco completo por teclado y revisión de contraste; la pluralización básica ya está aplicada a los contadores visibles.
+- **UX5 (resto):** revisión formal de contraste y recorrido completo solo con teclado; los estados accionables, la pluralización básica y los atajos principales ya están implementados.
 - **UX6:** pruebas con usuarios, pulido y validación visual final.
 
 > Los ajustes siguen abriéndose como diálogo modal moderno, no como drawer. La cola ya no es modal y el flujo principal permite descargar en tres acciones desde el catálogo.

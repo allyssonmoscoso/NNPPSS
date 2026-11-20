@@ -221,6 +221,34 @@
     -fx-background-color: transparent;
 }
 
+/* ── Empty and loading states ───────────────────────────────────── */
+
+.empty-state {
+    -fx-padding: 24;
+}
+
+.empty-icon {
+    -fx-font-size: 30px;
+    -fx-text-fill: -text-muted;
+}
+
+.empty-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-color;
+}
+
+.empty-hint {
+    -fx-font-size: 12px;
+    -fx-text-fill: -text-muted;
+    -fx-text-alignment: center;
+}
+
+.table-view:focused {
+    -fx-border-color: -primary;
+    -fx-border-width: 1;
+}
+
 /* ── Application shell ───────────────────────────────────────────── */
 
 .app-bar {

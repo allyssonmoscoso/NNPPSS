@@ -110,6 +110,11 @@ public class MainController {
     @FXML private VBox progressContainer;
     @FXML private Label statusLabel;
     @FXML private VBox queueDrawer;
+    @FXML private VBox emptyStateBox;
+    @FXML private Label emptyStateIcon;
+    @FXML private Label emptyStateTitle;
+    @FXML private Label emptyStateHint;
+    @FXML private Button btnEmptyAction;
 
     @FXML private VBox detailPane;
     @FXML private Label detailTitle;
@@ -155,6 +160,11 @@ public class MainController {
     private boolean started;
     private boolean restorePrompted;
     private boolean retryingFailed;
+
+    private enum EmptyState { LOADING, NO_DATA, NO_FILTER_RESULTS, LOAD_ERROR }
+
+    private EmptyState emptyState = EmptyState.NO_DATA;
+    private String emptyErrorMessage = "";
 
     /**
      * Receives the application services. It does not start any background work:
@@ -398,6 +408,92 @@ public class MainController {
             resultCountLabel.setText(I18n.getCount(
                     "results.count.one", "results.count", filteredData.size()));
         }
+
+        if (emptyState != EmptyState.LOADING && emptyState != EmptyState.LOAD_ERROR) {
+            if (masterData.isEmpty()) {
+                emptyState = EmptyState.NO_DATA;
+            } else if (filteredData.isEmpty()) {
+                emptyState = EmptyState.NO_FILTER_RESULTS;
+            } else {
+                emptyState = null;
+            }
+        }
+        updateEmptyState();
+    }
+
+    private void updateEmptyState() {
+        if (emptyStateTitle == null || emptyState == null) {
+            return;
+        }
+
+        String titleKey;
+        String hintKey;
+        String icon;
+        String actionKey = null;
+        Object[] hintArgs = new Object[0];
+
+        switch (emptyState) {
+            case LOADING -> {
+                titleKey = "empty.loading.title";
+                hintKey = "empty.loading.hint";
+                icon = "⋯";
+            }
+            case NO_DATA -> {
+                titleKey = "empty.nodata.title";
+                hintKey = "empty.nodata.hint";
+                icon = "◇";
+                actionKey = "button.open.settings";
+            }
+            case NO_FILTER_RESULTS -> {
+                titleKey = "empty.filtered.title";
+                hintKey = "empty.filtered.hint";
+                icon = "⌕";
+                actionKey = "button.clearfilters";
+            }
+            case LOAD_ERROR -> {
+                titleKey = "empty.error.title";
+                hintKey = "empty.error.hint";
+                icon = "⚠";
+                actionKey = "button.retry";
+                hintArgs = new Object[]{emptyErrorMessage == null ? "" : emptyErrorMessage};
+            }
+            default -> {
+                return;
+            }
+        }
+
+        emptyStateIcon.setText(icon);
+        emptyStateTitle.setText(I18n.get(titleKey));
+        emptyStateHint.setText(I18n.get(hintKey, hintArgs));
+        boolean showAction = actionKey != null;
+        btnEmptyAction.setVisible(showAction);
+        btnEmptyAction.setManaged(showAction);
+        if (showAction) {
+            btnEmptyAction.setText(I18n.get(actionKey));
+        }
+    }
+
+    @FXML
+    private void handleEmptyAction() {
+        if (emptyState == null) {
+            return;
+        }
+        switch (emptyState) {
+            case NO_DATA -> handleOpenSettings();
+            case NO_FILTER_RESULTS -> clearFilters();
+            case LOAD_ERROR -> handleRefresh();
+            default -> {
+                // Loading has no recovery action.
+            }
+        }
+    }
+
+    private void clearFilters() {
+        txtSearch.clear();
+        comboRegion.getSelectionModel().selectFirst();
+        comboSize.getSelectionModel().selectFirst();
+        updateFilter();
+        txtSearch.requestFocus();
     }
 
     private void loadGames(Console console) {
@@ -405,6 +501,9 @@ public class MainController {
             return;
         }
         if (databaseManager != null && !databaseManager.isConsoleAvailable(console)) {
+            emptyState = EmptyState.NO_DATA;
+            emptyErrorMessage = "";
+            updateEmptyState();
             notificationPane.showNotification(
                     I18n.get("status.database.unavailable", console.getDisplayName()),
                     NotificationPane.NotificationType.WARNING);
@@ -416,6 +515,9 @@ public class MainController {
         }
 
         final int generation = ++loadGeneration;
+        emptyState = EmptyState.LOADING;
+        emptyErrorMessage = "";
+        updateEmptyState();
         setLoading(true);
         statusLabel.setText(I18n.get("status.loading"));
 
@@ -433,6 +535,7 @@ public class MainController {
             }
             masterData.setAll(loadTask.getValue());
             tableGames.getSelectionModel().clearSelection();
+            emptyState = EmptyState.NO_DATA;
             refreshHistoryCache();
             updateRegionCombo();
             updateFilter();
@@ -447,9 +550,14 @@ public class MainController {
                 return;
             }
             statusLabel.setText(I18n.get("status.ready"));
+            emptyState = EmptyState.LOAD_ERROR;
+            emptyErrorMessage = loadTask.getException() == null
+                    ? "" : String.valueOf(loadTask.getException().getMessage());
+            masterData.clear();
+            updateFilter();
             setLoading(false);
             notificationPane.showNotification(
-                    I18n.get("notify.errorloading", loadTask.getException().getMessage()),
+                    I18n.get("notify.errorloading", emptyErrorMessage),
                     NotificationPane.NotificationType.ERROR);
             log.error("Load failed", loadTask.getException());
         });
@@ -827,6 +935,11 @@ public class MainController {
             queueDrawer.setMaxHeight(Double.MAX_VALUE);
             queueDrawer.setManaged(true);
             queueDrawer.setVisible(true);
+            Platform.runLater(() -> {
+                if (queueController != null) {
+                    queueController.focusTable();
+                }
+            });
         } catch (IOException e) {
             log.error("Failed to open the download queue drawer", e);
             notificationPane.showNotification(I18n.get("notify.openfailed",
@@ -841,6 +954,9 @@ public class MainController {
         }
         queueDrawer.setVisible(false);
         queueDrawer.setManaged(false);
+        if (btnDownloadList != null) {
+            Platform.runLater(btnDownloadList::requestFocus);
+        }
     }
 
     private boolean startDownloadsFromQueue() {
@@ -1496,6 +1612,21 @@ public class MainController {
             return;
         }
 
+        scene.getAccelerators().put(
+                new KeyCodeCombination(KeyCode.F5),
+                this::handleRefresh);
+        scene.getAccelerators().put(
+                new KeyCodeCombination(KeyCode.COMMA, KeyCombination.CONTROL_DOWN),
+                this::handleOpenSettings);
+        scene.getAccelerators().put(
+                new KeyCodeCombination(KeyCode.DIGIT1, KeyCombination.ALT_DOWN),
+                rbVita::fire);
+        scene.getAccelerators().put(
+                new KeyCodeCombination(KeyCode.DIGIT2, KeyCombination.ALT_DOWN),
+                rbPsp::fire);
+        scene.getAccelerators().put(
+                new KeyCodeCombination(KeyCode.DIGIT3, KeyCombination.ALT_DOWN),
+                rbPsx::fire);
         scene.getAccelerators().put(
                 new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN),
                 this::focusSearch);

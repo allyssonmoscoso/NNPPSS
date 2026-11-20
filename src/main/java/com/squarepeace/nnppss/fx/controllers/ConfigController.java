@@ -4,6 +4,7 @@ import com.squarepeace.nnppss.service.ConfigManager;
 import com.squarepeace.nnppss.util.I18n;
 
 import javafx.concurrent.Task;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -74,6 +75,8 @@ public class ConfigController {
         spinnerSpeedLimit.setTooltip(new Tooltip(I18n.get("config.tooltip.speedlimit")));
         checkAutoCleanup.setTooltip(new Tooltip(I18n.get("config.tooltip.autocleanup")));
         checkDarkMode.setTooltip(new Tooltip(I18n.get("config.tooltip.darkmode")));
+
+        Platform.runLater(txtPsvitaUrl::requestFocus);
     }
 
     private void loadValues() {

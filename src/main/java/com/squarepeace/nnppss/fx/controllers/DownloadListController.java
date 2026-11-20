@@ -100,6 +100,12 @@ public class DownloadListController {
         }
     }
 
+    public void focusTable() {
+        if (tableQueue != null) {
+            tableQueue.requestFocus();
+        }
+    }
+
     private void detachQueueListener() {
         if (downloadQueue != null && queueListener != null) {
             downloadQueue.removeListener(queueListener);
