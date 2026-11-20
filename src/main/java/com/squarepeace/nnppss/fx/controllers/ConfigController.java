@@ -32,11 +32,15 @@ public class ConfigController {
     @FXML
     public void initialize() {
         // Initialize spinners
-        spinnerSimultaneous.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 10, 1));
+        spinnerSimultaneous.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 4, 1));
         spinnerSpeedLimit.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 100000, 0, 50));
-        
+
         // Initialize combo box
         comboLanguage.getItems().addAll("English", "Español");
+
+        spinnerSpeedLimit.setTooltip(new Tooltip(I18n.get("config.tooltip.speedlimit")));
+        checkAutoCleanup.setTooltip(new Tooltip(I18n.get("config.tooltip.autocleanup")));
+        checkDarkMode.setTooltip(new Tooltip(I18n.get("config.tooltip.darkmode")));
     }
 
     private void loadValues() {
@@ -47,24 +51,22 @@ public class ConfigController {
         String psxUrl = configManager.getPsxUrl();
         String simultaneousDownloads = configManager.getProperty("simultaneousDownloads");
         int downloadSpeedLimit = configManager.getDownloadSpeedLimit();
-        String autoCleanup = configManager.getProperty("autoCleanupPkg");
-        String darkMode = configManager.getProperty("darkMode");
-        String language = configManager.getProperty("language");
 
         if (psvitaUrl != null) txtPsvitaUrl.setText(psvitaUrl);
         if (pspUrl != null) txtPspUrl.setText(pspUrl);
         if (psxUrl != null) txtPsxUrl.setText(psxUrl);
 
         if (simultaneousDownloads != null && simultaneousDownloads.matches("[0-9]+")) {
-            spinnerSimultaneous.getValueFactory().setValue(Integer.parseInt(simultaneousDownloads));
+            int value = Integer.parseInt(simultaneousDownloads);
+            spinnerSimultaneous.getValueFactory().setValue(Math.max(1, Math.min(4, value)));
         }
 
         spinnerSpeedLimit.getValueFactory().setValue(downloadSpeedLimit);
 
-        checkAutoCleanup.setSelected(autoCleanup != null && Boolean.parseBoolean(autoCleanup));
-        checkDarkMode.setSelected(darkMode != null && Boolean.parseBoolean(darkMode));
+        checkAutoCleanup.setSelected(configManager.isAutoCleanupEnabled());
+        checkDarkMode.setSelected(configManager.isDarkModeEnabled());
 
-        if (language != null && language.equals("es")) {
+        if ("es".equals(configManager.getLanguage())) {
             comboLanguage.getSelectionModel().select("Español");
         } else {
             comboLanguage.getSelectionModel().select("English");
@@ -75,34 +77,71 @@ public class ConfigController {
     private void handleSave() {
         if (configManager == null) return;
 
-        configManager.setProperty("psvita.url", txtPsvitaUrl.getText());
-        configManager.setProperty("psp.url", txtPspUrl.getText());
-        configManager.setProperty("psx.url", txtPsxUrl.getText());
-        configManager.setProperty("simultaneousDownloads", String.valueOf(spinnerSimultaneous.getValue()));
-        configManager.setProperty("downloadSpeedLimit", String.valueOf(spinnerSpeedLimit.getValue()));
+        int simultaneous = spinnerSimultaneous.getValue();
+        if (simultaneous < 1 || simultaneous > 4) {
+            showError(I18n.get("config.error.simultaneous"));
+            return;
+        }
+        int speedLimit = spinnerSpeedLimit.getValue();
+        if (speedLimit < 0) {
+            showError(I18n.get("config.error.speedlimit"));
+            return;
+        }
+
+        String previousLanguage = configManager.getLanguage();
+
+        configManager.setProperty("psvita.url", txtPsvitaUrl.getText().trim());
+        configManager.setProperty("psp.url", txtPspUrl.getText().trim());
+        configManager.setProperty("psx.url", txtPsxUrl.getText().trim());
+        configManager.setProperty("simultaneousDownloads", String.valueOf(simultaneous));
+        configManager.setProperty("downloadSpeedLimit", String.valueOf(speedLimit));
         configManager.setProperty("autoCleanupPkg", String.valueOf(checkAutoCleanup.isSelected()));
         configManager.setProperty("darkMode", String.valueOf(checkDarkMode.isSelected()));
 
         String selectedLang = comboLanguage.getValue();
-        configManager.setProperty("language", "Español".equals(selectedLang) ? "es" : "en");
+        String newLanguage = "Español".equals(selectedLang) ? "es" : "en";
+        configManager.setProperty("language", newLanguage);
 
         configManager.saveConfig();
-        
+
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Configuration Saved");
+        alert.setTitle(I18n.get("config.title"));
         alert.setHeaderText(null);
-        alert.setContentText("Configuration has been saved successfully.");
+        alert.setContentText(I18n.get("config.saved"));
         alert.showAndWait();
+
+        if (!previousLanguage.equals(newLanguage)) {
+            Alert languageInfo = new Alert(Alert.AlertType.INFORMATION);
+            languageInfo.setTitle(I18n.get("config.language.title"));
+            languageInfo.setHeaderText(null);
+            languageInfo.setContentText(I18n.get("config.language.message"));
+            languageInfo.showAndWait();
+        }
 
         if (onSaveCallback != null) {
             onSaveCallback.run();
         }
-        
+
         closeWindow();
+    }
+
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(I18n.get("config.error.title"));
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     @FXML
     private void handleClear() {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle(I18n.get("dialog.confirmclearfields.title"));
+        confirm.setHeaderText(null);
+        confirm.setContentText(I18n.get("dialog.confirmclearfields.message"));
+        if (confirm.showAndWait().filter(ButtonType.OK::equals).isEmpty()) {
+            return;
+        }
         txtPsvitaUrl.clear();
         txtPspUrl.clear();
         txtPsxUrl.clear();

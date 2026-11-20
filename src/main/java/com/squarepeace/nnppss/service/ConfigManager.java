@@ -29,6 +29,7 @@ public class ConfigManager {
         }
         try (FileInputStream fis = new FileInputStream(file)) {
             properties.load(fis);
+            applyMissingDefaults();
             log.info("Configuration loaded from {}", CONFIG_FILE);
         } catch (IOException e) {
             log.error("Error loading configuration file: {}", CONFIG_FILE, e);
@@ -41,8 +42,28 @@ public class ConfigManager {
         properties.setProperty("psvita.url", "");
         properties.setProperty("psx.url", "");
         properties.setProperty("simultaneousDownloads", "1");
+        properties.setProperty("downloadSpeedLimit", "0");
         properties.setProperty("autoCleanupPkg", "false");
+        properties.setProperty("darkMode", "false");
+        properties.setProperty("language", "en");
         saveConfig();
+    }
+
+    private void applyMissingDefaults() {
+        putIfMissing("psp.url", "");
+        putIfMissing("psvita.url", "");
+        putIfMissing("psx.url", "");
+        putIfMissing("simultaneousDownloads", "1");
+        putIfMissing("downloadSpeedLimit", "0");
+        putIfMissing("autoCleanupPkg", "false");
+        putIfMissing("darkMode", "false");
+        putIfMissing("language", "en");
+    }
+
+    private void putIfMissing(String key, String value) {
+        if (properties.getProperty(key) == null) {
+            properties.setProperty(key, value);
+        }
     }
 
     public void saveConfig() {
@@ -105,5 +126,14 @@ public class ConfigManager {
     public boolean isAutoCleanupEnabled() {
         String value = getProperty("autoCleanupPkg");
         return value != null && Boolean.parseBoolean(value);
+    }
+
+    public boolean isDarkModeEnabled() {
+        return Boolean.parseBoolean(getProperty("darkMode"));
+    }
+
+    public String getLanguage() {
+        String value = getProperty("language");
+        return value == null || value.isBlank() ? "en" : value.trim();
     }
 }

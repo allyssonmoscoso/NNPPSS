@@ -1,17 +1,23 @@
 package com.squarepeace.nnppss.fx.components;
 
+import com.squarepeace.nnppss.util.I18n;
+
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.text.DecimalFormat;
 
+/**
+ * Aggregate progress of the whole download session (games and bytes).
+ */
 public class GlobalProgressIndicator extends VBox {
+
+    private static final DecimalFormat SIZE_FORMAT = new DecimalFormat("#0.00");
 
     private final ProgressBar progressBar;
     private final Label statusLabel;
@@ -23,43 +29,30 @@ public class GlobalProgressIndicator extends VBox {
     private long downloadedBytes = 0;
     private long startTimeMs = 0;
 
-    private static final DecimalFormat SIZE_FORMAT = new DecimalFormat("#0.00");
-
     public GlobalProgressIndicator() {
         setSpacing(5);
         setPadding(new Insets(10));
         setStyle("-fx-border-color: #c8c8c8; -fx-border-width: 2 0 0 0;");
 
-        // Top Row: Status (Left) and ETA (Right)
         BorderPane topPane = new BorderPane();
-        statusLabel = new Label("Ready");
+        statusLabel = new Label(I18n.get("status.ready"));
         etaLabel = new Label("");
         topPane.setLeft(statusLabel);
         topPane.setRight(etaLabel);
 
-        // Middle: ProgressBar
         progressBar = new ProgressBar(0);
         progressBar.setMaxWidth(Double.MAX_VALUE);
         progressBar.setPrefHeight(25);
+        progressBar.setProgress(0);
 
-        // Overlay text on progress bar is tricky in JavaFX without a StackPane,
-        // let's just put it below or use a StackPane if we want it inside.
-        // For simplicity, let's put percentage on the right of the bar or inside.
-        // Let's us a simple VBox layout for now.
-        
-        // Let's try a StackPane for the progress text if we want specific styling,
-        // but standard ProgressBar doesn't support text inside easily.
-        // We'll place percentage in the center? No, let's just keep it simple.
-        
         getChildren().addAll(topPane, progressBar);
-        
         setVisible(false);
     }
 
     public void startDownloads(int totalGames, long totalBytes) {
-        this.totalGames = totalGames;
+        this.totalGames = Math.max(0, totalGames);
         this.completedGames = 0;
-        this.totalBytes = totalBytes;
+        this.totalBytes = Math.max(0, totalBytes);
         this.downloadedBytes = 0;
         this.startTimeMs = System.currentTimeMillis();
 
@@ -68,7 +61,7 @@ public class GlobalProgressIndicator extends VBox {
     }
 
     public void updateProgress(long downloadedBytes) {
-        this.downloadedBytes = downloadedBytes;
+        this.downloadedBytes = Math.max(0, downloadedBytes);
         Platform.runLater(this::updateDisplay);
     }
 
@@ -86,40 +79,43 @@ public class GlobalProgressIndicator extends VBox {
 
         Platform.runLater(() -> {
             progressBar.setProgress(0);
-            statusLabel.setText("Ready");
+            statusLabel.setText(I18n.get("status.ready"));
             etaLabel.setText("");
             setVisible(false);
         });
     }
 
     private void updateDisplay() {
-        // Calculate percentage
-        double percentBytes = totalBytes > 0 ? (double) downloadedBytes / totalBytes : 0;
-        double percentGames = totalGames > 0 ? (double) completedGames / totalGames : 0;
-
-        // Averaging both for smoothness, or just use bytes if available
-        double progress = (percentBytes + percentGames) / 2.0;
-
+        double progress;
+        if (totalBytes > 0) {
+            progress = (double) downloadedBytes / totalBytes;
+        } else if (totalGames > 0) {
+            progress = (double) completedGames / totalGames;
+        } else {
+            progress = 0;
+        }
+        progress = Math.max(0, Math.min(1, progress));
         progressBar.setProgress(progress);
 
-        // Status text
-        String sizeText = formatSize(downloadedBytes) + " / " + formatSize(totalBytes);
-        statusLabel.setText(String.format("Downloading: %d / %d games  •  %s",
-                completedGames, totalGames, sizeText));
+        statusLabel.setText(I18n.get("progress.globalinfo",
+                completedGames, totalGames,
+                formatSize(downloadedBytes), formatSize(totalBytes)));
 
-        // ETA calculation
-        long elapsedMs = System.currentTimeMillis() - startTimeMs;
-        if (elapsedMs > 1000 && downloadedBytes > 0 && downloadedBytes < totalBytes) {
-            long remainingBytes = totalBytes - downloadedBytes;
-            double bytesPerMs = (double) downloadedBytes / elapsedMs;
-            long etaMs = (long) (remainingBytes / bytesPerMs);
-
-            etaLabel.setText("ETA: " + formatTime(etaMs));
-        } else if (completedGames >= totalGames) {
-            etaLabel.setText("Complete!");
+        if (totalGames > 0 && completedGames >= totalGames) {
+            etaLabel.setText(I18n.get("progress.complete"));
             progressBar.setProgress(1.0);
+        } else if (totalBytes > 0 && downloadedBytes > 0) {
+            long elapsedMs = System.currentTimeMillis() - startTimeMs;
+            if (elapsedMs > 1000) {
+                double bytesPerMs = (double) downloadedBytes / elapsedMs;
+                long remainingBytes = Math.max(0, totalBytes - downloadedBytes);
+                long etaSeconds = (long) (remainingBytes / bytesPerMs / 1000.0);
+                etaLabel.setText(I18n.get("progress.eta", formatTime(etaSeconds)));
+            } else {
+                etaLabel.setText(I18n.get("progress.calculating"));
+            }
         } else {
-            etaLabel.setText("Calculating...");
+            etaLabel.setText("");
         }
     }
 
@@ -135,18 +131,13 @@ public class GlobalProgressIndicator extends VBox {
         }
     }
 
-    private String formatTime(long ms) {
-        long seconds = ms / 1000;
+    private String formatTime(long seconds) {
         if (seconds < 60) {
             return seconds + "s";
         } else if (seconds < 3600) {
-            long mins = seconds / 60;
-            long secs = seconds % 60;
-            return String.format("%dm %ds", mins, secs);
+            return String.format("%dm %ds", seconds / 60, seconds % 60);
         } else {
-            long hours = seconds / 3600;
-            long mins = (seconds % 3600) / 60;
-            return String.format("%dh %dm", hours, mins);
+            return String.format("%dh %dm", seconds / 3600, (seconds % 3600) / 60);
         }
     }
 }

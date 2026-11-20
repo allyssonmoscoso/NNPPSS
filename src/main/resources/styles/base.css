@@ -1,0 +1,82 @@
+/* Base theme for NNPPSS (JavaFX). */
+
+.root {
+    -fx-font-family: "System";
+    -fx-font-size: 12px;
+}
+
+.label {
+    -fx-text-fill: -fx-text-background-color;
+}
+
+.table-view .column-header,
+.table-view .column-header-background {
+    -fx-font-weight: bold;
+}
+
+.table-view .table-row-cell:empty {
+    -fx-background-color: transparent;
+}
+
+.button {
+    -fx-cursor: hand;
+}
+
+.progress-bar > .bar {
+    -fx-background-radius: 3;
+}
+
+.progress-bar > .track {
+    -fx-background-radius: 3;
+}
+
+/* Download history colours (F3) */
+.table-row-cell.row-completed .table-cell {
+    -fx-text-fill: #2e7d32;
+}
+
+.table-row-cell.row-paused .table-cell {
+    -fx-text-fill: #ef6c00;
+}
+
+.table-row-cell.row-failed .table-cell {
+    -fx-text-fill: #c62828;
+}
+
+.table-row-cell.row-completed:selected .table-cell,
+.table-row-cell.row-paused:selected .table-cell,
+.table-row-cell.row-failed:selected .table-cell {
+    -fx-text-fill: white;
+}
+
+/* Download rows (F4) */
+.download-item {
+    -fx-background-color: #FAFAFA;
+    -fx-border-color: #E0E0E0;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+
+.download-item:selected {
+    -fx-border-color: #3B82F6;
+    -fx-border-width: 2;
+}
+
+.download-item:paused {
+    -fx-opacity: 0.85;
+}
+
+.download-item.completed {
+    -fx-background-color: #E8F5E9;
+    -fx-border-color: #A5D6A7;
+}
+
+.download-item.failed {
+    -fx-background-color: #FFEBEE;
+    -fx-border-color: #EF9A9A;
+}
+
+.download-item.cancelled {
+    -fx-background-color: #FFF3E0;
+    -fx-border-color: #FFCC80;
+}

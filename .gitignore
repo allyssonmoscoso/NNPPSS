@@ -161,9 +161,9 @@ url.txt
 .vscode/
 
 .build_tmp/*
+.local/
 *.properties
 .classpath
 .project
 .settings/*
-.github/*
 *.json

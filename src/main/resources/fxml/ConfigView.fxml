@@ -17,12 +17,12 @@
 <VBox alignment="TOP_CENTER" spacing="20.0" xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.squarepeace.nnppss.fx.controllers.ConfigController"
-      prefWidth="500.0">
+      prefWidth="520.0">
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
     </padding>
 
-    <Label text="Configuration">
+    <Label text="%config.title">
         <font>
             <Font name="System Bold" size="18.0" />
         </font>
@@ -30,8 +30,8 @@
 
     <GridPane hgap="10.0" vgap="15.0">
         <columnConstraints>
-            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" percentWidth="35.0" />
-            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" percentWidth="65.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" percentWidth="40.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" percentWidth="60.0" />
         </columnConstraints>
         <rowConstraints>
             <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
@@ -44,35 +44,35 @@
             <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
         </rowConstraints>
 
-        <Label text="PS Vita URL:" GridPane.rowIndex="0" />
+        <Label text="%config.label.psvitaurl" GridPane.rowIndex="0" />
         <TextField fx:id="txtPsvitaUrl" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-        <Label text="PSP URL:" GridPane.rowIndex="1" />
+        <Label text="%config.label.pspurl" GridPane.rowIndex="1" />
         <TextField fx:id="txtPspUrl" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-        <Label text="PSX URL:" GridPane.rowIndex="2" />
+        <Label text="%config.label.psxurl" GridPane.rowIndex="2" />
         <TextField fx:id="txtPsxUrl" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-        <Label text="Simultaneous Downloads:" GridPane.rowIndex="3" />
+        <Label text="%config.label.simultaneous" GridPane.rowIndex="3" />
         <Spinner fx:id="spinnerSimultaneous" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
-        <Label text="Download Speed Limit (KB/s):" GridPane.rowIndex="4" />
+        <Label text="%config.label.speedlimit" GridPane.rowIndex="4" />
         <Spinner fx:id="spinnerSpeedLimit" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
-        <Label text="Language:" GridPane.rowIndex="5" />
+        <Label text="%config.label.language" GridPane.rowIndex="5" />
         <ComboBox fx:id="comboLanguage" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="5" />
-        
-        <Label text="Options:" GridPane.rowIndex="6" />
+
+        <Label text="%config.label.options" GridPane.rowIndex="6" />
         <VBox spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="6">
-             <CheckBox fx:id="checkAutoCleanup" text="Auto Cleanup PKG" />
-             <CheckBox fx:id="checkDarkMode" text="Dark Mode" />
+             <CheckBox fx:id="checkAutoCleanup" text="%config.label.autocleanup" />
+             <CheckBox fx:id="checkDarkMode" text="%config.label.darkmode" />
         </VBox>
     </GridPane>
 
     <HBox alignment="CENTER_RIGHT" spacing="10.0">
-        <Button onAction="#handleClear" text="Clear" />
-        <Button onAction="#handleSave" text="Save" defaultButton="true" />
-        <Button onAction="#handleClose" text="Close" cancelButton="true"/>
+        <Button text="%button.clear" onAction="#handleClear" />
+        <Button text="%button.save" defaultButton="true" onAction="#handleSave" />
+        <Button text="%button.close" cancelButton="true" onAction="#handleClose"/>
     </HBox>
 
 </VBox>

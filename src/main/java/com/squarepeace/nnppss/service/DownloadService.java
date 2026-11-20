@@ -16,12 +16,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.squarepeace.nnppss.model.download.DownloadMetadata;
+import com.squarepeace.nnppss.service.download.DownloadClient;
 import com.squarepeace.nnppss.service.download.ResourceAnalyzer;
 import com.squarepeace.nnppss.service.download.SegmentStateManager;
 import com.squarepeace.nnppss.service.download.SegmentedDownloadTask;
 import com.squarepeace.nnppss.util.PathResolver;
 
-public class DownloadService {
+public class DownloadService implements DownloadClient {
     private static final Logger log = LoggerFactory.getLogger(DownloadService.class);
     private static final int MAX_RETRIES = 3;
     private static final long INITIAL_RETRY_DELAY_MS = 2000; // 2 seconds
@@ -318,5 +319,18 @@ public class DownloadService {
      */
     public boolean isRetrying(String fileURL) {
         return getRetryCount(fileURL) > 0;
+    }
+
+    /**
+     * Cancels active downloads and releases the segment executor. Safe to call
+     * more than once; the application calls it from {@code MainApp.stop()}.
+     */
+    public void shutdown() {
+        for (SegmentedDownloadTask task : activeTasks.values()) {
+            task.cancel();
+        }
+        activeTasks.clear();
+        segmentExecutor.shutdownNow();
+        log.info("DownloadService shut down");
     }
 }

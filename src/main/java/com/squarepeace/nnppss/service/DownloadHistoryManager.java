@@ -1,10 +1,9 @@
 package com.squarepeace.nnppss.service;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +14,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.squarepeace.nnppss.model.DownloadHistory;
+import com.squarepeace.nnppss.util.JsonStore;
 import com.squarepeace.nnppss.util.PathResolver;
 
 public class DownloadHistoryManager {
@@ -27,24 +27,22 @@ public class DownloadHistoryManager {
     }
 
     public List<DownloadHistory> loadHistory() {
-        File file = PathResolver.getFile(HISTORY_FILE);
-        if (!file.exists()) {
-            //log.debug("No download history file found: {}", HISTORY_FILE);
+        Path path = PathResolver.resolve(HISTORY_FILE);
+        if (!Files.exists(path)) {
             return new ArrayList<>();
         }
 
-        try (FileReader reader = new FileReader(file)) {
-            Type listType = new TypeToken<List<DownloadHistory>>(){}.getType();
-            List<DownloadHistory> history = gson.fromJson(reader, listType);
-            
+        try {
+            Type listType = new TypeToken<List<DownloadHistory>>() {
+            }.getType();
+            List<DownloadHistory> history = JsonStore.read(path, listType, gson);
+
             if (history == null) {
                 log.warn("Download history file is empty or invalid: {}", HISTORY_FILE);
                 return new ArrayList<>();
             }
-            
-            //log.info("Loaded {} download history entries", history.size());
             return history;
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             log.error("Error loading download history from: {}", HISTORY_FILE, e);
             return new ArrayList<>();
         }
@@ -55,8 +53,8 @@ public class DownloadHistoryManager {
             history = new ArrayList<>();
         }
 
-        try (FileWriter writer = new FileWriter(PathResolver.getFile(HISTORY_FILE))) {
-            gson.toJson(history, writer);
+        try {
+            JsonStore.write(PathResolver.resolve(HISTORY_FILE), history, gson);
             log.debug("Saved {} download history entries to: {}", history.size(), HISTORY_FILE);
         } catch (IOException e) {
             log.error("Error saving download history to: {}", HISTORY_FILE, e);
@@ -64,19 +62,22 @@ public class DownloadHistoryManager {
     }
 
     public void addEntry(DownloadHistory entry) {
+        if (entry == null) {
+            return;
+        }
         List<DownloadHistory> history = loadHistory();
-        
-        // Remover entrada anterior con mismo pkgUrl si existe
-        history.removeIf(h -> h.getPkgUrl().equals(entry.getPkgUrl()));
-        
+
+        // Remove a previous entry with the same pkgUrl, if any.
+        history.removeIf(existing -> existing != null
+                && java.util.Objects.equals(existing.getPkgUrl(), entry.getPkgUrl()));
+
         history.add(entry);
         saveHistory(history);
     }
 
     public DownloadHistory findByUrl(String pkgUrl) {
-        List<DownloadHistory> history = loadHistory();
-        return history.stream()
-                .filter(h -> h.getPkgUrl().equals(pkgUrl))
+        return loadHistory().stream()
+                .filter(entry -> java.util.Objects.equals(entry.getPkgUrl(), pkgUrl))
                 .findFirst()
                 .orElse(null);
     }

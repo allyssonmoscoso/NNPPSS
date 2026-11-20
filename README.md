@@ -1,63 +1,134 @@
 # NNPPSS
 
-A tool for managing and downloading "Magic packages".    Built with Java, NNPPSS provides a robust download manager with persistence, segmented Downloads, retry capabilities, etc.
+A JavaFX download manager for "Magic packages" (PS Vita, PSP and PSX), with
+segmented downloads, pause/resume, retries, queue persistence, pkg2zip
+extraction and automatic cleanup.
 
-NNPPSS is compatible with Windows, macOS, and Linux/Unix-based operating systems.
+## Features
 
-## Prerequisites
+- PS Vita, PSP and PSX catalogues from configurable TSV URLs.
+- Search and filters (region, size) with debounced filtering.
+- Download queue with reordering, JSON export/import and free-space checks.
+- Segmented downloads, pause/resume, cancel with partial-file cleanup.
+- Download history, failed-download retry and row colouring.
+- Automatic session restore after restart (including paused downloads).
+- pkg2zip extraction and optional `.pkg` auto-cleanup.
+- English/Spanish UI, light/dark theme.
+- Per-user data directory, so the app works when installed read-only.
+- Self-contained app image built with jpackage (no JDK required).
 
-- **Java 17+** (required)
-- **[pkg2zip](https://github.com/mmozeiko/pkg2zip)**
+## Requirements
 
-## Installation
+- **pkg2zip** for extraction: `lib\pkg2zip.exe` on Windows, or `pkg2zip` on
+  `PATH` on macOS/Linux.
+- To build from source: **JDK 25** and **Maven 3.9+**.
 
-### Easiest (Download release)
+The distributed app image bundles its own Java runtime.
 
-The simplest way to run NNPPSS is to download the latest **[Releases](https://github.com/allyssonmoscoso/NNPPSS/releases)**.
+## Run the packaged app
 
-  
-
-Release assets include a pre-built `.jar` (all dependencies bundled). Download the release archive, extract and run:
-
-```bash
-java -jar NNPPSS-{version}.jar
+```powershell
+# Windows
+.\scripts\package-windows.ps1
+.\dist\NNPPSS\NNPPSS.exe
 ```
 
-### Development Mode
-
-For quick compilation and testing:
 ```bash
-./run-dev.sh          # Compile and run
-./run-dev.sh compile  # Compile only
-./run-dev.sh run      # Run without recompiling
-./run-dev.sh clean    # Clean build artifacts
+# macOS / Linux
+sh scripts/package-unix.sh
+# Linux: dist/NNPPSS/bin/NNPPSS
+# macOS: open dist/NNPPSS.app
 ```
 
-### Configuration
+Set `JPACKAGE_TYPE=msi` (Windows), `dmg` (macOS) or `deb` (Linux) to build an
+installer instead of the portable app image, provided the platform tools
+(WiX, Xcode tools, dpkg) are installed.
 
-- **Persistent Settings**: Configuration saved in `config.properties`
-- **Customizable Options**:
-  - Database URLs for each console
-  - Simultaneous download limit (1-4)
-- **Easy Setup**: Configuration wizard on first launch
+## Development
 
+```bash
+./run-dev.sh            # run the JavaFX application
+./run-dev.sh compile    # compile only
+./run-dev.sh test       # run the automated tests
+./run-dev.sh package    # build target/NNPPSS-<version>.jar
+./run-dev.sh clean      # clean build artifacts
+```
 
-- **Language selection**: change UI language; the choice is saved to `config.properties` and requires application restart to apply.
-- **Dark Mode (experimental)**: an experimental dark theme can be enabled in Settings; the theme is applied after restart.
-- **Download speed limit**: set an approximate download speed limit (KB/s). `0` means unlimited. The limiter works by throttling write loops and may be approximate.
-- **Auto-cleanup**: enable or disable automatic deletion of `.pkg` files after extraction.
+Direct Maven equivalents:
 
-## Usage Tips
+```bash
+mvn javafx:run
+mvn test
+mvn clean package
+```
 
-1. **First Launch**: Configure database URLs when prompted, save configurations, close and run .jar again.
-2. **Adding Downloads**: Select games from table → "Add to Download List" button
-3. **Managing Downloads**: Right-click on progress bars for pause/resume/cancel options
-4. **Resuming Sessions**: Close and reopen app - downloads automatically resume
-4. **Extraction**: Games auto-extract after download
+Development runs use `.local/` as the data directory; pass
+`-Dnnppss.dataDir=/path` to override it.
+
+## Data directory
+
+Configuration, databases, downloads, history and logs live outside the
+application folder:
+
+| OS | Default directory |
+|---|---|
+| Windows | `%APPDATA%\NNPPSS` |
+| macOS | `~/Library/Application Support/NNPPSS` |
+| Linux | `$XDG_DATA_HOME/NNPPSS` or `~/.local/share/NNPPSS` |
+
+Existing files next to the application are migrated once on first run.
+
+`config.properties` keys:
+
+- `psvita.url`, `psp.url`, `psx.url`: database URLs per console
+- `simultaneousDownloads`: 1–4
+- `downloadSpeedLimit`: approximate KB/s, `0` means unlimited
+- `autoCleanupPkg`: delete `.pkg` files after successful extraction
+- `darkMode`: enable the dark theme
+- `language`: `en` or `es` (applied on restart)
+
+## Project layout
+
+```
+src/main/java/com/squarepeace/nnppss/
+├── Launcher.java         jpackage entry point
+├── MainApp.java          JavaFX application
+├── app/                  AppContext, AppPaths, lifecycle, theme
+├── fx/                   controllers, components, view utilities
+├── model/                data model
+├── service/              downloads, coordinator, databases, persistence
+└── util/                 i18n, paths, atomic JSON storage
+src/main/resources/
+├── fxml/                 views
+├── styles/               base and dark CSS
+└── messages*.properties  English/Spanish translations
+```
+
+## Testing
+
+```bash
+mvn test
+```
+
+The suite covers application paths and migration, configuration defaults,
+i18n key parity, game filters, FXML loading and theming, the download
+coordinator (start, progress, pause/resume, cancel, history, extraction,
+restart persistence), queue persistence and a real segmented download against a
+local HTTP server.
 
 ## Troubleshooting
 
-- **Downloads won't start**: Check disk space and configuration
-- **Extraction fails**: Ensure pkg2zip is installed (add pkg2zip the environment path)
-- **Database empty**: Click "Refresh" button or check database URLs in settings
-- **Logs**: Check `logs/nnppss-error.log` for detailed error information, Please report any errors in issues.
+- **Downloads do not start:** check free disk space (the app requires the
+  download size plus a 5 GB buffer) and the console URLs.
+- **Extraction fails:** verify pkg2zip is installed or bundled.
+- **Database empty:** use Refresh, or check the console URLs.
+- **Logs:** `nnppss.log` and `nnppss-error.log` in the data directory.
+
+## History
+
+The last Swing-only release is tagged `legacy-swing-0.0.7`; version 1.0.0 is the
+definitive JavaFX edition.
+
+## License
+
+See [LICENSE](LICENSE).

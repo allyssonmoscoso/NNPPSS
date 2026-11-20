@@ -100,6 +100,15 @@ public class I18n {
     public static String getCurrentLanguageCode() {
         return currentLocale.getLanguage();
     }
+
+    /**
+     * Get the resource bundle for the current locale. Used by
+     * {@code FXMLLoader.setResources(...)} so that FXML files can use
+     * {@code %key} references.
+     */
+    public static ResourceBundle getResourceBundle() {
+        return resourceBundle;
+    }
     
     /**
      * Check if a key exists in the resource bundle

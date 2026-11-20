@@ -1,10 +1,10 @@
 package com.squarepeace.nnppss.service;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,6 +16,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.squarepeace.nnppss.model.DownloadState;
+import com.squarepeace.nnppss.util.JsonStore;
 import com.squarepeace.nnppss.util.PathResolver;
 
 public class DownloadStateManager {
@@ -33,32 +34,33 @@ public class DownloadStateManager {
      * @return List of DownloadState objects, or empty list if file doesn't exist or error occurs
      */
     public List<DownloadState> loadStates() {
-        File file = PathResolver.getFile(STATE_FILE);
-        if (!file.exists()) {
+        Path path = PathResolver.resolve(STATE_FILE);
+        if (!Files.exists(path)) {
             log.debug("No download state file found: {}", STATE_FILE);
             return new ArrayList<>();
         }
 
-        try (FileReader reader = new FileReader(file)) {
-            Type listType = new TypeToken<List<DownloadState>>(){}.getType();
-            List<DownloadState> states = gson.fromJson(reader, listType);
-            
+        try {
+            Type listType = new TypeToken<List<DownloadState>>() {
+            }.getType();
+            List<DownloadState> states = JsonStore.read(path, listType, gson);
+
             if (states == null) {
                 log.warn("Download state file is empty or invalid: {}", STATE_FILE);
                 return new ArrayList<>();
             }
-            
+
             int originalCount = states.size();
             // Filter out completed downloads and stale downloads
             List<DownloadState> filteredStates = states.stream()
                     .filter(state -> !"completed".equals(state.getStatus()))
                     .filter(state -> !isStale(state))
                     .collect(Collectors.toList());
-            
+
             log.info("Loaded {} download states ({} filtered out)", filteredStates.size(), originalCount - filteredStates.size());
             return filteredStates;
-            
-        } catch (IOException e) {
+
+        } catch (IOException | RuntimeException e) {
             log.error("Error loading download states from: {}", STATE_FILE, e);
             return new ArrayList<>();
         }
@@ -73,8 +75,8 @@ public class DownloadStateManager {
             states = new ArrayList<>();
         }
 
-        try (FileWriter writer = new FileWriter(PathResolver.getFile(STATE_FILE))) {
-            gson.toJson(states, writer);
+        try {
+            JsonStore.write(PathResolver.resolve(STATE_FILE), states, gson);
             log.debug("Saved {} download states to: {}", states.size(), STATE_FILE);
         } catch (IOException e) {
             log.error("Error saving download states to: {}", STATE_FILE, e);

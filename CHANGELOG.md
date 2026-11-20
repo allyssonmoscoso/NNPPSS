@@ -1,0 +1,47 @@
+# Changelog
+
+All notable changes to NNPPSS are documented here.
+
+## [1.0.0] — 2026-11-20
+
+### Added
+
+- Complete JavaFX user interface replacing the former Swing UI.
+- `DownloadCoordinator`: download queue, concurrency, pause/resume, cancel,
+  history, extraction, retry of failed downloads and session persistence.
+- Per-user data directory (`%APPDATA%`, `Library/Application Support`,
+  `$XDG_DATA_HOME`) with one-time migration from the legacy layout.
+- Atomic JSON persistence for queue, history and in-progress download state.
+- English/Spanish localization in every view, with restart notice for language
+  changes.
+- Light/dark CSS theme applied without restart.
+- Self-contained jpackage app image (Windows, macOS, Linux) and GitHub Actions
+  build matrix.
+- JUnit 5 test suite: application paths, configuration, i18n parity, filters,
+  FXML loading, theming, download coordinator, queue persistence and a real
+  segmented download against a local HTTP server.
+
+### Changed
+
+- Single entry point: `Launcher` for jpackage and `MainApp` for the JavaFX
+  runtime; Maven now builds a runnable JavaFX application by default.
+- Configuration validated (1–4 simultaneous downloads, non-negative speed
+  limit) with defaults for every key.
+- Logs are written to the data directory instead of the working directory.
+- README, architecture notes and build scripts updated for the JavaFX edition.
+
+### Removed
+
+- Swing entry point, `Frame`, `Config`, `ui` package, NetBeans `.form` files and
+  the legacy `build.sh` / `run.sh` / assembly descriptor.
+- `PackageService` dependency on Swing dialogs.
+
+### Fixed
+
+- Download state no longer races with readers (atomic replacement).
+- Session state is preserved on exit even while workers are being cancelled.
+- Global progress uses bytes instead of averaging bytes and game counts.
+
+## [0.0.7] — legacy
+
+Last Swing-only release, preserved under the `legacy-swing-0.0.7` tag.
