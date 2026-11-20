@@ -93,14 +93,12 @@ public class MainController {
     @FXML private Button btnRefresh;
     @FXML private Button btnSettings;
     @FXML private Button btnDownloadList;
-    @FXML private Button btnAdd;
     @FXML private Button btnTheme;
     @FXML private Label resultCountLabel;
 
     @FXML private TableView<Game> tableGames;
     @FXML private TableColumn<Game, String> colTitle;
     @FXML private TableColumn<Game, String> colRegion;
-    @FXML private TableColumn<Game, String> colId;
     @FXML private TableColumn<Game, Long> colSize;
     @FXML private TableColumn<Game, String> colConsole;
 
@@ -303,9 +301,6 @@ public class MainController {
     private void setupTable() {
         colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
         colRegion.setCellValueFactory(new PropertyValueFactory<>("region"));
-        if (colId != null) {
-            colId.setCellValueFactory(new PropertyValueFactory<>("contentId"));
-        }
         colConsole.setCellValueFactory(data ->
                 new javafx.beans.property.ReadOnlyStringWrapper(
                         consoleLabel(data.getValue().getConsole())));
@@ -362,11 +357,6 @@ public class MainController {
         tableGames.getSelectionModel().selectedItemProperty()
                 .addListener((obs, oldGame, newGame) -> showGameDetail(newGame));
 
-        if (btnAdd != null) {
-            btnAdd.disableProperty().bind(
-                    tableGames.getSelectionModel().selectedItemProperty().isNull());
-        }
-
         showGameDetail(null);
     }
 
@@ -407,6 +397,13 @@ public class MainController {
         if (resultCountLabel != null) {
             resultCountLabel.setText(I18n.getCount(
                     "results.count.one", "results.count", filteredData.size()));
+        }
+
+        if (started && !loading && emptyState != EmptyState.LOAD_ERROR
+                && statusLabel != null && !masterData.isEmpty()) {
+            statusLabel.setText(filteredData.size() == masterData.size()
+                    ? I18n.getCount("status.loaded.one", "status.loaded", masterData.size())
+                    : I18n.get("status.filtered", filteredData.size(), masterData.size()));
         }
 
         if (emptyState != EmptyState.LOADING && emptyState != EmptyState.LOAD_ERROR) {
@@ -647,11 +644,6 @@ public class MainController {
         } else {
             addToQueue(game);
         }
-    }
-
-    @FXML
-    private void handleAddSelected() {
-        addToQueue(tableGames.getSelectionModel().getSelectedItem());
     }
 
     @FXML

@@ -45,6 +45,8 @@ All notable changes to NNPPSS are documented here.
   accessible labels.
 - The catalogue now shows actionable empty/loading/error states (Open settings,
   Clear filters, Retry) and supports F5, Ctrl+, and Alt+1/2/3 shortcuts.
+- Internal UX validation documented (contrast, keyboard matrix, states and
+  screenshots); dead UI code removed and the status bar reflects active filters.
 - The download dock can be collapsed to “Show downloads” from the status bar
   and expands again automatically when a new session starts.
 - Content ID moved out of the table into the detail pane; console names are

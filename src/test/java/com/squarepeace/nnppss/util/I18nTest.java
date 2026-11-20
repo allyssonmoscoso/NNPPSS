@@ -35,6 +35,15 @@ class I18nTest {
     }
 
     @Test
+    void countSelectsSingularAndPlural() {
+        I18n.setLocale("en");
+        assertEquals("1 result", I18n.getCount(
+                "results.count.one", "results.count", 1));
+        assertEquals("2 results", I18n.getCount(
+                "results.count.one", "results.count", 2));
+    }
+
+    @Test
     void missingKeyFallsBackToTheKeyItself() {
         assertEquals("missing.key", I18n.get("missing.key"));
     }

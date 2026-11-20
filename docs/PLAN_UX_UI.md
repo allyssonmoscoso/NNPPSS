@@ -466,8 +466,13 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
   - La tabla muestra un estado de carga mientras se lee la biblioteca.
   - Atajos nuevos: `F5` actualizar, `Ctrl+,` ajustes, `Alt+1/2/3` cambiar de consola.
   - El foco pasa al catálogo al abrir la cola y vuelve al botón Queue al cerrarla; los ajustes enfocan la primera URL.
+  - La barra de estado muestra “X de Y juegos” cuando hay filtros activos.
+  - Contraste AA verificado en tokens y badges: [UX_VALIDACION.md](UX_VALIDACION.md).
   - Captura: [empty-filtered.png](ux/empty-filtered.png).
-  - Pending: revisión formal de contraste y recorrido completo solo con teclado.
+- **UX6 — parcial:**
+  - Validación interna documentada: 37 tests, contraste AA, matriz de teclado, estados y capturas.
+  - Limpieza de código muerto y revisión visual final.
+  - Pending: pruebas con 5 usuarios externos y ajustes derivados.
 
 ![Drawer de cola](ux/queue-drawer.png)
 
@@ -476,8 +481,8 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
 ### Pendiente
 
 - **UX2 (resto):** convertir la primera ejecución en un asistente de dos pasos (bibliotecas → preferencias) si la prueba con usuarios lo justifica.
-- **UX5 (resto):** revisión formal de contraste y recorrido completo solo con teclado; los estados accionables, la pluralización básica y los atajos principales ya están implementados.
-- **UX6:** pruebas con usuarios, pulido y validación visual final.
+- **UX5 (resto):** recorrido completo solo con teclado en una sesión de validación; los estados, el contraste y los atajos ya están implementados.
+- **UX6:** pruebas con 5 usuarios externos, registro SUS y correcciones finales.
 
 > Los ajustes siguen abriéndose como diálogo modal moderno, no como drawer. La cola ya no es modal y el flujo principal permite descargar en tres acciones desde el catálogo.
 

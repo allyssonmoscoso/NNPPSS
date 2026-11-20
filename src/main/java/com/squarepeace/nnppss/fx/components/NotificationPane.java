@@ -16,7 +16,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
 import java.util.LinkedList;
@@ -123,8 +122,7 @@ public class NotificationPane extends StackPane {
         hbox.setPadding(new Insets(10));
         hbox.setAlignment(Pos.CENTER_LEFT);
         
-        // Convert Color to hex string for CSS
-        String colorHex = toHexString(type.getColor());
+        // Convert Color to a translucent CSS background
         String bgColor = "rgba(" + (int)(type.getColor().getRed()*255) + "," + 
                                    (int)(type.getColor().getGreen()*255) + "," + 
                                    (int)(type.getColor().getBlue()*255) + ", 0.9)";
@@ -195,13 +193,6 @@ public class NotificationPane extends StackPane {
         slideOut.play();
     }
     
-    private String toHexString(Color c) {
-        return String.format("#%02X%02X%02X",
-            (int)(c.getRed() * 255),
-            (int)(c.getGreen() * 255),
-            (int)(c.getBlue() * 255));
-    }
-
     private static class NotificationMessage {
         String message;
         NotificationType type;
