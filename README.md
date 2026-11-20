@@ -129,6 +129,11 @@ local HTTP server.
 The last Swing-only release is tagged `legacy-swing-0.0.7`; version 1.0.0 is the
 definitive JavaFX edition.
 
+## Roadmap
+
+- [Plan de migración a JavaFX](docs/PLAN_MIGRACION_JAVAFX.md)
+- [Plan de mejora UI/UX](docs/PLAN_UX_UI.md)
+
 ## License
 
 See [LICENSE](LICENSE).
