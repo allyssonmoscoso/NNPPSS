@@ -51,6 +51,9 @@ All notable changes to NNPPSS are documented here.
   keyboard-shortcut reference, and WCAG contrast is now guarded by a test.
 - First-run configuration is now a two-step wizard (libraries → preferences)
   with validation before advancing and a “Configure later” escape hatch.
+- UX6 closed with internal validation (38 tests, automated WCAG contrast,
+  keyboard matrix and visual review); the 5-user SUS study is scheduled as
+  post-release follow-up.
 - The download dock can be collapsed to “Show downloads” from the status bar
   and expands again automatically when a new session starts.
 - Content ID moved out of the table into the detail pane; console names are

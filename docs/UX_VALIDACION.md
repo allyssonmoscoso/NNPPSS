@@ -2,9 +2,9 @@
 
 **Fecha:** 2026-11-20 · **Versión:** 1.0.0 · **Rama:** `feature/JavaFXMigrationGUI`
 
-Validación interna de las fases UX1–UX5. Las pruebas con usuarios externos
-siguen pendientes y son el único criterio de UX6 que no se puede cerrar desde
-este entorno.
+Validación interna de las fases UX1–UX6. El 2026-11-20 el usuario autorizó
+cerrar UX6 con esta validación; las sesiones con 5 usuarios externos y el SUS
+quedan como seguimiento post-release, no como bloqueo de la entrega.
 
 ## Resultado automatizado
 
@@ -83,8 +83,9 @@ Al abrir la cola, el foco pasa a su tabla. Al cerrarla, vuelve al botón
 
 ## Limitaciones conocidas
 
-- **Pruebas con 5 usuarios externos:** pendientes; requieren sesiones reales
-  fuera de este entorno.
+- **Pruebas con 5 usuarios externos:** diferidas por decisión del usuario
+  (2026-11-20); requieren sesiones reales y se ejecutarán como seguimiento
+  post-release con el guion preparado.
 - **Extracción con `pkg2zip`:** en este entorno de desarrollo falta
   `lib/pkg2zip.exe`; la descarga y la UI funcionan, pero la extracción no se
   validó aquí. El instalador incluye el binario cuando está disponible.
@@ -92,8 +93,9 @@ Al abrir la cola, el foco pasa a su tabla. Al cerrarla, vuelve al botón
 - **Ajustes:** se abren como diálogo modal moderno; no se convirtieron en
   drawer porque el formulario necesita más ancho que la cola.
 
-## Próximo paso de UX6
+## Seguimiento post-release
 
 Ejecutar el guion de prueba con 5 usuarios, registrar SUS y corregir los
-hallazgos de fricción antes de cerrar la fase. El guion está en
+hallazgos de fricción como siguiente iteración. UX6 se cierra con la validación
+interna por autorización expresa del usuario; el guion está en
 [USER_TEST_GUIDE.md](ux/USER_TEST_GUIDE.md).

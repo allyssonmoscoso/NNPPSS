@@ -316,7 +316,7 @@ Los tokens se declaran como colores con nombre en `.root` y se sobrescriben en `
 | **UX3 · Catálogo y detalle** | 3–4 días | Tabla rediseñada, panel de detalle, “Descargar ahora”, snackbar con deshacer | Descargar un juego requiere ≤3 acciones; sin modal de confirmación |
 | **UX4 · Cola y descargas** | 4–5 días | `QueueDrawer`, barra de descargas, acciones inline, contador | La cola no bloquea el catálogo; pausar/reanudar en un clic |
 | **UX5 · Estados, accesibilidad y teclado** | 3 días | Vacíos, carga, errores, foco, atajos, contraste, pluralización | Flujo completo solo con teclado; contraste ≥4.5:1 |
-| **UX6 · Pulido y validación** | 2 días | Pruebas con 5 usuarios, ajustes, capturas, documentación | SUS ≥75; 0 regresiones funcionales |
+| **UX6 · Pulido y validación** | 2 días | Pruebas con 5 usuarios, ajustes, capturas, documentación | Validación interna cerrada; SUS ≥75 queda como seguimiento post-release |
 
 **Total:** 19–24 días hábiles. Se puede paralizar UX1 con UX2 si hay dos personas; UX4 depende de UX3 y del contrato actual de `DownloadCoordinator`.
 
@@ -456,7 +456,7 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
   - Botones con ajuste en varias filas para el ancho del panel.
   - Pausa/reanudación inline en cada tarjeta de descarga, con texto accesible y estado visual.
   - Dock de descargas colapsable con “Ocultar descargas” / “Mostrar descargas”; se expande automáticamente al iniciar una sesión.
-- **UX5 — parcial:**
+- **UX5 — completado (validación interna):**
   - Contadores visibles con singular/plural (`1 resultado` / `N resultados`).
   - Textos accesibles en botones de icono (cerrar notificación, cerrar cola, pausar/cancelar descarga) y en el catálogo.
   - `Esc` cierra el drawer de cola.
@@ -470,21 +470,21 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
   - La barra de estado muestra “X de Y juegos” cuando hay filtros activos.
   - Contraste AA verificado en tokens y badges: [UX_VALIDACION.md](UX_VALIDACION.md).
   - Captura: [empty-filtered.png](ux/empty-filtered.png).
-- **UX6 — parcial:**
+- **UX6 — completado (validación interna):**
   - Validación interna documentada: 38 tests, contraste AA automatizado, matriz de teclado, estados y capturas.
   - Ayuda de atajos integrada (`F1`) y cierre “Configurar después” en primera ejecución.
   - Limpieza de código muerto y revisión visual final.
-  - Pending: pruebas con 5 usuarios externos y ajustes derivados.
+  - **Cierre:** el 2026-11-20 el usuario autorizó cerrar UX6 con la validación interna; las sesiones con 5 usuarios y el SUS quedan como seguimiento post-release, con guion en [ux/USER_TEST_GUIDE.md](ux/USER_TEST_GUIDE.md).
 
 ![Drawer de cola](ux/queue-drawer.png)
 
 ![Primer incremento UI](ux/redesign-final.png)
 
-### Pendiente
+### Seguimiento post-release
 
-- **UX2 (completado):** primera ejecución en dos pasos, validación inline, prueba de URLs en segundo plano y “Configurar después”.
-- **UX5 (resto):** recorrido completo solo con teclado en una sesión de validación; los estados, el contraste y los atajos ya están implementados.
-- **UX6:** pruebas con 5 usuarios externos, registro SUS y correcciones finales. Guion preparado en [ux/USER_TEST_GUIDE.md](ux/USER_TEST_GUIDE.md).
+- **Pruebas con 5 usuarios:** ejecutar [ux/USER_TEST_GUIDE.md](ux/USER_TEST_GUIDE.md), registrar SUS y priorizar hallazgos.
+- **UX2:** valorar un asistente de más pasos solo si la evidencia de usuarios lo justifica.
+- **UX5:** repetir el recorrido completo solo con teclado en una sesión real.
 
 > Los ajustes siguen abriéndose como diálogo modal moderno, no como drawer. La cola ya no es modal y el flujo principal permite descargar en tres acciones desde el catálogo.
 
