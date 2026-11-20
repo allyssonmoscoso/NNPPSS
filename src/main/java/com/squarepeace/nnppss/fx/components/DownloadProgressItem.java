@@ -47,10 +47,12 @@ public class DownloadProgressItem extends VBox {
     private final Canvas progressCanvas;
     private final Pane canvasHolder;
     private final Label statusLabel;
+    private final Button pauseButton;
     private final Button cancelButton;
 
     private final String gameTitle;
     private Runnable onCancel;
+    private Runnable onTogglePause;
     private String url;
 
     private long totalBytes = 0;
@@ -93,12 +95,24 @@ public class DownloadProgressItem extends VBox {
         cancelButton = new Button("✕");
         cancelButton.getStyleClass().add("download-cancel");
         cancelButton.setTooltip(new Tooltip(I18n.get("button.cancel")));
+        cancelButton.setAccessibleText(I18n.get("button.cancel"));
         cancelButton.setOnAction(e -> {
             if (onCancel != null) {
                 onCancel.run();
             }
         });
-        rightBox.getChildren().addAll(speedEtaLabel, cancelButton);
+
+        pauseButton = new Button("Ⅱ");
+        pauseButton.getStyleClass().add("download-pause");
+        pauseButton.setTooltip(new Tooltip(I18n.get("button.pause")));
+        pauseButton.setAccessibleText(I18n.get("button.pause"));
+        pauseButton.setOnAction(e -> {
+            if (onTogglePause != null) {
+                onTogglePause.run();
+            }
+        });
+
+        rightBox.getChildren().addAll(speedEtaLabel, pauseButton, cancelButton);
 
         topRow.setLeft(titleLabel);
         topRow.setRight(rightBox);
@@ -145,6 +159,18 @@ public class DownloadProgressItem extends VBox {
         this.onCancel = onCancel;
     }
 
+    public void setOnTogglePause(Runnable onTogglePause) {
+        this.onTogglePause = onTogglePause;
+    }
+
+    public void updatePauseButton(boolean paused) {
+        isPaused = paused;
+        String key = paused ? "button.resume" : "button.pause";
+        pauseButton.setText(paused ? "▶" : "Ⅱ");
+        pauseButton.setTooltip(new Tooltip(I18n.get(key)));
+        pauseButton.setAccessibleText(I18n.get(key));
+    }
+
     public void setSelected(boolean selected) {
         pseudoClassStateChanged(SELECTED_PSEUDO, selected);
     }
@@ -176,6 +202,7 @@ public class DownloadProgressItem extends VBox {
             repaintCanvas();
             updateStatusLabel();
             updateSpeedLabel();
+            updatePauseButton(paused);
         });
     }
 
@@ -202,6 +229,7 @@ public class DownloadProgressItem extends VBox {
         runOnFx(() -> {
             updateStatusLabel();
             updateSpeedLabel();
+            updatePauseButton(paused);
         });
     }
 
@@ -220,6 +248,8 @@ public class DownloadProgressItem extends VBox {
             statusLabel.setText("✓ " + I18n.get("status.completed")
                     + " — " + formatSize(totalBytes));
             speedEtaLabel.setText("");
+            pauseButton.setVisible(false);
+            pauseButton.setManaged(false);
             cancelButton.setVisible(false);
             repaintCanvas();
         });
@@ -234,6 +264,8 @@ public class DownloadProgressItem extends VBox {
             String detail = error == null || error.isBlank() ? "" : ": " + error;
             statusLabel.setText("✗ " + I18n.get("status.error") + detail);
             speedEtaLabel.setText("");
+            pauseButton.setVisible(false);
+            pauseButton.setManaged(false);
             cancelButton.setVisible(false);
             repaintCanvas();
         });
@@ -247,6 +279,8 @@ public class DownloadProgressItem extends VBox {
         runOnFx(() -> {
             statusLabel.setText("⚠ " + I18n.get("status.cancelled"));
             speedEtaLabel.setText("");
+            pauseButton.setVisible(false);
+            pauseButton.setManaged(false);
             cancelButton.setVisible(false);
             repaintCanvas();
         });

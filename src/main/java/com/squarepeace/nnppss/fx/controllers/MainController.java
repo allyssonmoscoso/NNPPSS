@@ -387,7 +387,8 @@ public class MainController {
                 I18n.get("filter.size.gt5")));
 
         if (resultCountLabel != null) {
-            resultCountLabel.setText(I18n.get("results.count", filteredData.size()));
+            resultCountLabel.setText(I18n.getCount(
+                    "results.count.one", "results.count", filteredData.size()));
         }
     }
 
@@ -427,7 +428,8 @@ public class MainController {
             refreshHistoryCache();
             updateRegionCombo();
             updateFilter();
-            statusLabel.setText(I18n.get("status.loaded", masterData.size()));
+            statusLabel.setText(I18n.getCount(
+                    "status.loaded.one", "status.loaded", masterData.size()));
             setLoading(false);
             log.info("Loaded {} games for {}", masterData.size(), console);
         });
@@ -1224,6 +1226,16 @@ public class MainController {
                 new DownloadProgressItem(task.getGame().getTitle(), task.getTotalBytes());
         item.setUrl(url);
         item.setOnCancel(() -> requestCancel(Set.of(url), false));
+        item.setOnTogglePause(() -> {
+            if (downloadCoordinator.isPaused(url)) {
+                downloadCoordinator.resume(url);
+            } else {
+                downloadCoordinator.pause(url);
+            }
+            item.setPaused(downloadCoordinator.isPaused(url));
+            updatePauseButton();
+        });
+        item.setPaused(downloadCoordinator.isPaused(url));
         item.setOnMouseClicked(event -> handleDownloadClick(url, event));
         item.setOnContextMenuRequested(event -> {
             if (!selectedDownloadUrls.contains(url)) {

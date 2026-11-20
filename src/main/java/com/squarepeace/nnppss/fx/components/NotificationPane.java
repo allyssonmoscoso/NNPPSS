@@ -1,5 +1,7 @@
 package com.squarepeace.nnppss.fx.components;
 
+import com.squarepeace.nnppss.util.I18n;
+
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -164,6 +166,7 @@ public class NotificationPane extends StackPane {
         closeBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 16px; -fx-cursor: hand;");
         closeBtn.setPadding(new Insets(0, 5, 0, 5));
         closeBtn.setMinWidth(Region.USE_PREF_SIZE);
+        closeBtn.setAccessibleText(I18n.get("button.close"));
         closeBtn.setOnAction(e -> dismissNotification(hbox));
 
         hbox.getChildren().add(closeBtn);

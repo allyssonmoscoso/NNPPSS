@@ -453,7 +453,13 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
   - El drawer no bloquea el catálogo; se cierra con “✕”, “Cerrar” o `Esc`.
   - Lista con índice, título, región, consola y tamaño; estadísticas y acciones (seleccionar, reordenar, quitar, limpiar, exportar/importar, iniciar).
   - Botones con ajuste en varias filas para el ancho del panel.
-  - Pending: pausa/reanudación inline en las tarjetas de descarga y dock colapsable.
+  - Pausa/reanudación inline en cada tarjeta de descarga, con texto accesible y estado visual.
+  - Pending: dock de descargas colapsable.
+- **UX5 — parcial:**
+  - Contadores visibles con singular/plural (`1 resultado` / `N resultados`).
+  - Textos accesibles en botones de icono (cerrar notificación, cerrar cola, pausar/cancelar descarga).
+  - `Esc` cierra el drawer de cola.
+  - Pending: estados de error/vacío con acción, foco completo por teclado y revisión de contraste.
 
 ![Drawer de cola](ux/queue-drawer.png)
 
@@ -462,8 +468,8 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
 ### Pendiente
 
 - **UX2 (resto):** convertir la primera ejecución en un asistente de dos pasos (bibliotecas → preferencias) si la prueba con usuarios lo justifica.
-- **UX4 (resto):** pausa/reanudación inline en las tarjetas y dock de descargas colapsable.
-- **UX5:** estados de carga/vacío/error con acción, accesibilidad por teclado y pluralización.
+- **UX4 (resto):** dock de descargas colapsable y pulido de estados de la tarjeta.
+- **UX5 (resto):** estados de carga/vacío/error con acción, foco completo por teclado y revisión de contraste; la pluralización básica ya está aplicada a los contadores visibles.
 - **UX6:** pruebas con usuarios, pulido y validación visual final.
 
 > Los ajustes siguen abriéndose como diálogo modal moderno, no como drawer. La cola ya no es modal y el flujo principal permite descargar en tres acciones desde el catálogo.

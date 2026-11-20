@@ -60,6 +60,13 @@ public class I18n {
             return key;
         }
     }
+
+    /**
+     * Selects a singular or plural message and formats it with the count.
+     */
+    public static String getCount(String singularKey, String pluralKey, int count) {
+        return get(count == 1 ? singularKey : pluralKey, count);
+    }
     
     /**
      * Set the current locale and reload resource bundle

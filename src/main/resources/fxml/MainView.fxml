@@ -54,7 +54,7 @@
 
                     <Region HBox.hgrow="ALWAYS" />
 
-                    <Label fx:id="resultCountLabel" text="%results.count" styleClass="result-count"/>
+                    <Label fx:id="resultCountLabel" text=" " styleClass="result-count"/>
                     <Button fx:id="btnRefresh" text="%button.refresh"
                             styleClass="subtle-button" onAction="#handleRefresh"/>
                 </HBox>

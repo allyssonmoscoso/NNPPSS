@@ -29,7 +29,7 @@
                 </font>
             </Label>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="✕" styleClass="icon-button" onAction="#handleClose"/>
+            <Button text="✕" styleClass="icon-button" onAction="#handleClose" accessibleText="%button.close"/>
         </HBox>
     </top>
 

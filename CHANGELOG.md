@@ -40,6 +40,9 @@ All notable changes to NNPPSS are documented here.
   inline validation and per-URL “Test” checks that run in the background;
   first-run configuration explains what is required and refuses to save with
   no library configured.
+- Each download card now has an inline pause/resume button; visible result
+  counters use correct singular/plural forms and icon-only actions expose
+  accessible labels.
 - Content ID moved out of the table into the detail pane; console names are
   localized.
 - Configuration validated (1–4 simultaneous downloads, non-negative speed

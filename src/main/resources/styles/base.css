@@ -529,6 +529,19 @@
     -fx-cursor: hand;
 }
 
+.download-pause {
+    -fx-font-size: 10px;
+    -fx-padding: 1 5 1 5;
+    -fx-background-color: transparent;
+    -fx-text-fill: -text-muted;
+    -fx-cursor: hand;
+}
+
+.download-pause:hover {
+    -fx-background-color: -surface-alt;
+    -fx-background-radius: 4;
+}
+
 .download-item:selected {
     -fx-border-color: -primary;
     -fx-border-width: 2;
