@@ -1,6 +1,6 @@
 # Plan · Versionado y actualizaciones automáticas
 
-**Estado:** en implementación · **Versión de desarrollo:** 2.0.0-SNAPSHOT · **Última release publicada:** 1.1.0 · **Fecha:** 2026-11-20.
+**Estado:** implementado; draft 2.0.0 generado, pendiente de publicación manual · **Versión de desarrollo:** 2.0.0-SNAPSHOT · **Última release publicada:** 1.1.0 · **Fecha:** 2026-11-20.
 
 ## 1. Objetivo
 
@@ -322,7 +322,14 @@ Implementado:
 
 Pendiente para cerrar el objetivo:
 
-- Validar `release.yml` en act/GitHub con un tag de prueba.
-- Probar MSI, DMG y DEB en runners/máquinas limpias.
-- Publicar un draft de prueba y comprobar `update-manifest.json` + checksums.
+- Publicar el draft `v2.0.0` tras revisión manual.
+- Probar MSI/DMG/DEB en máquinas limpias (los assets se generaron correctamente).
 - Firma y canal beta quedan fuera de 2.0.0 por decisión.
+
+## 15. Validación
+
+- CI de rama: run [44800940009](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44800940009) — verde en Ubuntu, Windows y macOS (Linux necesitó un rerun por un fallo transitorio de Maven Central).
+- Release `v2.0.0`: run [44802330265](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44802330265) — `validate`, los tres builds y `release` correctos.
+- Draft release: `v2.0.0`, con MSI, DMG, DEB, ZIP portables, `SHA256SUMS.txt` y `update-manifest.json`.
+- Act: job `validate` y build Linux (`deb` + app-image + upload) correctos.
+- 51 tests locales verdes.
