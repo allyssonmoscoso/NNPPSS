@@ -1,0 +1,207 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate tag and changelog
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Tag must be vMAJOR.MINOR.PATCH (got $GITHUB_REF_NAME)" >&2
+            exit 1
+          fi
+          if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+            echo "CHANGELOG.md has no section '## [$VERSION]'" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows-x64
+          - os: macos-latest
+            platform: macos
+          - os: ubuntu-latest
+            platform: linux-x64
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb maven fakeroot libgtk-3-0t64 libxtst6 libasound2t64 \
+            || sudo apt-get install -y xvfb maven fakeroot libgtk-3-0 libxtst6 libasound2
+
+      - name: Test
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run -a mvn -B clean verify
+          else
+            mvn -B clean verify
+          fi
+
+      - name: Set release version
+        shell: bash
+        run: mvn -B versions:set -DnewVersion=${{ needs.validate.outputs.version }} -DgenerateBackupPoms=false
+
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          New-Item -ItemType Directory -Force release-assets | Out-Null
+          $env:NNPPSS_VERSION = $env:VERSION
+          $env:JPACKAGE_TYPE = "msi"
+          pwsh -NoProfile -File scripts/package-windows.ps1
+          $msi = Get-ChildItem dist -Filter "*.msi" | Select-Object -First 1
+          if (-not $msi) { throw "MSI installer was not produced" }
+          Copy-Item $msi.FullName "release-assets/NNPPSS-$env:VERSION-windows-x64.msi"
+
+          $env:JPACKAGE_TYPE = "app-image"
+          pwsh -NoProfile -File scripts/package-windows.ps1
+          Compress-Archive -Path dist/NNPPSS -DestinationPath "release-assets/NNPPSS-$env:VERSION-windows-x64.zip"
+
+      - name: Package macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          export NNPPSS_VERSION="$VERSION"
+          JPACKAGE_TYPE=dmg sh scripts/package-unix.sh
+          DMG="$(find dist -maxdepth 1 -name '*.dmg' -print -quit)"
+          test -n "$DMG"
+          cp "$DMG" "release-assets/NNPPSS-$VERSION-macos.dmg"
+          JPACKAGE_TYPE=app-image sh scripts/package-unix.sh
+          (cd dist && zip -qry "$GITHUB_WORKSPACE/release-assets/NNPPSS-$VERSION-macos.zip" NNPPSS.app)
+
+      - name: Package Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          export NNPPSS_VERSION="$VERSION"
+          JPACKAGE_TYPE=deb sh scripts/package-unix.sh
+          DEB="$(find dist -maxdepth 1 -name '*.deb' -print -quit)"
+          test -n "$DEB"
+          cp "$DEB" "release-assets/NNPPSS-$VERSION-linux-x64.deb"
+          JPACKAGE_TYPE=app-image sh scripts/package-unix.sh
+          tar -czf "release-assets/NNPPSS-$VERSION-linux-x64.tar.gz" -C dist NNPPSS
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: release-assets/*
+          if-no-files-found: error
+
+  release:
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate checksums and manifest
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          cd release-assets
+          sha256sum NNPPSS-* > SHA256SUMS.txt
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          repo = os.environ["REPOSITORY"]
+          assets = {}
+          names = {
+              "windows-x64": f"NNPPSS-{version}-windows-x64.msi",
+              "macos": f"NNPPSS-{version}-macos.dmg",
+              "linux-x64": f"NNPPSS-{version}-linux-x64.deb",
+          }
+          for platform, name in names.items():
+              path = Path(name)
+              if not path.exists():
+                  continue
+              assets[platform] = {
+                  "url": f"https://github.com/{repo}/releases/download/v{version}/{name}",
+                  "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                  "size": path.stat().st_size,
+              }
+          manifest = {
+              "version": version,
+              "tag": f"v{version}",
+              "channel": "stable",
+              "notesUrl": f"https://github.com/{repo}/releases/tag/v{version}",
+              "assets": assets,
+          }
+          Path("update-manifest.json").write_text(
+              json.dumps(manifest, indent=2), encoding="utf-8")
+          PY
+          awk -v version="$VERSION" '
+            $0 ~ "^## \\[" version "\\]" {printing=1}
+            printing && /^## \[/ && $0 !~ "^## \\[" version "\\]" {exit}
+            printing {print}
+          ' ../CHANGELOG.md > ../release-notes.md
+
+      - name: Create draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [ ! -s release-notes.md ]; then
+            echo "Release notes are empty" >&2
+            exit 1
+          fi
+          gh release create "v$VERSION" release-assets/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "NNPPSS $VERSION" \
+            --notes-file release-notes.md \
+            --draft

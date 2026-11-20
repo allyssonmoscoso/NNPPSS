@@ -25,6 +25,7 @@
         <HBox alignment="CENTER_LEFT" spacing="8.0">
             <Label fx:id="titleLabel" text="%config.title" styleClass="settings-title"/>
             <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="versionLabel" text="vdev" styleClass="settings-version"/>
             <Label fx:id="stepLabel" text="%config.step" styleClass="step-label"
                    visible="false" managed="false"/>
         </HBox>
@@ -158,6 +159,18 @@
                     <CheckBox fx:id="checkAutoCleanup" text="%config.label.autocleanup"
                               GridPane.columnIndex="1" GridPane.rowIndex="2"/>
                 </GridPane>
+            </VBox>
+
+            <VBox fx:id="updatesSection" styleClass="settings-section" spacing="10.0">
+                <Label text="%config.section.updates" styleClass="section-title"/>
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <Label fx:id="updateVersionLabel" styleClass="field-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="btnCheckUpdates" text="%button.checkupdates"
+                            styleClass="subtle-button" onAction="#handleCheckUpdates"/>
+                </HBox>
+                <CheckBox fx:id="checkUpdates" text="%config.updates.auto"/>
+                <Label fx:id="updateStatusLabel" styleClass="field-hint" wrapText="true"/>
             </VBox>
 
             <VBox fx:id="appearanceSection" styleClass="settings-section" spacing="10.0">

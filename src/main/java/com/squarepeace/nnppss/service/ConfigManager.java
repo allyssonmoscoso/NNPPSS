@@ -53,6 +53,7 @@ public class ConfigManager {
         properties.setProperty("downloads.directory", "");
         properties.setProperty("extraction.directory", "");
         properties.setProperty("pkg2zip.path", "");
+        properties.setProperty("updates.checkOnStartup", "true");
         saveConfig();
     }
 
@@ -68,6 +69,7 @@ public class ConfigManager {
         putIfMissing("downloads.directory", "");
         putIfMissing("extraction.directory", "");
         putIfMissing("pkg2zip.path", "");
+        putIfMissing("updates.checkOnStartup", "true");
     }
 
     private void putIfMissing(String key, String value) {
@@ -145,6 +147,24 @@ public class ConfigManager {
     public String getLanguage() {
         String value = getProperty("language");
         return value == null || value.isBlank() ? "en" : value.trim();
+    }
+
+    public boolean isUpdateCheckOnStartupEnabled() {
+        return !"false".equalsIgnoreCase(getProperty("updates.checkOnStartup"));
+    }
+
+    public long getLastUpdateCheckEpoch() {
+        String value = getProperty("updates.lastCheck");
+        try {
+            return value == null ? 0L : Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
+    }
+
+    public void markUpdateChecked(long epochSeconds) {
+        setProperty("updates.lastCheck", String.valueOf(epochSeconds));
+        saveConfig();
     }
 
     /** Folder where .pkg files are stored; legacy default is {@code dataDir/packages}. */

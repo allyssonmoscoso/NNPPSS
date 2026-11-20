@@ -1,6 +1,7 @@
 package com.squarepeace.nnppss.fx.controllers;
 
 import com.squarepeace.nnppss.app.AppContext;
+import com.squarepeace.nnppss.app.BuildInfo;
 import com.squarepeace.nnppss.app.ThemeManager;
 import com.squarepeace.nnppss.fx.components.DownloadProgressItem;
 import com.squarepeace.nnppss.fx.components.GlobalProgressIndicator;
@@ -23,6 +24,7 @@ import com.squarepeace.nnppss.service.PackageService;
 import com.squarepeace.nnppss.service.Pkg2zipResolver;
 import com.squarepeace.nnppss.service.StorageCleanupService;
 import com.squarepeace.nnppss.service.SystemValidator;
+import com.squarepeace.nnppss.service.UpdateService;
 import com.squarepeace.nnppss.service.download.DownloadTaskState;
 import com.squarepeace.nnppss.util.I18n;
 
@@ -72,6 +74,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -165,6 +168,8 @@ public class MainController {
     private boolean started;
     private boolean restorePrompted;
     private boolean retryingFailed;
+    private boolean updateCheckRunning;
+    private final UpdateService updateService = new UpdateService();
 
     private enum EmptyState { LOADING, NO_DATA, NO_FILTER_RESULTS, LOAD_ERROR }
 
@@ -252,6 +257,87 @@ public class MainController {
         refreshConsoleAvailability();
         installShortcuts();
         restoreSavedDownloads();
+        scheduleUpdateCheck();
+    }
+
+    private void scheduleUpdateCheck() {
+        if (configManager == null || !configManager.isUpdateCheckOnStartupEnabled()) {
+            return;
+        }
+        long elapsed = Instant.now().getEpochSecond() - configManager.getLastUpdateCheckEpoch();
+        if (elapsed < 24 * 60 * 60) {
+            return;
+        }
+        checkForUpdates(null, false);
+    }
+
+    private void checkForUpdates(ConfigController configController, boolean manual) {
+        if (updateCheckRunning) {
+            return;
+        }
+        updateCheckRunning = true;
+        Task<java.util.Optional<UpdateService.UpdateInfo>> task = new Task<>() {
+            @Override
+            protected java.util.Optional<UpdateService.UpdateInfo> call()
+                    throws IOException, InterruptedException {
+                return updateService.check(BuildInfo.currentVersion());
+            }
+        };
+        task.setOnSucceeded(event -> {
+            updateCheckRunning = false;
+            configManager.markUpdateChecked(Instant.now().getEpochSecond());
+            java.util.Optional<UpdateService.UpdateInfo> update = task.getValue();
+            if (update.isPresent()) {
+                UpdateService.UpdateInfo info = update.get();
+                if (configController != null) {
+                    configController.setUpdateStatus(
+                            I18n.get("update.available.status", info.version()));
+                }
+                notificationPane.showActionNotification(
+                        I18n.get("update.available", info.version()),
+                        NotificationPane.NotificationType.INFO,
+                        I18n.get("button.viewrelease"),
+                        () -> openUrl(info.notesUrl()),
+                        10000);
+            } else if (manual && configController != null) {
+                configController.setUpdateStatus(
+                        I18n.get("update.current", BuildInfo.displayVersion()));
+            }
+        });
+        task.setOnFailed(event -> {
+            updateCheckRunning = false;
+            if (task.getException() != null) {
+                log.warn("Update check failed", task.getException());
+            }
+            if (manual && configController != null) {
+                configController.setUpdateStatus(I18n.get("update.error"));
+            }
+        });
+        Thread thread = new Thread(task, "update-check");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void openUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return;
+        }
+        try {
+            String os = System.getProperty("os.name", "").toLowerCase();
+            List<String> command;
+            if (os.contains("win")) {
+                command = List.of("rundll32", "url.dll,FileProtocolHandler", url);
+            } else if (os.contains("mac")) {
+                command = List.of("open", url);
+            } else {
+                command = List.of("xdg-open", url);
+            }
+            new ProcessBuilder(command).start();
+        } catch (IOException e) {
+            log.warn("Could not open release page: {}", url, e);
+            notificationPane.showNotification(I18n.get("update.openerror"),
+                    NotificationPane.NotificationType.ERROR);
+        }
     }
 
     @FXML
@@ -1073,6 +1159,8 @@ public class MainController {
             controller.setConfigManager(configManager);
             controller.setFirstRun(firstRun);
             controller.setOnCleanupRequested(() -> handleStorageCleanup(controller));
+            controller.setOnCheckUpdates(() -> checkForUpdates(controller, true));
+            controller.setUpdateStatus(I18n.get("update.idle"));
             refreshCleanupHint(controller);
             controller.setOnSaveCallback(() -> {
                 applyTheme();

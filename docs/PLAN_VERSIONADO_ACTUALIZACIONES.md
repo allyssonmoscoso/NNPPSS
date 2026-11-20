@@ -1,6 +1,6 @@
 # Plan · Versionado y actualizaciones automáticas
 
-**Estado:** propuesta para aprobación · **Base actual:** `pom.xml` 1.0.0, últimos tags `1.0.1`/`1.1.0` · **Fecha:** 2026-11-20.
+**Estado:** en implementación · **Versión de desarrollo:** 2.0.0-SNAPSHOT · **Última release publicada:** 1.1.0 · **Fecha:** 2026-11-20.
 
 ## 1. Objetivo
 
@@ -294,7 +294,6 @@ No es prioridad. Requiere updater específico por plataforma, bloqueo de ejecuta
 | macOS/Windows no se prueban con act | Validar en runners reales/GitHub y máquinas limpias. |
 
 ## 13. Decisiones confirmadas
-
 El 2026-11-20 el usuario confirmó:
 
 1. Próxima versión: **2.0.0**.
@@ -306,3 +305,24 @@ El 2026-11-20 el usuario confirmó:
 7. Release **draft** con publicación manual.
 
 Con esto se puede empezar por V0/V1 sin más preguntas de producto.
+
+## 14. Estado de implementación
+
+Implementado:
+
+- `pom.xml` en `2.0.0-SNAPSHOT` y `Implementation-Version` en el manifiesto del JAR.
+- `BuildInfo` y versión visible en Ajustes.
+- `release.yml` con validación de tag/CHANGELOG, matriz de instaladores, checksums, manifiesto y draft release.
+- `UpdateService` con lectura del manifiesto, comparación SemVer y pruebas con servidor HTTP local.
+- Sección **Ajustes → Actualizaciones**, auto-check al inicio (24 h) y banner con “Ver release”.
+- `scripts/package-*` aceptan `NNPPSS_VERSION` y `JPACKAGE_TYPE` (MSI/DMG/DEB/app-image).
+- `CHANGELOG` 2.0.0 y tests: **51 verdes**.
+- App image Windows versionada generada correctamente.
+- `release.yml` validado con act: job `validate` + build Linux (`deb`, app-image y upload de artefacto) correctos.
+
+Pendiente para cerrar el objetivo:
+
+- Validar `release.yml` en act/GitHub con un tag de prueba.
+- Probar MSI, DMG y DEB en runners/máquinas limpias.
+- Publicar un draft de prueba y comprobar `update-manifest.json` + checksums.
+- Firma y canal beta quedan fuera de 2.0.0 por decisión.

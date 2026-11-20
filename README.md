@@ -16,6 +16,8 @@ extraction and automatic cleanup.
 - Configurable download and extraction folders.
 - “Free up space” cleanup for `.pkg` files that have not been extracted,
   showing the file count and recoverable space before deleting anything.
+- Update checks against the latest stable GitHub release, with the current
+  version shown in Settings and a link to the release page.
 - pkg2zip auto-detection (configured, bundled or `PATH`) with folder picker.
 - English/Spanish UI, light/dark theme.
 - Per-user data directory, so the app works when installed read-only.
@@ -155,6 +157,16 @@ definitive JavaFX edition.
 - [Plan de migración a JavaFX](docs/PLAN_MIGRACION_JAVAFX.md)
 - [Plan de mejora UI/UX](docs/PLAN_UX_UI.md)
 - [Plan de versionado y actualizaciones](docs/PLAN_VERSIONADO_ACTUALIZACIONES.md)
+
+## Versioning and releases
+
+Release versions come from Git tags named `vMAJOR.MINOR.PATCH`. The release
+workflow injects the tag version into Maven, the JAR, `jpackage` and the update
+manifest. Pushing a tag creates a **draft** GitHub release; a maintainer
+reviews and publishes it. The app only checks published stable releases and
+opens the release page; it never installs anything silently.
+
+Next planned version: **2.0.0**. See [the versioning and update plan](docs/PLAN_VERSIONADO_ACTUALIZACIONES.md).
 
 ## License
 

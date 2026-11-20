@@ -43,17 +43,36 @@ if (-not $packageType) {
 }
 
 Write-Host "Running jpackage (type: $packageType)..."
-jpackage --type $packageType `
-    --name NNPPSS `
-    --input $appDir `
-    --main-jar NNPPSS.jar `
-    --main-class com.squarepeace.nnppss.Launcher `
-    --dest $distDir `
-    --java-options "--enable-native-access=ALL-UNNAMED"
+$jpackageArgs = @(
+    "--type", $packageType,
+    "--name", "NNPPSS",
+    "--input", $appDir,
+    "--main-jar", "NNPPSS.jar",
+    "--main-class", "com.squarepeace.nnppss.Launcher",
+    "--dest", $distDir,
+    "--java-options", "--enable-native-access=ALL-UNNAMED"
+)
+if ($env:NNPPSS_VERSION) {
+    $jpackageArgs += @("--app-version", $env:NNPPSS_VERSION)
+}
+if ($packageType -eq "msi") {
+    $jpackageArgs += @(
+        "--win-menu",
+        "--win-shortcut",
+        "--win-dir-chooser",
+        "--win-upgrade-uuid", "8f7d64a0-3b4a-4d6a-9a1f-2f0d8f4c6b21"
+    )
+}
+& jpackage @jpackageArgs
 
 if ($LASTEXITCODE -ne 0) {
     throw "jpackage failed with exit code $LASTEXITCODE"
 }
 
-Write-Host "App image created: $imageDir"
-Write-Host "Run: $imageDir\NNPPSS.exe"
+if (Test-Path $imageDir) {
+    Write-Host "App image created: $imageDir"
+    Write-Host "Run: $imageDir\NNPPSS.exe"
+} else {
+    Write-Host "Package created under: $distDir"
+    Get-ChildItem $distDir | Select-Object Name, Length
+}

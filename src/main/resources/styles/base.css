@@ -112,6 +112,12 @@
     -fx-text-fill: -text-muted;
 }
 
+.settings-version {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-muted;
+    -fx-padding: 0 8 0 0;
+}
+
 .step-label {
     -fx-font-size: 11px;
     -fx-text-fill: -primary;

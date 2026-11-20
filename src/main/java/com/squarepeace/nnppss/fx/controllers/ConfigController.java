@@ -1,6 +1,7 @@
 package com.squarepeace.nnppss.fx.controllers;
 
 import com.squarepeace.nnppss.app.AppPaths;
+import com.squarepeace.nnppss.app.BuildInfo;
 import com.squarepeace.nnppss.service.ConfigManager;
 import com.squarepeace.nnppss.service.Pkg2zipResolver;
 import com.squarepeace.nnppss.util.I18n;
@@ -36,6 +37,7 @@ public class ConfigController {
 
     @FXML private Label titleLabel;
     @FXML private Label subtitleLabel;
+    @FXML private Label versionLabel;
     @FXML private TextField txtPsvitaUrl;
     @FXML private TextField txtPspUrl;
     @FXML private TextField txtPsxUrl;
@@ -62,8 +64,13 @@ public class ConfigController {
     @FXML private VBox appearanceSection;
     @FXML private VBox storageSection;
     @FXML private VBox maintenanceSection;
+    @FXML private VBox updatesSection;
     @FXML private Label cleanupHintLabel;
     @FXML private Button btnCleanup;
+    @FXML private Label updateVersionLabel;
+    @FXML private Label updateStatusLabel;
+    @FXML private Button btnCheckUpdates;
+    @FXML private CheckBox checkUpdates;
     @FXML private TextField txtDownloadsDir;
     @FXML private TextField txtExtractionDir;
     @FXML private Button btnChooseDownloads;
@@ -85,6 +92,7 @@ public class ConfigController {
     private Path pendingPkg2zipPath;
     private boolean pkg2zipAutomatic = true;
     private Runnable onCleanupRequested;
+    private Runnable onCheckUpdates;
 
     public void setConfigManager(ConfigManager configManager) {
         this.configManager = configManager;
@@ -341,6 +349,7 @@ public class ConfigController {
             setSectionVisible(librariesSection, true);
             setSectionVisible(storageSection, true);
             setSectionVisible(maintenanceSection, true);
+            setSectionVisible(updatesSection, true);
             setSectionVisible(downloadsSection, true);
             setSectionVisible(appearanceSection, true);
             setButtonVisible(btnBack, false);
@@ -357,6 +366,7 @@ public class ConfigController {
         setSectionVisible(librariesSection, librariesStep);
         setSectionVisible(storageSection, true);
         setSectionVisible(maintenanceSection, false);
+        setSectionVisible(updatesSection, false);
         setSectionVisible(downloadsSection, !librariesStep);
         setSectionVisible(appearanceSection, !librariesStep);
         setButtonVisible(btnBack, !librariesStep);
@@ -415,6 +425,24 @@ public class ConfigController {
         this.onCleanupRequested = onCleanupRequested;
     }
 
+    public void setOnCheckUpdates(Runnable onCheckUpdates) {
+        this.onCheckUpdates = onCheckUpdates;
+    }
+
+    public void setUpdateStatus(String status) {
+        if (updateStatusLabel != null) {
+            updateStatusLabel.setText(status == null ? "" : status);
+        }
+    }
+
+    @FXML
+    private void handleCheckUpdates() {
+        if (onCheckUpdates != null) {
+            setUpdateStatus(I18n.get("update.checking"));
+            onCheckUpdates.run();
+        }
+    }
+
     public void refreshStorageInfo() {
         updateStorageInfo();
     }
@@ -441,6 +469,12 @@ public class ConfigController {
 
     @FXML
     public void initialize() {
+        if (versionLabel != null) {
+            versionLabel.setText(BuildInfo.displayVersion());
+        }
+        if (updateVersionLabel != null) {
+            updateVersionLabel.setText(BuildInfo.displayVersion());
+        }
         spinnerSimultaneous.setValueFactory(
                 new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 4, 1));
         spinnerSpeedLimit.setValueFactory(
@@ -479,6 +513,7 @@ public class ConfigController {
 
         checkAutoCleanup.setSelected(configManager.isAutoCleanupEnabled());
         checkDarkMode.setSelected(configManager.isDarkModeEnabled());
+        checkUpdates.setSelected(configManager.isUpdateCheckOnStartupEnabled());
 
         if ("es".equals(configManager.getLanguage())) {
             comboLanguage.getSelectionModel().select("Español");
@@ -607,6 +642,7 @@ public class ConfigController {
         configManager.setProperty("downloadSpeedLimit", String.valueOf(speedLimit));
         configManager.setProperty("autoCleanupPkg", String.valueOf(checkAutoCleanup.isSelected()));
         configManager.setProperty("darkMode", String.valueOf(checkDarkMode.isSelected()));
+        configManager.setProperty("updates.checkOnStartup", String.valueOf(checkUpdates.isSelected()));
 
         String selectedLang = comboLanguage.getValue();
         String newLanguage = "Español".equals(selectedLang) ? "es" : "en";

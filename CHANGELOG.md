@@ -2,6 +2,39 @@
 
 All notable changes to NNPPSS are documented here.
 
+## [2.0.0] — 2026-11-20
+
+### Added
+
+- Modern JavaFX application shell with app bar, console switch, search, theme
+  toggle, queue counter and a persistent detail pane.
+- “Download now” and “Add to queue” actions, with undo for queue additions.
+- Non-modal download queue drawer with ordering, selection, export/import and
+  start controls.
+- Inline pause/resume and cancel controls on download cards.
+- Collapsible download dock with global progress and ETA.
+- Configurable download and extraction folders, free-space hints and folder
+  pickers.
+- pkg2zip auto-detection from configuration, bundled `lib`, or `PATH`, with a
+  folder picker and actionable missing-tool dialog.
+- Two-step first-run wizard for libraries, storage and preferences.
+- “Free up space” cleanup for unextracted `.pkg` files, with confirmation,
+  file list and recoverable-space estimate.
+- Actionable loading, empty, filtered-empty and load-error states.
+- Keyboard shortcuts, focus handling, accessible labels and WCAG AA contrast
+  checks.
+- Local `act` workflow support and Linux JavaFX runner dependencies.
+- 51 automated tests, including paths, update/config storage, pkg2zip
+  resolution, update checks and storage cleanup.
+
+### Changed
+
+- Maven development version is now `2.0.0-SNAPSHOT`; release builds will take
+  their version from the Git tag.
+- The JAR manifest exposes `Implementation-Version`.
+- Settings are grouped into Libraries, Storage cleanup, Storage, Downloads and
+  Appearance sections.
+
 ## [1.0.0] — 2026-11-20
 
 ### Added

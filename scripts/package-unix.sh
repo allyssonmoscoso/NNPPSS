@@ -29,13 +29,23 @@ fi
 rm -rf "$ROOT_DIR/dist/NNPPSS" "$ROOT_DIR/dist/NNPPSS.app"
 
 PACKAGE_TYPE="${JPACKAGE_TYPE:-app-image}"
+VERSION_ARGS=""
+if [ -n "${NNPPSS_VERSION:-}" ]; then
+    VERSION_ARGS="--app-version ${NNPPSS_VERSION}"
+fi
+EXTRA_ARGS=""
+if [ "$PACKAGE_TYPE" = "deb" ]; then
+    EXTRA_ARGS="--linux-shortcut"
+fi
 echo "Running jpackage (type: $PACKAGE_TYPE)..."
+# shellcheck disable=SC2086
 jpackage --type "$PACKAGE_TYPE" \
     --name NNPPSS \
     --input "$APP_DIR" \
     --main-jar NNPPSS.jar \
     --main-class com.squarepeace.nnppss.Launcher \
     --dest "$ROOT_DIR/dist" \
-    --java-options "--enable-native-access=ALL-UNNAMED"
+    --java-options "--enable-native-access=ALL-UNNAMED" \
+    $VERSION_ARGS $EXTRA_ARGS
 
-echo "App image created under $ROOT_DIR/dist"
+echo "Package created under $ROOT_DIR/dist"
