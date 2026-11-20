@@ -159,6 +159,7 @@ lib/
 app/
 url.txt
 .vscode/
+.agents/
 
 .build_tmp/*
 .local/

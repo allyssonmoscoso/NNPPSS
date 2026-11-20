@@ -25,6 +25,12 @@ All notable changes to NNPPSS are documented here.
 
 - Single entry point: `Launcher` for jpackage and `MainApp` for the JavaFX
   runtime; Maven now builds a runnable JavaFX application by default.
+- Segmented-download UI updates are throttled at the source and in the
+  coordinator (5 Hz), avoiding thousands of repaint events per large download.
+- Failed-download retry resolves games off the JavaFX thread; the retry button
+  uses the in-memory history cache instead of reading JSON on every update.
+- Download row and global progress styling moved from inline styles to CSS
+  classes with dark-theme overrides.
 - Configuration validated (1–4 simultaneous downloads, non-negative speed
   limit) with defaults for every key.
 - Logs are written to the data directory instead of the working directory.
@@ -41,6 +47,8 @@ All notable changes to NNPPSS are documented here.
 - Download state no longer races with readers (atomic replacement).
 - Session state is preserved on exit even while workers are being cancelled.
 - Global progress uses bytes instead of averaging bytes and game counts.
+- Retry-failed and history lookups no longer block the JavaFX Application
+  Thread.
 
 ## [0.0.7] — legacy
 

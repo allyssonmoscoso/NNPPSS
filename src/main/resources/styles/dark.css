@@ -24,3 +24,52 @@
 .root.dark .table-view .table-row-cell:odd {
     -fx-background-color: #303030;
 }
+
+.root.dark .download-item {
+    -fx-background-color: #2b2b2b;
+    -fx-border-color: #3c3c3c;
+}
+
+.root.dark .global-progress {
+    -fx-border-color: #3c3c3c;
+}
+
+.root.dark .download-title {
+    -fx-text-fill: #e0e0e0;
+}
+
+.root.dark .download-meta,
+.root.dark .download-status {
+    -fx-text-fill: #b0b0b0;
+}
+
+.root.dark .download-item.completed {
+    -fx-background-color: #1e3323;
+    -fx-border-color: #2e5b38;
+}
+
+.root.dark .download-item.failed {
+    -fx-background-color: #3a1f22;
+    -fx-border-color: #6b2d33;
+}
+
+.root.dark .download-item.cancelled {
+    -fx-background-color: #3a2a17;
+    -fx-border-color: #6b4a24;
+}
+
+.root.dark .download-item.completed .download-status {
+    -fx-text-fill: #81c784;
+}
+
+.root.dark .download-item.failed .download-status {
+    -fx-text-fill: #ef9a9a;
+}
+
+.root.dark .download-item.cancelled .download-status {
+    -fx-text-fill: #ffb74d;
+}
+
+.root.dark .stats-warning {
+    -fx-text-fill: #ef9a9a;
+}

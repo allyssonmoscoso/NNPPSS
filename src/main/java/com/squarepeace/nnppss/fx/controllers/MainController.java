@@ -137,6 +137,7 @@ public class MainController {
     private boolean loading;
     private boolean started;
     private boolean restorePrompted;
+    private boolean retryingFailed;
 
     /**
      * Receives the application services. It does not start any background work:
@@ -816,18 +817,60 @@ public class MainController {
 
     @FXML
     private void handleRetryFailed() {
-        if (downloadCoordinator == null || !downloadCoordinator.hasFailedDownloads()) {
+        int failedCount = failedHistoryCount();
+        if (downloadCoordinator == null || failedCount == 0) {
             notificationPane.showNotification(I18n.get("notify.nofailed"),
                     NotificationPane.NotificationType.INFO);
             return;
         }
+        if (retryingFailed) {
+            return;
+        }
 
-        int failedCount = downloadCoordinator.getFailedCount();
         if (!confirm("dialog.retryfailed.title", "dialog.retryfailed.message", failedCount)) {
             return;
         }
 
-        List<Game> failedGames = downloadCoordinator.takeFailedGames();
+        // Resolving the games touches the TSV databases, so keep it off the FX
+        // thread. The history is updated by the coordinator on the worker.
+        retryingFailed = true;
+        btnRetry.setDisable(true);
+        statusLabel.setText(I18n.get("status.retrying"));
+
+        Task<List<Game>> retryTask = new Task<>() {
+            @Override
+            protected List<Game> call() {
+                return downloadCoordinator.takeFailedGames();
+            }
+        };
+
+        retryTask.setOnSucceeded(event -> {
+            retryingFailed = false;
+            addRetriedGames(retryTask.getValue());
+            statusLabel.setText(I18n.get("status.ready"));
+            refreshHistoryCache();
+            tableGames.refresh();
+            updateRetryButton();
+        });
+
+        retryTask.setOnFailed(event -> {
+            retryingFailed = false;
+            statusLabel.setText(I18n.get("status.ready"));
+            refreshHistoryCache();
+            updateRetryButton();
+            Throwable error = retryTask.getException();
+            notificationPane.showNotification(
+                    I18n.get("notify.retryfailed.error",
+                            error == null ? "" : error.getMessage()),
+                    NotificationPane.NotificationType.ERROR);
+        });
+
+        Thread thread = new Thread(retryTask, "retry-loader");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void addRetriedGames(List<Game> failedGames) {
         int added = 0;
         for (Game game : failedGames) {
             boolean alreadyQueued = downloadQueue.stream()
@@ -845,15 +888,23 @@ public class MainController {
             notificationPane.showNotification(I18n.get("notify.nofailedadded"),
                     NotificationPane.NotificationType.WARNING);
         }
-        refreshHistoryCache();
-        tableGames.refresh();
-        updateRetryButton();
     }
 
     private void updateRetryButton() {
-        if (btnRetry != null && downloadCoordinator != null) {
-            btnRetry.setDisable(!downloadCoordinator.hasFailedDownloads());
+        if (btnRetry != null) {
+            btnRetry.setDisable(failedHistoryCount() == 0);
         }
+    }
+
+    /** Number of failed entries in the in-memory history cache (no disk IO on FX). */
+    private int failedHistoryCount() {
+        int count = 0;
+        for (DownloadHistory entry : historyByUrl.values()) {
+            if ("failed".equals(entry.getStatus())) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private Set<String> targetDownloadUrls() {

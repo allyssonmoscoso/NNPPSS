@@ -49,12 +49,57 @@
     -fx-text-fill: white;
 }
 
+/* Global download progress */
+.global-progress {
+    -fx-border-color: #c8c8c8;
+    -fx-border-width: 2 0 0 0;
+}
+
 /* Download rows (F4) */
-.download-item {
-    -fx-background-color: #FAFAFA;
+.download-item {    -fx-background-color: #FAFAFA;
     -fx-border-color: #E0E0E0;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
+}
+
+.download-title {
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+.download-meta {
+    -fx-font-size: 11px;
+    -fx-text-fill: #666666;
+}
+
+.download-status {
+    -fx-font-size: 11px;
+    -fx-text-fill: #888888;
+}
+
+.download-cancel {
+    -fx-font-size: 10px;
+    -fx-padding: 1 5 1 5;
+    -fx-background-color: transparent;
+    -fx-text-fill: #999999;
+    -fx-cursor: hand;
+}
+
+.download-item.completed .download-status {
+    -fx-text-fill: #2E7D32;
+}
+
+.download-item.failed .download-status {
+    -fx-text-fill: #C62828;
+}
+
+.download-item.cancelled .download-status {
+    -fx-text-fill: #E65100;
+}
+
+.stats-warning {
+    -fx-text-fill: #c62828;
+    -fx-font-weight: bold;
 }
 
 .download-item:selected {

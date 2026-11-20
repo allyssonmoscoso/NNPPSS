@@ -200,6 +200,7 @@ public class DownloadService implements DownloadClient {
                 byte[] buf = new byte[64 * 1024];
                 int read;
                 long downloaded = partial ? existingFileSize : 0L;
+                long lastProgressNotifyMs = 0L;
                 while (true) {
                     long startChunkTime = System.currentTimeMillis();
                     read = in.read(buf);
@@ -233,7 +234,9 @@ public class DownloadService implements DownloadClient {
                     }
 
                     downloaded += read;
-                    if (listener != null) {
+                    long now = System.currentTimeMillis();
+                    if (listener != null && now - lastProgressNotifyMs >= 200) {
+                        lastProgressNotifyMs = now;
                         listener.onProgress(downloaded, totalSize);
                     }
                 }

@@ -42,6 +42,7 @@ public class SegmentedDownloadTask implements Callable<File> {
     private final AtomicBoolean paused = new AtomicBoolean(false);
     private final AtomicBoolean cancelled = new AtomicBoolean(false);
     private final AtomicLong totalBytesDownloaded = new AtomicLong(0);
+    private final AtomicLong lastListenerNotifyMs = new AtomicLong(0);
 
     public SegmentedDownloadTask(DownloadMetadata metadata, DownloadListener listener, 
                                  ConfigManager configManager, SegmentStateManager stateManager,
@@ -183,6 +184,19 @@ public class SegmentedDownloadTask implements Callable<File> {
         // Workers check this flag
     }
 
+    /**
+     * Emits progress/segment callbacks at most five times per second. Without
+     * this gate a 1 GB download would enqueue ~130k UI events.
+     */
+    private void notifyListenerThrottled(long totalDownloaded) {
+        long now = System.currentTimeMillis();
+        long last = lastListenerNotifyMs.get();
+        if (now - last >= 200 && lastListenerNotifyMs.compareAndSet(last, now)) {
+            listener.onProgress(totalDownloaded, metadata.getTotalSize());
+            listener.onSegmentProgress(metadata.getSegments());
+        }
+    }
+
     public void resume() {
         paused.set(false);
     }
@@ -281,11 +295,7 @@ public class SegmentedDownloadTask implements Callable<File> {
                     
                     // Atomic update of global progress and notification
                     long total = totalBytesDownloaded.addAndGet(bytesRead);
-                    
-                    // Update listeners
-                    // We should probably throttle this if performance is an issue, but standard IDM updates fast.
-                    listener.onProgress(total, metadata.getTotalSize());
-                    listener.onSegmentProgress(metadata.getSegments());
+                    notifyListenerThrottled(total);
                     
                     // Synchronization/Speed Limit logic could go here (Phase 8)
                     applySpeedLimit(bytesRead);

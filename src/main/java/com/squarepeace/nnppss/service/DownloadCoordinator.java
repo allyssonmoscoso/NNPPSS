@@ -222,7 +222,9 @@ public class DownloadCoordinator {
 
                         @Override
                         public void onSegmentProgress(List<Segment> segments) {
-                            listener.onTaskSegments(task, segments);
+                            if (task.shouldNotifySegments(PROGRESS_NOTIFY_INTERVAL_MS)) {
+                                listener.onTaskSegments(task, segments);
+                            }
                         }
 
                         @Override

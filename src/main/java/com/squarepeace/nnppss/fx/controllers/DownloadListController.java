@@ -144,7 +144,7 @@ public class DownloadListController {
         }
         if (downloadQueue == null || downloadQueue.isEmpty()) {
             statsLabel.setText(I18n.get("label.queueempty"));
-            statsLabel.setStyle("");
+            statsLabel.getStyleClass().remove("stats-warning");
             return;
         }
 
@@ -164,7 +164,10 @@ public class DownloadListController {
         statsLabel.setText(I18n.get(
                 insufficient ? "queue.stats.insufficient" : "queue.stats",
                 downloadQueue.size(), totalGb, freeGb));
-        statsLabel.setStyle(insufficient ? "-fx-text-fill: #c62828;" : "");
+        statsLabel.getStyleClass().remove("stats-warning");
+        if (insufficient) {
+            statsLabel.getStyleClass().add("stats-warning");
+        }
     }
 
     private void updateButtonState() {

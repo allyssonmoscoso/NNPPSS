@@ -30,9 +30,9 @@ public class GlobalProgressIndicator extends VBox {
     private long startTimeMs = 0;
 
     public GlobalProgressIndicator() {
+        getStyleClass().add("global-progress");
         setSpacing(5);
         setPadding(new Insets(10));
-        setStyle("-fx-border-color: #c8c8c8; -fx-border-width: 2 0 0 0;");
 
         BorderPane topPane = new BorderPane();
         statusLabel = new Label(I18n.get("status.ready"));

@@ -78,7 +78,7 @@ public class DownloadProgressItem extends VBox {
         // Row 1: title + speed/ETA + cancel
         BorderPane topRow = new BorderPane();
         titleLabel = new Label(gameTitle);
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
+        titleLabel.getStyleClass().add("download-title");
         titleLabel.setMaxWidth(Double.MAX_VALUE);
         titleLabel.setEllipsisString("...");
         BorderPane.setAlignment(titleLabel, Pos.CENTER_LEFT);
@@ -87,12 +87,11 @@ public class DownloadProgressItem extends VBox {
         rightBox.setAlignment(Pos.CENTER_RIGHT);
         rightBox.setMinWidth(HBox.USE_PREF_SIZE); // don't shrink past content
         speedEtaLabel = new Label("");
-        speedEtaLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #666;");
+        speedEtaLabel.getStyleClass().add("download-meta");
         speedEtaLabel.setMinWidth(Label.USE_PREF_SIZE);
 
         cancelButton = new Button("✕");
-        cancelButton.setStyle("-fx-font-size: 10px; -fx-padding: 1 5 1 5; "
-                + "-fx-background-color: transparent; -fx-text-fill: #999; -fx-cursor: hand;");
+        cancelButton.getStyleClass().add("download-cancel");
         cancelButton.setTooltip(new Tooltip(I18n.get("button.cancel")));
         cancelButton.setOnAction(e -> {
             if (onCancel != null) {
@@ -128,7 +127,7 @@ public class DownloadProgressItem extends VBox {
 
         // Row 3: status
         statusLabel = new Label(I18n.get("status.starting"));
-        statusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #888;");
+        statusLabel.getStyleClass().add("download-status");
         statusLabel.setMaxWidth(Double.MAX_VALUE);
 
         getChildren().addAll(topRow, canvasHolder, statusLabel);
@@ -170,9 +169,10 @@ public class DownloadProgressItem extends VBox {
         this.currentSpeedBps = Math.max(0, speedBps);
         this.etaSeconds = etaSeconds;
         this.retryCount = Math.max(0, retryCount);
-        setPaused(paused);
+        this.isPaused = paused;
+        pseudoClassStateChanged(PAUSED_PSEUDO, paused);
 
-        Platform.runLater(() -> {
+        runOnFx(() -> {
             repaintCanvas();
             updateStatusLabel();
             updateSpeedLabel();
@@ -189,7 +189,7 @@ public class DownloadProgressItem extends VBox {
         this.downloadedBytes = segments.stream().mapToLong(Segment::bytesDownloaded).sum();
         updateSpeed(downloadedBytes);
 
-        Platform.runLater(() -> {
+        runOnFx(() -> {
             repaintCanvas();
             updateStatusLabel();
             updateSpeedLabel();
@@ -199,7 +199,7 @@ public class DownloadProgressItem extends VBox {
     public void setPaused(boolean paused) {
         this.isPaused = paused;
         pseudoClassStateChanged(PAUSED_PSEUDO, paused);
-        Platform.runLater(() -> {
+        runOnFx(() -> {
             updateStatusLabel();
             updateSpeedLabel();
         });
@@ -207,7 +207,7 @@ public class DownloadProgressItem extends VBox {
 
     public void setRetryCount(int retryCount) {
         this.retryCount = Math.max(0, retryCount);
-        Platform.runLater(this::updateStatusLabel);
+        runOnFx(this::updateStatusLabel);
     }
 
     public void setCompleted() {
@@ -216,10 +216,9 @@ public class DownloadProgressItem extends VBox {
         this.downloadedBytes = this.totalBytes;
         getStyleClass().add("completed");
         pseudoClassStateChanged(PAUSED_PSEUDO, false);
-        Platform.runLater(() -> {
+        runOnFx(() -> {
             statusLabel.setText("✓ " + I18n.get("status.completed")
                     + " — " + formatSize(totalBytes));
-            statusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #2E7D32;");
             speedEtaLabel.setText("");
             cancelButton.setVisible(false);
             repaintCanvas();
@@ -231,10 +230,9 @@ public class DownloadProgressItem extends VBox {
         this.isPaused = false;
         getStyleClass().add("failed");
         pseudoClassStateChanged(PAUSED_PSEUDO, false);
-        Platform.runLater(() -> {
+        runOnFx(() -> {
             String detail = error == null || error.isBlank() ? "" : ": " + error;
             statusLabel.setText("✗ " + I18n.get("status.error") + detail);
-            statusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #C62828;");
             speedEtaLabel.setText("");
             cancelButton.setVisible(false);
             repaintCanvas();
@@ -246,13 +244,21 @@ public class DownloadProgressItem extends VBox {
         this.isPaused = false;
         getStyleClass().add("cancelled");
         pseudoClassStateChanged(PAUSED_PSEUDO, false);
-        Platform.runLater(() -> {
+        runOnFx(() -> {
             statusLabel.setText("⚠ " + I18n.get("status.cancelled"));
-            statusLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #E65100;");
             speedEtaLabel.setText("");
             cancelButton.setVisible(false);
             repaintCanvas();
         });
+    }
+
+    /** Runs immediately on the FX thread, or queues one hop when called from a worker. */
+    private void runOnFx(Runnable action) {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+        } else {
+            Platform.runLater(action);
+        }
     }
 
     // ───────────────────────── Canvas painting ─────────────────────────

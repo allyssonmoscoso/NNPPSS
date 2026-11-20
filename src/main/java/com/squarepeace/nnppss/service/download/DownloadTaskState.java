@@ -29,6 +29,7 @@ public final class DownloadTaskState {
     private long lastSampleTimeMs;
     private long lastSampleBytes;
     private long lastProgressNotifyMs;
+    private long lastSegmentNotifyMs;
 
     public DownloadTaskState(Game game, String destinationPath) {
         this.game = game;
@@ -168,6 +169,20 @@ public final class DownloadTaskState {
         long now = System.currentTimeMillis();
         if (now - lastProgressNotifyMs >= intervalMs) {
             lastProgressNotifyMs = now;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Rate-limits segment-graph notifications. Segmented downloads emit one
+     * event per 8 KB buffer; without this gate the FX queue can receive
+     * thousands of repaint requests per second.
+     */
+    public synchronized boolean shouldNotifySegments(long intervalMs) {
+        long now = System.currentTimeMillis();
+        if (now - lastSegmentNotifyMs >= intervalMs) {
+            lastSegmentNotifyMs = now;
             return true;
         }
         return false;

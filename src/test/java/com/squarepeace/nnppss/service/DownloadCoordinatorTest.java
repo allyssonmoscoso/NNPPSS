@@ -185,6 +185,20 @@ class DownloadCoordinatorTest {
     }
 
     @Test
+    void throttlesSegmentNotificationsFromTheDownloadWorker() throws Exception {
+        Game game = game("Zeta", "https://example.test/zeta.pkg", 2048);
+        assertTrue(coordinator.start(List.of(game), Set.of()));
+        DownloadService.DownloadListener clientListener = downloadClient.await(game.getPkgUrl());
+
+        for (int i = 0; i < 20; i++) {
+            clientListener.onSegmentProgress(List.of());
+        }
+
+        assertEquals(1, listener.segmentCount.get(),
+                "only the first segment update should reach the UI within the throttle window");
+    }
+
+    @Test
     void shutdownKeepsActiveStateForTheNextSession() throws Exception {
         Game game = game("Epsilon", "https://example.test/epsilon.pkg", 4096);
         assertTrue(coordinator.start(List.of(game), Set.of()));
@@ -293,6 +307,8 @@ class DownloadCoordinatorTest {
         private final List<DownloadTaskState> completed = new ArrayList<>();
         private final java.util.concurrent.atomic.AtomicInteger progressCount =
                 new java.util.concurrent.atomic.AtomicInteger();
+        private final java.util.concurrent.atomic.AtomicInteger segmentCount =
+                new java.util.concurrent.atomic.AtomicInteger();
         private final java.util.concurrent.atomic.AtomicInteger allFinished =
                 new java.util.concurrent.atomic.AtomicInteger();
 
@@ -304,6 +320,11 @@ class DownloadCoordinatorTest {
         @Override
         public void onTaskProgress(DownloadTaskState task) {
             progressCount.incrementAndGet();
+        }
+
+        @Override
+        public void onTaskSegments(DownloadTaskState task, List<com.squarepeace.nnppss.model.download.Segment> segments) {
+            segmentCount.incrementAndGet();
         }
 
         @Override
