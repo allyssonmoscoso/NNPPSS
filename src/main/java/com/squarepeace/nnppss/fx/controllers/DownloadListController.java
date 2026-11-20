@@ -65,6 +65,7 @@ public class DownloadListController {
     private ObservableList<Game> downloadQueue;
     private DownloadQueueManager queueManager;
     private BooleanSupplier onStartDownloadsCallback;
+    private Runnable onClose;
     private ListChangeListener<Game> queueListener;
 
     @FXML
@@ -86,13 +87,17 @@ public class DownloadListController {
         };
         downloadQueue.addListener(queueListener);
 
-        if (btnClose.getScene() != null
-                && btnClose.getScene().getWindow() instanceof Stage stage) {
-            stage.setOnCloseRequest(event -> detachQueueListener());
-        }
-
         updateStats();
         updateButtonState();
+    }
+
+    /** Refreshes stats and buttons when the drawer is reopened. */
+    public void refresh() {
+        updateStats();
+        updateButtonState();
+        if (tableQueue != null) {
+            tableQueue.refresh();
+        }
     }
 
     private void detachQueueListener() {
@@ -102,13 +107,17 @@ public class DownloadListController {
         }
     }
 
-    /** Releases the queue listener when the dialog is closed by the window manager. */
+    /** Releases the queue listener when the drawer is disposed. */
     public void detach() {
         detachQueueListener();
     }
 
     public void setOnStartDownloads(BooleanSupplier callback) {
         this.onStartDownloadsCallback = callback;
+    }
+
+    public void setOnClose(Runnable onClose) {
+        this.onClose = onClose;
     }
 
     private void setupTable() {
@@ -143,7 +152,7 @@ public class DownloadListController {
             return;
         }
         if (downloadQueue == null || downloadQueue.isEmpty()) {
-            statsLabel.setText(I18n.get("label.queueempty"));
+            statsLabel.setText("");
             statsLabel.getStyleClass().remove("stats-warning");
             return;
         }
@@ -377,7 +386,10 @@ public class DownloadListController {
     }
 
     private void closeWindow() {
-        detachQueueListener();
+        if (onClose != null) {
+            onClose.run();
+            return;
+        }
         Stage stage = (Stage) btnClose.getScene().getWindow();
         stage.close();
     }

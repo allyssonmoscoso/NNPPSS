@@ -111,4 +111,13 @@
         </bottom>
     </BorderPane>
 
+    <VBox fx:id="queueDrawer" styleClass="queue-drawer"
+          StackPane.alignment="TOP_RIGHT"
+          prefWidth="420.0" minWidth="420.0" maxWidth="420.0"
+          visible="false" managed="false">
+        <StackPane.margin>
+            <Insets top="56.0"/>
+        </StackPane.margin>
+    </VBox>
+
 </StackPane>

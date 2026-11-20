@@ -440,18 +440,26 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
   - Content ID y consola se movieron fuera de la tabla (consola con nombre localizado).
   - Añadir a la cola sin confirmación + snackbar con “Deshacer”.
   - Cola con contador en el botón (`Cola (N)`).
-  - Notificaciones movidas a la esquina inferior derecha para no tapar la app bar.
+  - Notificaciones movidas a la esquina inferior izquierda para no tapar las acciones del detalle.
+- **UX4 — parcial:**
+  - La cola dejó de ser un diálogo modal y ahora es un drawer lateral de 420 px, debajo de la app bar.
+  - El drawer no bloquea el catálogo; se cierra con “✕”, “Cerrar” o `Esc`.
+  - Lista con índice, título, región, consola y tamaño; estadísticas y acciones (seleccionar, reordenar, quitar, limpiar, exportar/importar, iniciar).
+  - Botones con ajuste en varias filas para el ancho del panel.
+  - Pending: pausa/reanudación inline en las tarjetas de descarga y dock colapsable.
+
+![Drawer de cola](ux/queue-drawer.png)
 
 ![Primer incremento UI](ux/redesign-final.png)
 
 ### Pendiente
 
 - **UX2:** asistente de primera ejecución y panel de ajustes por secciones con “Probar” URL.
-- **UX4:** sustituir el diálogo modal de cola por el drawer lateral.
+- **UX4 (resto):** pausa/reanudación inline en las tarjetas y dock de descargas colapsable.
 - **UX5:** estados de carga/vacío/error con acción, accesibilidad por teclado y pluralización.
 - **UX6:** pruebas con usuarios, pulido y validación visual final.
 
-> El diálogo modal de cola y el formulario de ajustes siguen siendo los actuales; se abordan en UX2/UX4. El flujo principal ya permite descargar en tres acciones desde el catálogo.
+> El formulario de ajustes sigue siendo el actual; se aborda en UX2. La cola ya no es modal y el flujo principal permite descargar en tres acciones desde el catálogo.
 
 ---
 

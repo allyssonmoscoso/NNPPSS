@@ -6,6 +6,7 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
@@ -14,63 +15,70 @@
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.squarepeace.nnppss.fx.controllers.DownloadListController"
-            prefHeight="460.0" prefWidth="820.0">
+            styleClass="queue-panel"
+            prefHeight="680.0" prefWidth="420.0">
 
     <top>
         <HBox alignment="CENTER_LEFT" spacing="10.0">
             <padding>
-                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+                <Insets bottom="10.0" left="14.0" right="14.0" top="14.0"/>
             </padding>
-            <Label text="%dialog.downloadqueue.title">
+            <Label text="%dialog.downloadqueue.title" styleClass="dialog-title">
                 <font>
-                    <Font name="System Bold" size="14.0"/>
+                    <Font name="System Bold" size="16.0"/>
                 </font>
             </Label>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="✕" styleClass="icon-button" onAction="#handleClose"/>
         </HBox>
     </top>
 
     <center>
-        <TableView fx:id="tableQueue">
+        <TableView fx:id="tableQueue" styleClass="game-table">
             <columns>
-                <TableColumn fx:id="colIndex" text="#" prefWidth="40.0" sortable="false"/>
-                <TableColumn fx:id="colTitle" text="%table.column.name" prefWidth="320.0"/>
-                <TableColumn fx:id="colRegion" text="%table.column.region" prefWidth="70.0"/>
-                <TableColumn fx:id="colConsole" text="%table.column.console" prefWidth="90.0"/>
-                <TableColumn fx:id="colSize" text="%table.column.size" prefWidth="100.0"/>
+                <TableColumn fx:id="colIndex" text="#" prefWidth="34.0" sortable="false"/>
+                <TableColumn fx:id="colTitle" text="%table.column.name" prefWidth="190.0"/>
+                <TableColumn fx:id="colRegion" text="%table.column.region" prefWidth="55.0"/>
+                <TableColumn fx:id="colConsole" text="%table.column.console" prefWidth="75.0"/>
+                <TableColumn fx:id="colSize" text="%table.column.size" prefWidth="80.0"/>
             </columns>
             <columnResizePolicy>
                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
             </columnResizePolicy>
             <placeholder>
-                <Label text="%dialog.downloadlist.empty"/>
+                <Label text="%dialog.downloadlist.empty" wrapText="true"/>
             </placeholder>
         </TableView>
     </center>
 
     <bottom>
-        <VBox spacing="6.0">
+        <VBox spacing="8.0">
             <padding>
-                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+                <Insets bottom="12.0" left="12.0" right="12.0" top="10.0"/>
             </padding>
 
-            <Label fx:id="statsLabel" text="%label.queueempty"/>
+            <Label fx:id="statsLabel" text="%label.queueempty" styleClass="stats-label" wrapText="true"/>
 
-            <HBox alignment="CENTER_LEFT" spacing="8.0">
-                <Button fx:id="btnSelectAll" text="%button.selectall" onAction="#handleSelectAll"/>
-                <Button fx:id="btnDeselectAll" text="%button.deselectall" onAction="#handleDeselectAll"/>
-                <Button fx:id="btnMoveUp" text="%button.moveup" onAction="#handleMoveUp"/>
-                <Button fx:id="btnMoveDown" text="%button.movedown" onAction="#handleMoveDown"/>
-                <Button fx:id="btnRemove" text="%button.removeselected" onAction="#handleRemoveSelected"/>
-            </HBox>
+            <FlowPane hgap="6.0" vgap="6.0" prefWrapLength="390.0">
+                <Button fx:id="btnSelectAll" text="%button.selectall" styleClass="subtle-button" onAction="#handleSelectAll"/>
+                <Button fx:id="btnDeselectAll" text="%button.deselectall" styleClass="subtle-button" onAction="#handleDeselectAll"/>
+                <Button fx:id="btnMoveUp" text="%button.moveup" styleClass="subtle-button" onAction="#handleMoveUp"/>
+                <Button fx:id="btnMoveDown" text="%button.movedown" styleClass="subtle-button" onAction="#handleMoveDown"/>
+                <Button fx:id="btnRemove" text="%button.removeselected" styleClass="subtle-button" onAction="#handleRemoveSelected"/>
+            </FlowPane>
 
-            <HBox alignment="CENTER_LEFT" spacing="8.0">
-                <Button fx:id="btnClear" text="%button.clearall" onAction="#handleClearAll"/>
-                <Button fx:id="btnExport" text="%button.export" onAction="#handleExport"/>
-                <Button fx:id="btnImport" text="%button.import" onAction="#handleImport"/>
+            <FlowPane hgap="6.0" vgap="6.0" prefWrapLength="390.0">
+                <Button fx:id="btnClear" text="%button.clearall" styleClass="subtle-button" onAction="#handleClearAll"/>
+                <Button fx:id="btnExport" text="%button.export" styleClass="subtle-button" onAction="#handleExport"/>
+                <Button fx:id="btnImport" text="%button.import" styleClass="subtle-button" onAction="#handleImport"/>
+            </FlowPane>
+
+            <HBox alignment="CENTER_RIGHT" spacing="8.0">
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button fx:id="btnStart" text="%button.startdownloads" defaultButton="true"
-                        onAction="#handleStartDownloads"/>
-                <Button fx:id="btnClose" text="%button.close" cancelButton="true" onAction="#handleClose"/>
+                <Button fx:id="btnStart" text="%button.startdownloads" styleClass="primary-button"
+                        defaultButton="true" onAction="#handleStartDownloads"/>
+                <Button fx:id="btnClose" text="%button.close" styleClass="subtle-button"
+                        cancelButton="true" onAction="#handleClose"/>
             </HBox>
         </VBox>
     </bottom>

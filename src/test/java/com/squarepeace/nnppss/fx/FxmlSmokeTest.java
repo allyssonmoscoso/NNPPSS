@@ -96,11 +96,12 @@ class FxmlSmokeTest {
     }
 
     @Test
-    void opensDownloadListDialogWithCurrentControllerSignatures() throws Exception {
+    void opensDownloadListDrawerWithCurrentControllerSignatures() throws Exception {
         AppContext context = AppContext.create();
         Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
         AtomicReference<Throwable> error = new AtomicReference<>();
         AtomicReference<Stage> ownerRef = new AtomicReference<>();
+        AtomicBoolean drawerVisible = new AtomicBoolean(false);
         try {
             LoadedView view = load("/fxml/MainView.fxml");
             MainController controller = (MainController) view.controller();
@@ -115,29 +116,24 @@ class FxmlSmokeTest {
                     owner.setScene(new Scene(view.root()));
                     owner.show();
 
-                    Timeline closer = new Timeline(new KeyFrame(Duration.millis(800), event -> {
-                        for (Window window : new ArrayList<>(Window.getWindows())) {
-                            if (window != owner && window.isShowing()) {
-                                window.hide();
-                            }
-                        }
-                    }));
-                    closer.play();
-
                     Button downloadList = (Button) view.root().lookup("#btnDownloadList");
                     assertNotNull(downloadList, "download list button is missing");
                     downloadList.fire();
+
+                    var drawer = view.root().lookup("#queueDrawer");
+                    drawerVisible.set(drawer != null && drawer.isVisible());
                 } finally {
                     closed.countDown();
                     owner.close();
                 }
             });
 
-            assertTrue(closed.await(20, TimeUnit.SECONDS), "download list dialog did not close");
+            assertTrue(closed.await(20, TimeUnit.SECONDS), "download list drawer did not open");
             if (error.get() != null) {
                 error.get().printStackTrace();
             }
             assertNull(error.get(), () -> "Exception opening the download list: " + error.get());
+            assertTrue(drawerVisible.get(), "queue drawer was not visible");
             controller.shutdown();
         } finally {
             Thread.setDefaultUncaughtExceptionHandler(previous);

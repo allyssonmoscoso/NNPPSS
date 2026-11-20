@@ -108,6 +108,7 @@ public class MainController {
     @FXML private Button btnRetry;
     @FXML private VBox progressContainer;
     @FXML private Label statusLabel;
+    @FXML private VBox queueDrawer;
 
     @FXML private VBox detailPane;
     @FXML private Label detailTitle;
@@ -132,6 +133,8 @@ public class MainController {
     private DownloadHistoryManager downloadHistoryManager;
     private SystemValidator systemValidator;
     private DownloadCoordinator downloadCoordinator;
+    private DownloadListController queueController;
+    private Parent queueRoot;
 
     private ObservableList<Game> masterData = FXCollections.observableArrayList();
     private ObservableList<Game> downloadQueue;
@@ -780,31 +783,53 @@ public class MainController {
 
     @FXML
     private void handleOpenDownloadList() {
-        if (downloadQueue == null) return;
+        if (queueDrawer == null) {
+            return;
+        }
+        if (queueDrawer.isVisible()) {
+            closeQueueDrawer();
+        } else {
+            openQueueDrawer();
+        }
+    }
 
+    private void openQueueDrawer() {
+        if (downloadQueue == null || queueDrawer == null) {
+            return;
+        }
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/DownloadListView.fxml"),
-                    I18n.getResourceBundle());
-            Parent root = loader.load();
+            if (queueRoot == null) {
+                FXMLLoader loader = new FXMLLoader(
+                        getClass().getResource("/fxml/DownloadListView.fxml"),
+                        I18n.getResourceBundle());
+                queueRoot = loader.load();
+                queueController = loader.getController();
+                queueController.setQueueData(downloadQueue, downloadQueueManager);
+                queueController.setOnStartDownloads(this::startDownloadsFromQueue);
+                queueController.setOnClose(this::closeQueueDrawer);
+                VBox.setVgrow(queueRoot, javafx.scene.layout.Priority.ALWAYS);
+                queueDrawer.getChildren().add(queueRoot);
+            } else {
+                queueController.refresh();
+            }
 
-            DownloadListController controller = loader.getController();
-            controller.setQueueData(downloadQueue, downloadQueueManager);
-            controller.setOnStartDownloads(this::startDownloadsFromQueue);
-
-            Stage stage = new Stage();
-            stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setTitle(I18n.get("dialog.downloadqueue.title"));
-            Scene scene = new Scene(root);
-            ThemeManager.apply(scene, configManager.isDarkModeEnabled());
-            stage.setScene(scene);
-            stage.setOnCloseRequest(event -> controller.detach());
-            stage.showAndWait();
+            queueDrawer.setMaxHeight(Double.MAX_VALUE);
+            queueDrawer.setManaged(true);
+            queueDrawer.setVisible(true);
         } catch (IOException e) {
-            log.error("Failed to open download list", e);
+            log.error("Failed to open the download queue drawer", e);
             notificationPane.showNotification(I18n.get("notify.openfailed",
                     I18n.get("dialog.downloadqueue.title"), e.getMessage()),
                     NotificationPane.NotificationType.ERROR);
         }
+    }
+
+    private void closeQueueDrawer() {
+        if (queueDrawer == null) {
+            return;
+        }
+        queueDrawer.setVisible(false);
+        queueDrawer.setManaged(false);
     }
 
     private boolean startDownloadsFromQueue() {
@@ -1446,6 +1471,13 @@ public class MainController {
                     }
                 });
         scene.getAccelerators().put(
+                new KeyCodeCombination(KeyCode.ESCAPE),
+                () -> {
+                    if (queueDrawer != null && queueDrawer.isVisible()) {
+                        closeQueueDrawer();
+                    }
+                });
+        scene.getAccelerators().put(
                 new KeyCodeCombination(KeyCode.DELETE),
                 () -> {
                     if (scene.getFocusOwner() instanceof TextInputControl) {
@@ -1579,6 +1611,9 @@ public class MainController {
      * controller. Called from {@link com.squarepeace.nnppss.MainApp#stop()}.
      */
     public void shutdown() {
+        if (queueController != null) {
+            queueController.detach();
+        }
         if (downloadQueue != null && !downloadQueue.isEmpty() && downloadQueueManager != null) {
             downloadQueueManager.saveQueue(new ArrayList<>(downloadQueue));
         }

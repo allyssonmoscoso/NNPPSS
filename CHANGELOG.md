@@ -34,6 +34,8 @@ All notable changes to NNPPSS are documented here.
 - New application shell: app bar with console switch and queue counter,
   filter bar with result count, and a detail pane with “Descargar” and
   “Añadir a la cola”; adding to the queue can be undone from the snackbar.
+- The download queue is now a non-modal side drawer with statistics, compact
+  actions and JSON export/import, instead of a blocking dialog.
 - Content ID moved out of the table into the detail pane; console names are
   localized.
 - Configuration validated (1–4 simultaneous downloads, non-negative speed

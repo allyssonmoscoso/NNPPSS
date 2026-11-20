@@ -88,6 +88,34 @@
     -fx-text-fill: #1d4ed8;
 }
 
+/* ── Queue drawer ───────────────────────────────────────────────── */
+
+.queue-drawer {
+    -fx-background-color: -surface;
+    -fx-border-color: transparent transparent transparent -border-color;
+    -fx-border-width: 0 0 0 1;
+    -fx-effect: dropshadow(gaussian, rgba(16, 24, 40, 0.18), 18, 0, -4, 0);
+}
+
+.queue-panel {
+    -fx-background-color: -surface;
+}
+
+.queue-panel .dialog-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-color;
+}
+
+.queue-panel .stats-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-muted;
+}
+
+.queue-panel .flow-pane {
+    -fx-background-color: transparent;
+}
+
 /* ── Application shell ───────────────────────────────────────────── */
 
 .app-bar {
@@ -173,6 +201,19 @@
 
 .subtle-button:disabled {
     -fx-opacity: 0.55;
+}
+
+.icon-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -text-muted;
+    -fx-font-size: 14px;
+    -fx-padding: 4 8 4 8;
+    -fx-cursor: hand;
+}
+
+.icon-button:hover {
+    -fx-background-color: -surface-alt;
+    -fx-background-radius: 6;
 }
 
 .primary-button {
