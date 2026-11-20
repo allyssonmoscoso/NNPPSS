@@ -811,9 +811,9 @@ public class MainController {
         }
 
         ButtonType configure = new ButtonType(
-                I18n.get("button.configure"), ButtonBar.ButtonData.LEFT);
+                I18n.get("button.configure"), ButtonBar.ButtonData.OK_DONE);
         ButtonType without = new ButtonType(
-                I18n.get("button.downloadwithout"), ButtonBar.ButtonData.OK_DONE);
+                I18n.get("button.downloadwithout"), ButtonBar.ButtonData.LEFT);
         ButtonType cancel = new ButtonType(
                 I18n.get("button.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
