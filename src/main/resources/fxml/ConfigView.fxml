@@ -22,13 +22,18 @@
       prefWidth="640.0" prefHeight="720.0">
 
     <VBox styleClass="settings-header" spacing="4.0">
-        <Label fx:id="titleLabel" text="%config.title" styleClass="settings-title"/>
+        <HBox alignment="CENTER_LEFT" spacing="8.0">
+            <Label fx:id="titleLabel" text="%config.title" styleClass="settings-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="stepLabel" text="%config.step" styleClass="step-label"
+                   visible="false" managed="false"/>
+        </HBox>
         <Label fx:id="subtitleLabel" text="%config.subtitle" styleClass="settings-subtitle" wrapText="true"/>
     </VBox>
 
     <ScrollPane fitToWidth="true" styleClass="settings-scroll" VBox.vgrow="ALWAYS">
         <VBox styleClass="settings-content" spacing="16.0">
-            <VBox styleClass="settings-section" spacing="10.0">
+            <VBox fx:id="librariesSection" styleClass="settings-section" spacing="10.0">
                 <Label text="%config.section.libraries" styleClass="section-title"/>
                 <Label text="%config.section.libraries.hint" styleClass="field-hint" wrapText="true"/>
 
@@ -69,7 +74,7 @@
                 </GridPane>
             </VBox>
 
-            <VBox styleClass="settings-section" spacing="10.0">
+            <VBox fx:id="downloadsSection" styleClass="settings-section" spacing="10.0">
                 <Label text="%config.section.downloads" styleClass="section-title"/>
 
                 <GridPane hgap="12.0" vgap="10.0">
@@ -94,7 +99,7 @@
                 </GridPane>
             </VBox>
 
-            <VBox styleClass="settings-section" spacing="10.0">
+            <VBox fx:id="appearanceSection" styleClass="settings-section" spacing="10.0">
                 <Label text="%config.section.appearance" styleClass="section-title"/>
 
                 <GridPane hgap="12.0" vgap="10.0">
@@ -123,10 +128,14 @@
     </ScrollPane>
 
     <HBox styleClass="settings-footer" spacing="8.0" alignment="CENTER_RIGHT">
-        <Button text="%button.clear" styleClass="subtle-button" onAction="#handleClear"/>
+        <Button fx:id="btnClear" text="%button.clear" styleClass="subtle-button" onAction="#handleClear"/>
         <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="btnBack" text="%button.back" styleClass="subtle-button"
+                visible="false" managed="false" onAction="#handleBack"/>
+        <Button fx:id="btnNext" text="%button.next" styleClass="primary-button"
+                visible="false" managed="false" onAction="#handleNext"/>
         <Button fx:id="btnClose" text="%button.close" styleClass="subtle-button" cancelButton="true" onAction="#handleClose"/>
-        <Button text="%button.save" styleClass="primary-button" defaultButton="true" onAction="#handleSave"/>
+        <Button fx:id="btnSave" text="%button.save" styleClass="primary-button" defaultButton="true" onAction="#handleSave"/>
     </HBox>
 
 </VBox>

@@ -16,6 +16,7 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.net.HttpURLConnection;
@@ -41,10 +42,19 @@ public class ConfigController {
     @FXML private CheckBox checkDarkMode;
     @FXML private Label validationLabel;
     @FXML private Button btnClose;
+    @FXML private Button btnBack;
+    @FXML private Button btnNext;
+    @FXML private Button btnSave;
+    @FXML private Button btnClear;
+    @FXML private Label stepLabel;
+    @FXML private VBox librariesSection;
+    @FXML private VBox downloadsSection;
+    @FXML private VBox appearanceSection;
 
     private ConfigManager configManager;
     private Runnable onSaveCallback;
     private boolean firstRun;
+    private int wizardStep = 1;
 
     public void setConfigManager(ConfigManager configManager) {
         this.configManager = configManager;
@@ -53,15 +63,85 @@ public class ConfigController {
 
     public void setFirstRun(boolean firstRun) {
         this.firstRun = firstRun;
+        this.wizardStep = 1;
         if (titleLabel != null) {
             titleLabel.setText(I18n.get(firstRun ? "config.firstrun.title" : "config.title"));
             subtitleLabel.setText(I18n.get(
                     firstRun ? "config.firstrun.subtitle" : "config.subtitle"));
         }
-        if (btnClose != null) {
-            btnClose.setText(I18n.get(
-                    firstRun ? "button.configurelater" : "button.close"));
+        updateWizard();
+    }
+
+    private void updateWizard() {
+        if (librariesSection == null) {
+            return;
         }
+
+        boolean wizard = firstRun;
+        stepLabel.setVisible(wizard);
+        stepLabel.setManaged(wizard);
+        stepLabel.setText(wizard ? I18n.get("config.step", wizardStep) : "");
+
+        if (!wizard) {
+            setSectionVisible(librariesSection, true);
+            setSectionVisible(downloadsSection, true);
+            setSectionVisible(appearanceSection, true);
+            setButtonVisible(btnBack, false);
+            setButtonVisible(btnNext, false);
+            setButtonVisible(btnSave, true);
+            setButtonVisible(btnClear, true);
+            btnClose.setText(I18n.get("button.close"));
+            btnSave.setDefaultButton(true);
+            btnNext.setDefaultButton(false);
+            return;
+        }
+
+        boolean librariesStep = wizardStep == 1;
+        setSectionVisible(librariesSection, librariesStep);
+        setSectionVisible(downloadsSection, !librariesStep);
+        setSectionVisible(appearanceSection, !librariesStep);
+        setButtonVisible(btnBack, !librariesStep);
+        setButtonVisible(btnNext, librariesStep);
+        setButtonVisible(btnSave, !librariesStep);
+        setButtonVisible(btnClear, librariesStep);
+        btnClose.setText(I18n.get("button.configurelater"));
+        btnNext.setDefaultButton(librariesStep);
+        btnSave.setDefaultButton(!librariesStep);
+        hideValidation();
+    }
+
+    private void setSectionVisible(VBox section, boolean visible) {
+        if (section != null) {
+            section.setVisible(visible);
+            section.setManaged(visible);
+        }
+    }
+
+    private void setButtonVisible(Button button, boolean visible) {
+        if (button != null) {
+            button.setVisible(visible);
+            button.setManaged(visible);
+        }
+    }
+
+    @FXML
+    private void handleNext() {
+        hideValidation();
+        if (isBlank(txtPsvitaUrl.getText())
+                && isBlank(txtPspUrl.getText())
+                && isBlank(txtPsxUrl.getText())) {
+            showError(I18n.get("config.error.nourl"));
+            return;
+        }
+        wizardStep = 2;
+        updateWizard();
+    }
+
+    @FXML
+    private void handleBack() {
+        wizardStep = 1;
+        hideValidation();
+        updateWizard();
     }
 
     public void setOnSaveCallback(Runnable onSaveCallback) {

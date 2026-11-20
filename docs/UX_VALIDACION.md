@@ -77,7 +77,8 @@ Al abrir la cola, el foco pasa a su tabla. Al cerrarla, vuelve al botón
 - [Vista principal](ux/redesign-final.png)
 - [Drawer de cola](ux/queue-drawer.png)
 - [Ajustes](ux/settings-panel.png)
-- [Primera ejecución](ux/first-run.png)
+- [Primera ejecución, paso 1](ux/first-run-step1.png)
+- [Primera ejecución, paso 2](ux/first-run-step2.png)
 - [Estado vacío por filtros](ux/empty-filtered.png)
 
 ## Limitaciones conocidas

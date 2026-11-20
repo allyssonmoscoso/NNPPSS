@@ -112,6 +112,14 @@
     -fx-text-fill: -text-muted;
 }
 
+.step-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: -primary;
+    -fx-background-color: -selected-row;
+    -fx-background-radius: 10;
+    -fx-padding: 3 9 3 9;
+}
+
 .settings-scroll {
     -fx-background-color: transparent;
     -fx-background-insets: 0;

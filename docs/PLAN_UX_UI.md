@@ -433,13 +433,14 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
   - Barra de estado y dock de descargas colapsable.
   - Tema claro/oscuro coherente en la ventana principal; botón de tema en caliente.
   - Ventana inicial 1180×760, mínimo 1100×720.
-- **UX2 — parcial:**
-  - Primera ejecución con título, explicación y exigencia de al menos una biblioteca antes de guardar.
+- **UX2 — completado:**
+  - Primera ejecución en dos pasos: Bibliotecas → Preferencias, con indicador “Paso 1 de 2”.
+  - El paso de bibliotecas exige al menos una URL; “Configurar después” permite omitir.
   - Ajustes por secciones (Bibliotecas, Descargas, Apariencia) en un panel con scroll y footer fijo.
   - Validación inline, sin alertas intermedias para errores de rango.
   - Botón “Probar” por URL, con comprobación en segundo plano y estado OK/Error sin bloquear el diálogo.
   - Nota visible de que el idioma se aplica al reiniciar.
-  - Capturas: [settings-panel.png](ux/settings-panel.png) y [first-run.png](ux/first-run.png).
+  - Capturas: [settings-panel.png](ux/settings-panel.png), [first-run-step1.png](ux/first-run-step1.png) y [first-run-step2.png](ux/first-run-step2.png).
 - **UX3 — parcial:**
   - Panel de detalle con título, consola, región, tamaño, Content ID y estado.
   - Botones “Descargar” y “Añadir a la cola” en el detalle.
@@ -481,7 +482,7 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
 
 ### Pendiente
 
-- **UX2 (resto):** convertir la primera ejecución en un asistente de dos pasos (bibliotecas → preferencias) si la prueba con usuarios lo justifica.
+- **UX2 (completado):** primera ejecución en dos pasos, validación inline, prueba de URLs en segundo plano y “Configurar después”.
 - **UX5 (resto):** recorrido completo solo con teclado en una sesión de validación; los estados, el contraste y los atajos ya están implementados.
 - **UX6:** pruebas con 5 usuarios externos, registro SUS y correcciones finales. Guion preparado en [ux/USER_TEST_GUIDE.md](ux/USER_TEST_GUIDE.md).
 
