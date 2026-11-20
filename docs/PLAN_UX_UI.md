@@ -470,7 +470,8 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
   - Contraste AA verificado en tokens y badges: [UX_VALIDACION.md](UX_VALIDACION.md).
   - Captura: [empty-filtered.png](ux/empty-filtered.png).
 - **UX6 — parcial:**
-  - Validación interna documentada: 37 tests, contraste AA, matriz de teclado, estados y capturas.
+  - Validación interna documentada: 38 tests, contraste AA automatizado, matriz de teclado, estados y capturas.
+  - Ayuda de atajos integrada (`F1`) y cierre “Configurar después” en primera ejecución.
   - Limpieza de código muerto y revisión visual final.
   - Pending: pruebas con 5 usuarios externos y ajustes derivados.
 
@@ -482,7 +483,7 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
 
 - **UX2 (resto):** convertir la primera ejecución en un asistente de dos pasos (bibliotecas → preferencias) si la prueba con usuarios lo justifica.
 - **UX5 (resto):** recorrido completo solo con teclado en una sesión de validación; los estados, el contraste y los atajos ya están implementados.
-- **UX6:** pruebas con 5 usuarios externos, registro SUS y correcciones finales.
+- **UX6:** pruebas con 5 usuarios externos, registro SUS y correcciones finales. Guion preparado en [ux/USER_TEST_GUIDE.md](ux/USER_TEST_GUIDE.md).
 
 > Los ajustes siguen abriéndose como diálogo modal moderno, no como drawer. La cola ya no es modal y el flujo principal permite descargar en tres acciones desde el catálogo.
 

@@ -40,6 +40,7 @@ public class ConfigController {
     @FXML private CheckBox checkAutoCleanup;
     @FXML private CheckBox checkDarkMode;
     @FXML private Label validationLabel;
+    @FXML private Button btnClose;
 
     private ConfigManager configManager;
     private Runnable onSaveCallback;
@@ -56,6 +57,10 @@ public class ConfigController {
             titleLabel.setText(I18n.get(firstRun ? "config.firstrun.title" : "config.title"));
             subtitleLabel.setText(I18n.get(
                     firstRun ? "config.firstrun.subtitle" : "config.subtitle"));
+        }
+        if (btnClose != null) {
+            btnClose.setText(I18n.get(
+                    firstRun ? "button.configurelater" : "button.close"));
         }
     }
 

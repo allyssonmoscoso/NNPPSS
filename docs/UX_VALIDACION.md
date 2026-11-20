@@ -10,7 +10,7 @@ este entorno.
 
 ```text
 mvn clean verify
-Tests run: 37, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 38, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
@@ -35,6 +35,8 @@ La app image de Windows también se reconstruyó y se arrancó correctamente:
 
 El estado no depende solo del color: las tarjetas de descarga muestran texto
 (`Paused`, `Completed`, `Error`) y los badges de detalle incluyen etiqueta.
+La comprobación está automatizada en `ThemeContrastTest`, que lee los
+stylesheets reales y falla si un token baja de 4.5:1.
 
 ## Recorrido de teclado
 
@@ -49,6 +51,7 @@ El estado no depende solo del color: las tarjetas de descarga muestran texto
 | `Ctrl+,` | Abrir ajustes |
 | `Alt+1/2/3` | Cambiar PS Vita / PSP / PSX |
 | `Enter` | Descargar el juego seleccionado |
+| `F1` | Mostrar esta ayuda |
 | `Esc` | Cerrar el drawer de cola |
 | `Tab` | Recorrer controles; foco visible en la tabla |
 
@@ -91,4 +94,5 @@ Al abrir la cola, el foco pasa a su tabla. Al cerrarla, vuelve al botón
 ## Próximo paso de UX6
 
 Ejecutar el guion de prueba con 5 usuarios, registrar SUS y corregir los
-hallazgos de fricción antes de cerrar la fase.
+hallazgos de fricción antes de cerrar la fase. El guion está en
+[USER_TEST_GUIDE.md](ux/USER_TEST_GUIDE.md).

@@ -1608,6 +1608,9 @@ public class MainController {
                 new KeyCodeCombination(KeyCode.F5),
                 this::handleRefresh);
         scene.getAccelerators().put(
+                new KeyCodeCombination(KeyCode.F1),
+                this::showShortcuts);
+        scene.getAccelerators().put(
                 new KeyCodeCombination(KeyCode.COMMA, KeyCombination.CONTROL_DOWN),
                 this::handleOpenSettings);
         scene.getAccelerators().put(
@@ -1660,6 +1663,14 @@ public class MainController {
     private void focusSearch() {
         txtSearch.requestFocus();
         txtSearch.selectAll();
+    }
+
+    private void showShortcuts() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(I18n.get("dialog.shortcuts.title"));
+        alert.setHeaderText(I18n.get("dialog.shortcuts.header"));
+        alert.setContentText(I18n.get("dialog.shortcuts.content"));
+        alert.showAndWait();
     }
 
     /** Marshals coordinator events onto the FX thread. */

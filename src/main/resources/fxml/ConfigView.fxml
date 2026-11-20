@@ -125,7 +125,7 @@
     <HBox styleClass="settings-footer" spacing="8.0" alignment="CENTER_RIGHT">
         <Button text="%button.clear" styleClass="subtle-button" onAction="#handleClear"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button text="%button.close" styleClass="subtle-button" cancelButton="true" onAction="#handleClose"/>
+        <Button fx:id="btnClose" text="%button.close" styleClass="subtle-button" cancelButton="true" onAction="#handleClose"/>
         <Button text="%button.save" styleClass="primary-button" defaultButton="true" onAction="#handleSave"/>
     </HBox>
 

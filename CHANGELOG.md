@@ -47,6 +47,8 @@ All notable changes to NNPPSS are documented here.
   Clear filters, Retry) and supports F5, Ctrl+, and Alt+1/2/3 shortcuts.
 - Internal UX validation documented (contrast, keyboard matrix, states and
   screenshots); dead UI code removed and the status bar reflects active filters.
+- First-run settings can be closed with “Configure later”; F1 opens an in-app
+  keyboard-shortcut reference, and WCAG contrast is now guarded by a test.
 - The download dock can be collapsed to “Show downloads” from the status bar
   and expands again automatically when a new session starts.
 - Content ID moved out of the table into the detail pane; console names are
