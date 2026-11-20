@@ -88,6 +88,111 @@
     -fx-text-fill: #1d4ed8;
 }
 
+/* ── Settings panel ─────────────────────────────────────────────── */
+
+.settings-panel {
+    -fx-background-color: -surface;
+}
+
+.settings-header {
+    -fx-padding: 20 20 16 20;
+    -fx-background-color: -surface;
+    -fx-border-color: transparent transparent -border-color transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.settings-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-color;
+}
+
+.settings-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: -text-muted;
+}
+
+.settings-scroll {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.settings-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.settings-content {
+    -fx-padding: 18 20 20 20;
+}
+
+.settings-section {
+    -fx-background-color: -surface-alt;
+    -fx-background-radius: 8;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 14;
+}
+
+.section-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -text-color;
+}
+
+.field-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-muted;
+}
+
+.field-hint {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-muted;
+}
+
+.settings-footer {
+    -fx-padding: 12 20 14 20;
+    -fx-background-color: -surface;
+    -fx-border-color: -border-color transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+.validation-error {
+    -fx-font-size: 12px;
+    -fx-text-fill: #c62828;
+}
+
+.test-status {
+    -fx-font-size: 11px;
+    -fx-text-fill: -text-muted;
+}
+
+.test-status.test-ok {
+    -fx-text-fill: #2e7d32;
+}
+
+.test-status.test-fail {
+    -fx-text-fill: #c62828;
+}
+
+.test-status.test-pending {
+    -fx-text-fill: #b26a00;
+}
+
+.settings-panel .text-field,
+.settings-panel .combo-box,
+.settings-panel .spinner {
+    -fx-background-color: -surface;
+    -fx-border-color: -border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.settings-panel .text-field {
+    -fx-padding: 7 10 7 10;
+}
+
 /* ── Queue drawer ───────────────────────────────────────────────── */
 
 .queue-drawer {

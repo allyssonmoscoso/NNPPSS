@@ -36,6 +36,10 @@ All notable changes to NNPPSS are documented here.
   “Añadir a la cola”; adding to the queue can be undone from the snackbar.
 - The download queue is now a non-modal side drawer with statistics, compact
   actions and JSON export/import, instead of a blocking dialog.
+- Settings redesigned into Libraries, Downloads and Appearance sections with
+  inline validation and per-URL “Test” checks that run in the background;
+  first-run configuration explains what is required and refuses to save with
+  no library configured.
 - Content ID moved out of the table into the detail pane; console names are
   localized.
 - Configuration validated (1–4 simultaneous downloads, non-negative speed

@@ -92,6 +92,19 @@
     -fx-text-fill: #ef9a9a;
 }
 
+.root.dark .validation-error,
+.root.dark .test-status.test-fail {
+    -fx-text-fill: #ef9a9a;
+}
+
+.root.dark .test-status.test-ok {
+    -fx-text-fill: #81c784;
+}
+
+.root.dark .test-status.test-pending {
+    -fx-text-fill: #ffb74d;
+}
+
 .root.dark .detail-badge.badge-success {
     -fx-background-color: #1e3323;
     -fx-text-fill: #81c784;

@@ -892,6 +892,7 @@ public class MainController {
 
             ConfigController controller = loader.getController();
             controller.setConfigManager(configManager);
+            controller.setFirstRun(firstRun);
             controller.setOnSaveCallback(() -> {
                 applyTheme();
                 if (firstRun) {
@@ -899,6 +900,8 @@ public class MainController {
                 } else {
                     handleConfigSaved();
                 }
+                notificationPane.showNotification(I18n.get("config.saved"),
+                        NotificationPane.NotificationType.SUCCESS);
             });
 
             Stage stage = new Stage();
