@@ -13,14 +13,18 @@ extraction and automatic cleanup.
 - Download history, failed-download retry and row colouring.
 - Automatic session restore after restart (including paused downloads).
 - pkg2zip extraction and optional `.pkg` auto-cleanup.
+- Configurable download and extraction folders.
+- pkg2zip auto-detection (configured, bundled or `PATH`) with folder picker.
 - English/Spanish UI, light/dark theme.
 - Per-user data directory, so the app works when installed read-only.
 - Self-contained app image built with jpackage (no JDK required).
 
 ## Requirements
 
-- **pkg2zip** for extraction: `lib\pkg2zip.exe` on Windows, or `pkg2zip` on
-  `PATH` on macOS/Linux.
+- **pkg2zip** for extraction: detected from `pkg2zip.path`, the bundled
+  `lib\pkg2zip.exe`/`lib/pkg2zip`, or `PATH` on any platform. If it is missing,
+  choose its folder in Settings; downloads are blocked unless you explicitly
+  choose “Download without extracting”.
 - To build from source: **JDK 25** and **Maven 3.9+**.
 
 The distributed app image bundles its own Java runtime.
@@ -84,6 +88,12 @@ Existing files next to the application are migrated once on first run.
 - `simultaneousDownloads`: 1–4
 - `downloadSpeedLimit`: approximate KB/s, `0` means unlimited
 - `autoCleanupPkg`: delete `.pkg` files after successful extraction
+- `downloads.directory`: folder for downloaded `.pkg` files (default
+  `<dataDir>/packages`)
+- `extraction.directory`: folder where pkg2zip writes its output (default
+  `<dataDir>/extracted`)
+- `pkg2zip.path`: optional path to a pkg2zip executable; empty means automatic
+  detection
 - `darkMode`: enable the dark theme
 - `language`: `en` or `es` (applied on restart)
 

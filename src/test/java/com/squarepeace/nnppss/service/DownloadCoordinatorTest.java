@@ -92,6 +92,8 @@ class DownloadCoordinatorTest {
 
         DownloadTaskState task = coordinator.getTask(game.getPkgUrl());
         assertEquals(DownloadTaskState.Status.COMPLETED, task.getStatus());
+        assertEquals(tempDir.resolve("packages").resolve("alpha.pkg").toAbsolutePath().normalize(),
+                Path.of(task.getDestinationPath()));
         assertEquals(1, listener.completed.size());
         assertEquals(1, listener.allFinished.get());
         assertFalse(coordinator.isDownloading());
@@ -102,6 +104,21 @@ class DownloadCoordinatorTest {
         List<DownloadHistory> history = historyManager.loadHistory();
         assertEquals(1, history.size());
         assertEquals("completed", history.get(0).getStatus());
+    }
+
+    @Test
+    void skipsExtractionWhenSessionRequestsIt() throws Exception {
+        Game game = game("NoExtract", "https://example.test/noextract.pkg", 1024);
+        assertTrue(coordinator.start(List.of(game), Set.of(), false));
+
+        DownloadService.DownloadListener clientListener = downloadClient.await(game.getPkgUrl());
+        File file = tempDir.resolve("noextract.pkg").toFile();
+        clientListener.onComplete(file);
+
+        assertEquals(0, packageExtractor.calls,
+                "extraction must be skipped when the user chooses Download without extracting");
+        assertEquals(DownloadTaskState.Status.COMPLETED,
+                coordinator.getTask(game.getPkgUrl()).getStatus());
     }
 
     @Test

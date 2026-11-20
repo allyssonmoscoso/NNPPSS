@@ -97,6 +97,18 @@
     -fx-text-fill: #ef9a9a;
 }
 
+.root.dark .pkg2zip-status.pkg2zip-ok {
+    -fx-text-fill: #81c784;
+}
+
+.root.dark .pkg2zip-status.pkg2zip-warn {
+    -fx-text-fill: #ffb74d;
+}
+
+.root.dark .pkg2zip-status.pkg2zip-error {
+    -fx-text-fill: #ef9a9a;
+}
+
 .root.dark .test-status.test-ok {
     -fx-text-fill: #81c784;
 }

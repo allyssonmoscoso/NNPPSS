@@ -85,6 +85,7 @@ public class DownloadCoordinator {
     private volatile Listener listener = new Listener() {
     };
     private volatile boolean downloading;
+    private volatile boolean extractionEnabled = true;
     private volatile boolean shuttingDown;
     private ExecutorService executor;
     private volatile long lastStateSaveMs = System.currentTimeMillis();
@@ -148,6 +149,13 @@ public class DownloadCoordinator {
      *         empty or there is not enough disk space
      */
     public boolean start(List<Game> games, Set<String> pausedUrls) {
+        return start(games, pausedUrls, true);
+    }
+
+    /**
+     * Starts the given games, optionally skipping extraction for this session.
+     */
+    public boolean start(List<Game> games, Set<String> pausedUrls, boolean extract) {
         if (games == null || games.isEmpty()) {
             return false;
         }
@@ -177,6 +185,7 @@ public class DownloadCoordinator {
             }
 
             downloading = true;
+            extractionEnabled = extract;
             lastStartError = "";
             tasks.clear();
 
@@ -294,6 +303,11 @@ public class DownloadCoordinator {
     }
 
     private void extractIfNeeded(DownloadTaskState task) {
+        if (!extractionEnabled) {
+            log.info("Extraction disabled for this session; keeping .pkg for {}",
+                    task.getGame().getTitle());
+            return;
+        }
         Game game = task.getGame();
         if (game == null || task.getDestinationPath() == null) {
             return;

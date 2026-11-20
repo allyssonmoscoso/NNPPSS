@@ -1,6 +1,8 @@
 package com.squarepeace.nnppss.fx.controllers;
 
+import com.squarepeace.nnppss.app.AppPaths;
 import com.squarepeace.nnppss.service.ConfigManager;
+import com.squarepeace.nnppss.service.Pkg2zipResolver;
 import com.squarepeace.nnppss.util.I18n;
 
 import javafx.concurrent.Task;
@@ -17,10 +19,18 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 
 public class ConfigController {
 
@@ -50,15 +60,256 @@ public class ConfigController {
     @FXML private VBox librariesSection;
     @FXML private VBox downloadsSection;
     @FXML private VBox appearanceSection;
+    @FXML private VBox storageSection;
+    @FXML private TextField txtDownloadsDir;
+    @FXML private TextField txtExtractionDir;
+    @FXML private Button btnChooseDownloads;
+    @FXML private Button btnChooseExtraction;
+    @FXML private Button btnOpenDownloads;
+    @FXML private Button btnOpenExtraction;
+    @FXML private Button btnResetStorage;
+    @FXML private Button btnDetectPkg2zip;
+    @FXML private Button btnChoosePkg2zip;
+    @FXML private Label storageHint;
+    @FXML private Label pkg2zipStatusLabel;
+    @FXML private Label pkg2zipPathLabel;
 
     private ConfigManager configManager;
     private Runnable onSaveCallback;
     private boolean firstRun;
     private int wizardStep = 1;
+    private Pkg2zipResolver pkg2zipResolver;
+    private Path pendingPkg2zipPath;
+    private boolean pkg2zipAutomatic = true;
 
     public void setConfigManager(ConfigManager configManager) {
         this.configManager = configManager;
+        this.pkg2zipResolver = new Pkg2zipResolver(configManager);
+        this.pendingPkg2zipPath = configManager.getPkg2zipPath();
+        this.pkg2zipAutomatic = pendingPkg2zipPath == null;
         loadValues();
+        loadStorageValues();
+        updatePkg2zipStatus();
+    }
+
+    private void loadStorageValues() {
+        if (configManager == null) {
+            return;
+        }
+        txtDownloadsDir.setText(configManager.getDownloadsDirectory().toString());
+        txtExtractionDir.setText(configManager.getExtractionDirectory().toString());
+        updateStorageInfo();
+    }
+
+    private void updateStorageInfo() {
+        if (storageHint == null) {
+            return;
+        }
+        Path downloads = pathOrNull(txtDownloadsDir.getText());
+        Path extraction = pathOrNull(txtExtractionDir.getText());
+        String free = downloads == null ? "" : formatBytes(downloads.toFile().getUsableSpace());
+        String message = I18n.get("config.storage.free", free);
+        if (downloads != null && extraction != null
+                && downloads.toAbsolutePath().normalize()
+                .equals(extraction.toAbsolutePath().normalize())) {
+            message += "  ·  " + I18n.get("config.label.samefolder");
+        }
+        storageHint.setText(message);
+    }
+
+    private void updatePkg2zipStatus() {
+        if (pkg2zipStatusLabel == null || pkg2zipResolver == null) {
+            return;
+        }
+        Pkg2zipResolver.Resolution resolution = resolvePkg2zip();
+        String key;
+        String style;
+        switch (resolution.source()) {
+            case CONFIGURED -> {
+                key = "config.pkg2zip.configured";
+                style = "pkg2zip-ok";
+            }
+            case BUNDLED -> {
+                key = "config.pkg2zip.bundled";
+                style = "pkg2zip-ok";
+            }
+            case PATH -> {
+                key = "config.pkg2zip.path";
+                style = "pkg2zip-ok";
+            }
+            case INVALID -> {
+                key = "config.pkg2zip.invalid";
+                style = "pkg2zip-error";
+            }
+            case NOT_FOUND -> {
+                key = "config.pkg2zip.notfound";
+                style = "pkg2zip-warn";
+            }
+            default -> {
+                key = "config.pkg2zip.notfound";
+                style = "pkg2zip-warn";
+            }
+        }
+        pkg2zipStatusLabel.getStyleClass().setAll("pkg2zip-status", style);
+        pkg2zipStatusLabel.setText(I18n.get(key));
+        String path = resolution.executable() == null ? "" : resolution.executable().toString();
+        pkg2zipPathLabel.setText(path);
+        pkg2zipPathLabel.setTooltip(path.isBlank() ? null : new Tooltip(path));
+    }
+
+    private Pkg2zipResolver.Resolution resolvePkg2zip() {
+        return pkg2zipResolver.resolve(pkg2zipAutomatic ? null : pendingPkg2zipPath);
+    }
+
+    private boolean hasUsablePkg2zip() {
+        Pkg2zipResolver.Source source = resolvePkg2zip().source();
+        return source != Pkg2zipResolver.Source.NOT_FOUND
+                && source != Pkg2zipResolver.Source.INVALID;
+    }
+
+    @FXML
+    private void handleDetectPkg2zip() {
+        pendingPkg2zipPath = null;
+        pkg2zipAutomatic = true;
+        updatePkg2zipStatus();
+    }
+
+    @FXML
+    private void handleChoosePkg2zip() {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle(I18n.get("config.pkg2zip.choosetitle"));
+        Path current = pendingPkg2zipPath == null ? null : pendingPkg2zipPath.getParent();
+        if (current != null && Files.isDirectory(current)) {
+            chooser.setInitialDirectory(current.toFile());
+        }
+        File selected = chooser.showDialog(ownerWindow());
+        if (selected == null) {
+            return;
+        }
+        Path executable = pkg2zipResolver.findInDirectory(selected.toPath());
+        if (executable == null) {
+            showError(I18n.get("config.pkg2zip.notfoundindir", selected));
+            return;
+        }
+        pendingPkg2zipPath = executable;
+        pkg2zipAutomatic = false;
+        hideValidation();
+        updatePkg2zipStatus();
+    }
+
+    @FXML
+    private void handleChooseDownloads() {
+        chooseDirectory(txtDownloadsDir, "config.label.downloadsdir");
+    }
+
+    @FXML
+    private void handleChooseExtraction() {
+        chooseDirectory(txtExtractionDir, "config.label.extractiondir");
+    }
+
+    private void chooseDirectory(TextField field, String titleKey) {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle(I18n.get(titleKey));
+        Path current = pathOrNull(field.getText());
+        if (current != null && Files.isDirectory(current)) {
+            chooser.setInitialDirectory(current.toFile());
+        }
+        File selected = chooser.showDialog(ownerWindow());
+        if (selected != null) {
+            field.setText(selected.getAbsolutePath());
+            updateStorageInfo();
+        }
+    }
+
+    @FXML
+    private void handleOpenDownloads() {
+        openDirectory(txtDownloadsDir);
+    }
+
+    @FXML
+    private void handleOpenExtraction() {
+        openDirectory(txtExtractionDir);
+    }
+
+    private void openDirectory(TextField field) {
+        Path path = pathOrNull(field.getText());
+        if (path == null || !Files.isDirectory(path)) {
+            showError(I18n.get("config.error.pathnotdirectory"));
+            return;
+        }
+        try {
+            String os = System.getProperty("os.name", "").toLowerCase();
+            List<String> command;
+            if (os.contains("win")) {
+                command = List.of("explorer.exe", path.toString());
+            } else if (os.contains("mac")) {
+                command = List.of("open", path.toString());
+            } else {
+                command = List.of("xdg-open", path.toString());
+            }
+            new ProcessBuilder(command).start();
+        } catch (IOException e) {
+            showError(I18n.get("config.error.openfolder", e.getMessage()));
+        }
+    }
+
+    @FXML
+    private void handleResetStorage() {
+        txtDownloadsDir.setText(AppPaths.dataDir().resolve("packages").toString());
+        txtExtractionDir.setText(AppPaths.dataDir().resolve("extracted").toString());
+        updateStorageInfo();
+        hideValidation();
+    }
+
+    private Path pathOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Paths.get(value.trim());
+        } catch (InvalidPathException e) {
+            return null;
+        }
+    }
+
+    private Path validateDirectory(TextField field) {
+        Path path = pathOrNull(field.getText());
+        if (path == null) {
+            showError(I18n.get("config.error.pathempty"));
+            return null;
+        }
+        path = path.toAbsolutePath().normalize();
+        try {
+            Files.createDirectories(path);
+        } catch (IOException e) {
+            showError(I18n.get("config.error.pathcreate", path, e.getMessage()));
+            return null;
+        }
+        if (!Files.isDirectory(path) || !Files.isWritable(path)) {
+            showError(I18n.get("config.error.pathnotwritable", path));
+            return null;
+        }
+        return path;
+    }
+
+    private String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        String[] units = {"KB", "MB", "GB", "TB"};
+        double value = bytes;
+        int unit = -1;
+        do {
+            value /= 1024.0;
+            unit++;
+        } while (value >= 1024 && unit < units.length - 1);
+        return String.format("%.1f %s", value, units[unit]);
+    }
+
+    private Stage ownerWindow() {
+        if (txtPsvitaUrl != null && txtPsvitaUrl.getScene() != null
+                && txtPsvitaUrl.getScene().getWindow() instanceof Stage stage) {
+            return stage;
+        }
+        return null;
     }
 
     public void setFirstRun(boolean firstRun) {
@@ -84,6 +335,7 @@ public class ConfigController {
 
         if (!wizard) {
             setSectionVisible(librariesSection, true);
+            setSectionVisible(storageSection, true);
             setSectionVisible(downloadsSection, true);
             setSectionVisible(appearanceSection, true);
             setButtonVisible(btnBack, false);
@@ -98,6 +350,7 @@ public class ConfigController {
 
         boolean librariesStep = wizardStep == 1;
         setSectionVisible(librariesSection, librariesStep);
+        setSectionVisible(storageSection, true);
         setSectionVisible(downloadsSection, !librariesStep);
         setSectionVisible(appearanceSection, !librariesStep);
         setButtonVisible(btnBack, !librariesStep);
@@ -131,6 +384,10 @@ public class ConfigController {
                 && isBlank(txtPspUrl.getText())
                 && isBlank(txtPsxUrl.getText())) {
             showError(I18n.get("config.error.nourl"));
+            return;
+        }
+        if (!hasUsablePkg2zip()) {
+            showError(I18n.get("config.error.pkg2ziprequired"));
             return;
         }
         wizardStep = 2;
@@ -286,6 +543,27 @@ public class ConfigController {
                 && isBlank(txtPsxUrl.getText())) {
             showError(I18n.get("config.error.nourl"));
             return;
+        }
+        if (firstRun && !hasUsablePkg2zip()) {
+            showError(I18n.get("config.error.pkg2ziprequired"));
+            return;
+        }
+
+        Path downloads = validateDirectory(txtDownloadsDir);
+        if (downloads == null) {
+            return;
+        }
+        Path extraction = validateDirectory(txtExtractionDir);
+        if (extraction == null) {
+            return;
+        }
+
+        configManager.setDownloadsDirectory(downloads);
+        configManager.setExtractionDirectory(extraction);
+        if (pkg2zipAutomatic) {
+            configManager.setPkg2zipPath(null);
+        } else {
+            configManager.setPkg2zipPath(pendingPkg2zipPath);
         }
 
         configManager.setProperty("psvita.url", txtPsvitaUrl.getText().trim());

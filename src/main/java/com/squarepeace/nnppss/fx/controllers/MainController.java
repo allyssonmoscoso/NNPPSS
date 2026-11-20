@@ -20,6 +20,7 @@ import com.squarepeace.nnppss.service.DownloadService;
 import com.squarepeace.nnppss.service.DownloadStateManager;
 import com.squarepeace.nnppss.service.GameRepository;
 import com.squarepeace.nnppss.service.PackageService;
+import com.squarepeace.nnppss.service.Pkg2zipResolver;
 import com.squarepeace.nnppss.service.SystemValidator;
 import com.squarepeace.nnppss.service.download.DownloadTaskState;
 import com.squarepeace.nnppss.util.I18n;
@@ -37,6 +38,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
@@ -139,6 +141,7 @@ public class MainController {
     private DownloadHistoryManager downloadHistoryManager;
     private SystemValidator systemValidator;
     private DownloadCoordinator downloadCoordinator;
+    private Pkg2zipResolver pkg2zipResolver;
     private DownloadListController queueController;
     private Parent queueRoot;
 
@@ -184,6 +187,7 @@ public class MainController {
                 packageService, downloadStateManager, downloadHistoryManager,
                 systemValidator, gameRepository);
         this.downloadCoordinator.setListener(new CoordinatorListener());
+        this.pkg2zipResolver = new Pkg2zipResolver(configManager);
 
         this.downloadQueue = FXCollections.observableArrayList(downloadQueueManager.loadQueue());
         this.downloadQueue.addListener((javafx.collections.ListChangeListener<Game>) change -> {
@@ -743,13 +747,19 @@ public class MainController {
             return;
         }
 
+        Pkg2zipDecision pkg2zipDecision = choosePkg2zipBehaviour();
+        if (pkg2zipDecision == Pkg2zipDecision.CANCEL) {
+            return;
+        }
+        boolean extract = pkg2zipDecision == Pkg2zipDecision.ALLOW_EXTRACTION;
+
         downloadQueue.removeIf(queued -> Objects.equals(queued.getPkgUrl(), game.getPkgUrl()));
         downloadQueueManager.saveQueue(new ArrayList<>(downloadQueue));
 
         resetDownloadUi();
         showDownloadDock();
         globalProgress.startDownloads(1, game.getFileSize());
-        if (!downloadCoordinator.start(List.of(game), Set.of())) {
+        if (!downloadCoordinator.start(List.of(game), Set.of(), extract)) {
             globalProgress.reset();
             notificationPane.showNotification(
                     I18n.get("notify.startfailed", downloadCoordinator.getLastStartError()),
@@ -782,6 +792,45 @@ public class MainController {
             return false;
         }
         return true;
+    }
+
+    private enum Pkg2zipDecision { ALLOW_EXTRACTION, ALLOW_WITHOUT_EXTRACTION, CANCEL }
+
+    /**
+     * Blocks the start when pkg2zip is missing, unless the user explicitly
+     * chooses to download the .pkg without extracting it.
+     */
+    private Pkg2zipDecision choosePkg2zipBehaviour() {
+        if (pkg2zipResolver == null) {
+            return Pkg2zipDecision.ALLOW_EXTRACTION;
+        }
+        Pkg2zipResolver.Source source = pkg2zipResolver.resolve().source();
+        if (source != Pkg2zipResolver.Source.NOT_FOUND
+                && source != Pkg2zipResolver.Source.INVALID) {
+            return Pkg2zipDecision.ALLOW_EXTRACTION;
+        }
+
+        ButtonType configure = new ButtonType(
+                I18n.get("button.configure"), ButtonBar.ButtonData.LEFT);
+        ButtonType without = new ButtonType(
+                I18n.get("button.downloadwithout"), ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancel = new ButtonType(
+                I18n.get("button.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(I18n.get("dialog.pkg2zip.title"));
+        alert.setHeaderText(I18n.get("dialog.pkg2zip.header"));
+        alert.setContentText(I18n.get("dialog.pkg2zip.message"));
+        alert.getButtonTypes().setAll(configure, without, cancel);
+
+        ButtonType choice = alert.showAndWait().orElse(cancel);
+        if (choice == configure) {
+            handleOpenSettings();
+            return Pkg2zipDecision.CANCEL;
+        }
+        if (choice == without) {
+            return Pkg2zipDecision.ALLOW_WITHOUT_EXTRACTION;
+        }
+        return Pkg2zipDecision.CANCEL;
     }
 
     private void showGameDetail(Game game) {
@@ -963,6 +1012,12 @@ public class MainController {
             return false;
         }
 
+        Pkg2zipDecision pkg2zipDecision = choosePkg2zipBehaviour();
+        if (pkg2zipDecision == Pkg2zipDecision.CANCEL) {
+            return false;
+        }
+        boolean extract = pkg2zipDecision == Pkg2zipDecision.ALLOW_EXTRACTION;
+
         List<Game> gamesToStart = new ArrayList<>(downloadQueue);
         long totalBytes = gamesToStart.stream().mapToLong(Game::getFileSize).sum();
 
@@ -970,7 +1025,7 @@ public class MainController {
         showDownloadDock();
         globalProgress.startDownloads(gamesToStart.size(), totalBytes);
 
-        if (!downloadCoordinator.start(gamesToStart, Set.of())) {
+        if (!downloadCoordinator.start(gamesToStart, Set.of(), extract)) {
             globalProgress.reset();
             notificationPane.showNotification(
                     I18n.get("notify.startfailed", downloadCoordinator.getLastStartError()),
@@ -1578,11 +1633,17 @@ public class MainController {
             return;
         }
 
+        Pkg2zipDecision pkg2zipDecision = choosePkg2zipBehaviour();
+        if (pkg2zipDecision == Pkg2zipDecision.CANCEL) {
+            return;
+        }
+        boolean extract = pkg2zipDecision == Pkg2zipDecision.ALLOW_EXTRACTION;
+
         resetDownloadUi();
         showDownloadDock();
         globalProgress.startDownloads(games.size(),
                 games.stream().mapToLong(Game::getFileSize).sum());
-        if (!downloadCoordinator.start(games, pausedUrls)) {
+        if (!downloadCoordinator.start(games, pausedUrls, extract)) {
             globalProgress.reset();
             notificationPane.showNotification(
                     I18n.get("notify.startfailed", downloadCoordinator.getLastStartError()),

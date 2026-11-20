@@ -74,6 +74,56 @@
                 </GridPane>
             </VBox>
 
+            <VBox fx:id="storageSection" styleClass="settings-section" spacing="10.0">
+                <Label text="%config.section.storage" styleClass="section-title"/>
+                <Label text="%config.section.storage.hint" styleClass="field-hint" wrapText="true"/>
+
+                <GridPane hgap="12.0" vgap="10.0">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="140.0" prefWidth="155.0"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="%config.label.downloadsdir" styleClass="field-label" GridPane.rowIndex="0"/>
+                    <HBox spacing="6.0" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <TextField fx:id="txtDownloadsDir" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="btnChooseDownloads" text="%button.choose" styleClass="subtle-button"
+                                onAction="#handleChooseDownloads"/>
+                        <Button fx:id="btnOpenDownloads" text="%button.open" styleClass="subtle-button"
+                                onAction="#handleOpenDownloads"/>
+                    </HBox>
+
+                    <Label text="%config.label.extractiondir" styleClass="field-label" GridPane.rowIndex="1"/>
+                    <HBox spacing="6.0" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <TextField fx:id="txtExtractionDir" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="btnChooseExtraction" text="%button.choose" styleClass="subtle-button"
+                                onAction="#handleChooseExtraction"/>
+                        <Button fx:id="btnOpenExtraction" text="%button.open" styleClass="subtle-button"
+                                onAction="#handleOpenExtraction"/>
+                    </HBox>
+                </GridPane>
+
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <Label fx:id="storageHint" styleClass="field-hint" wrapText="true" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="btnResetStorage" text="%button.reset" styleClass="subtle-button"
+                            onAction="#handleResetStorage"/>
+                </HBox>
+
+                <VBox styleClass="settings-subsection" spacing="6.0">
+                    <Label text="%config.section.pkg2zip" styleClass="section-title"/>
+                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                        <Label fx:id="pkg2zipStatusLabel" styleClass="pkg2zip-status"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="btnDetectPkg2zip" text="%config.pkg2zip.detect"
+                                styleClass="subtle-button" onAction="#handleDetectPkg2zip"/>
+                        <Button fx:id="btnChoosePkg2zip" text="%config.pkg2zip.choose"
+                                styleClass="subtle-button" onAction="#handleChoosePkg2zip"/>
+                    </HBox>
+                    <Label fx:id="pkg2zipPathLabel" styleClass="pkg2zip-path" wrapText="true"/>
+                    <Label text="%config.pkg2zip.hint" styleClass="field-hint" wrapText="true"/>
+                </VBox>
+            </VBox>
+
             <VBox fx:id="downloadsSection" styleClass="settings-section" spacing="10.0">
                 <Label text="%config.section.downloads" styleClass="section-title"/>
 

@@ -54,6 +54,11 @@ All notable changes to NNPPSS are documented here.
 - UX6 closed with internal validation (38 tests, automated WCAG contrast,
   keyboard matrix and visual review); the 5-user SUS study is scheduled as
   post-release follow-up.
+- Downloads and extraction folders are now configurable in Settings and the
+  first-run wizard, with free-space hints and “Open” actions.
+- pkg2zip is auto-detected from configuration, the bundled `lib` folder or
+  `PATH`; users can pick the folder containing it. When missing, downloads are
+  blocked unless “Download without extracting” is chosen explicitly.
 - The download dock can be collapsed to “Show downloads” from the status bar
   and expands again automatically when a new session starts.
 - Content ID moved out of the table into the detail pane; console names are

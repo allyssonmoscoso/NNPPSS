@@ -43,18 +43,28 @@ Referencia de uso de pkg2zip: [pkg2zip (mmozeiko)](https://context7.com/mmozeiko
 | Selector | Selector de **carpeta** para pkg2zip (busca dentro el ejecutable), tal como se pidió. |
 | Misma carpeta | Se permite con advertencia inline; no se bloquea el guardado. |
 
-## 3.1 Estado de implementación (fundación)
+## 3.1 Estado de implementación
 
-Completado en la primera iteración:
+Implementado:
 
 - Claves `downloads.directory`, `extraction.directory` y `pkg2zip.path` en `ConfigManager`, con defaults y persistencia.
 - `Pkg2zipResolver` con orden configurado → incluido → `PATH` y estados `CONFIGURED`, `BUNDLED`, `PATH`, `NOT_FOUND`, `INVALID`.
 - `DownloadCoordinator` usa la carpeta de descargas configurada y guarda rutas absolutas.
 - `PackageService` recibe ruta absoluta del `.pkg`, carpeta de salida y usa `ProcessBuilder.directory(...)` con argumentos separados.
 - `SystemValidator` valida espacio sobre la carpeta elegida.
-- Tests: 44 verdes (incluye `Pkg2zipResolverTest` y persistencia de rutas).
+- Sección **Almacenamiento** en ajustes con descargas/extracción, espacio libre, advertencia de carpeta compartida, selectores y botones “Abrir”.
+- Sección **pkg2zip** con estado, ruta detectada, “Volver a detectar” y “Elegir carpeta”.
+- Bloqueo al iniciar descargas si pkg2zip no está disponible, con excepción “Descargar sin extraer” y acceso a ajustes.
+- Primera ejecución: el asistente exige pkg2zip junto con al menos una biblioteca.
+- `DownloadCoordinator.start(..., boolean extract)` permite omitir la extracción solo en la sesión elegida.
+- Tests: **45 verdes** (`Pkg2zipResolverTest`, persistencia de rutas, destino absoluto y omisión de extracción).
+- Prueba manual real: descarga y extracción en carpetas personalizadas (`test-downloads` / `test-extracted`) con pkg2zip detectado en `PATH`; pkg2zip extrajo `app/PCSG00312/...` correctamente.
 
-Pendiente para las siguientes iteraciones: UI de almacenamiento/pkg2zip, bloqueo de descargas con excepción “Descargar sin extraer”, primera ejecución, notificaciones y pruebas manuales.
+Pendiente:
+
+- Acción “Abrir carpeta” desde la notificación de descarga completada (hoy está en ajustes).
+- Revisar restauración de una descarga pausada antigua si el usuario cambió de carpeta.
+- Capturas finales de ajustes y primera ejecución con la nueva sección.
 
 ## 4. Modelo de configuración
 

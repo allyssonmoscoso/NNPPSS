@@ -39,7 +39,14 @@ public final class Pkg2zipResolver {
     }
 
     public Resolution resolve() {
-        Path configured = configManager == null ? null : configManager.getPkg2zipPath();
+        return resolve(configManager == null ? null : configManager.getPkg2zipPath());
+    }
+
+    /**
+     * Resolves with an explicit configured path. Passing {@code null} means
+     * automatic detection, ignoring the persisted configuration.
+     */
+    public Resolution resolve(Path configured) {
         if (configured != null) {
             Path executable = executableIn(configured);
             if (executable != null) {
