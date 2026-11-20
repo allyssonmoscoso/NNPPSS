@@ -21,6 +21,7 @@ import com.squarepeace.nnppss.service.DownloadStateManager;
 import com.squarepeace.nnppss.service.GameRepository;
 import com.squarepeace.nnppss.service.PackageService;
 import com.squarepeace.nnppss.service.Pkg2zipResolver;
+import com.squarepeace.nnppss.service.StorageCleanupService;
 import com.squarepeace.nnppss.service.SystemValidator;
 import com.squarepeace.nnppss.service.download.DownloadTaskState;
 import com.squarepeace.nnppss.util.I18n;
@@ -69,8 +70,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -1068,6 +1072,8 @@ public class MainController {
             ConfigController controller = loader.getController();
             controller.setConfigManager(configManager);
             controller.setFirstRun(firstRun);
+            controller.setOnCleanupRequested(() -> handleStorageCleanup(controller));
+            refreshCleanupHint(controller);
             controller.setOnSaveCallback(() -> {
                 applyTheme();
                 if (firstRun) {
@@ -1115,6 +1121,83 @@ public class MainController {
             }
             databaseManager.downloadAllDatabases();
         }));
+    }
+
+    private StorageCleanupService.ScanResult scanUnextractedPackages() {
+        Set<Path> excluded = new HashSet<>();
+        if (downloadCoordinator != null) {
+            for (DownloadTaskState task : downloadCoordinator.getTasks()) {
+                String destination = task.getDestinationPath();
+                if (destination != null && !destination.isBlank()) {
+                    try {
+                        excluded.add(Path.of(destination).toAbsolutePath().normalize());
+                    } catch (InvalidPathException e) {
+                        log.debug("Ignoring invalid active download path: {}", destination);
+                    }
+                }
+            }
+        }
+        return new StorageCleanupService().scan(
+                configManager.getDownloadsDirectory(), excluded, downloadHistoryManager);
+    }
+
+    private void refreshCleanupHint(ConfigController controller) {
+        if (controller == null) {
+            return;
+        }
+        StorageCleanupService.ScanResult scan = scanUnextractedPackages();
+        controller.updateCleanupHint(scan.candidates().size(), scan.totalBytes());
+    }
+
+    private void handleStorageCleanup(ConfigController controller) {
+        StorageCleanupService.ScanResult scan = scanUnextractedPackages();
+        if (scan.isEmpty()) {
+            Alert empty = new Alert(Alert.AlertType.INFORMATION);
+            empty.setTitle(I18n.get("dialog.cleanup.title"));
+            empty.setHeaderText(null);
+            empty.setContentText(I18n.get("dialog.cleanup.empty"));
+            empty.showAndWait();
+            refreshCleanupHint(controller);
+            return;
+        }
+
+        String sample = scan.candidates().stream()
+                .limit(8)
+                .map(candidate -> "• " + candidate.path().getFileName())
+                .collect(java.util.stream.Collectors.joining("\n"));
+        if (scan.candidates().size() > 8) {
+            sample += "\n• …";
+        }
+
+        ButtonType delete = new ButtonType(
+                I18n.get("button.delete"), ButtonBar.ButtonData.LEFT);
+        ButtonType cancel = new ButtonType(
+                I18n.get("button.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(I18n.get("dialog.cleanup.title"));
+        alert.setHeaderText(I18n.get("dialog.cleanup.header",
+                scan.candidates().size(), formatSize(scan.totalBytes())));
+        alert.setContentText(I18n.get("dialog.cleanup.message",
+                scan.candidates().size(), formatSize(scan.totalBytes()), sample));
+        alert.getButtonTypes().setAll(delete, cancel);
+        Button cancelButton = (Button) alert.getDialogPane().lookupButton(cancel);
+        if (cancelButton != null) {
+            cancelButton.setDefaultButton(true);
+        }
+
+        ButtonType choice = alert.showAndWait().orElse(cancel);
+        if (choice != delete) {
+            return;
+        }
+
+        long freed = new StorageCleanupService().delete(scan.candidates());
+        notificationPane.showNotification(I18n.get("notify.cleanup.done",
+                        scan.candidates().size(), formatSize(freed)),
+                NotificationPane.NotificationType.SUCCESS);
+        if (controller != null) {
+            controller.refreshStorageInfo();
+            refreshCleanupHint(controller);
+        }
     }
 
     private void applyTheme() {

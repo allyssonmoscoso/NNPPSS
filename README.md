@@ -14,6 +14,8 @@ extraction and automatic cleanup.
 - Automatic session restore after restart (including paused downloads).
 - pkg2zip extraction and optional `.pkg` auto-cleanup.
 - Configurable download and extraction folders.
+- “Free up space” cleanup for `.pkg` files that have not been extracted,
+  showing the file count and recoverable space before deleting anything.
 - pkg2zip auto-detection (configured, bundled or `PATH`) with folder picker.
 - English/Spanish UI, light/dark theme.
 - Per-user data directory, so the app works when installed read-only.

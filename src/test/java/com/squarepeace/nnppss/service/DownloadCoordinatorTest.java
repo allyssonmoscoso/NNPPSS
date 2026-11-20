@@ -99,6 +99,8 @@ class DownloadCoordinatorTest {
         assertFalse(coordinator.isDownloading());
         assertTrue(packageExtractor.calls > 0, "PSVITA downloads must be extracted");
         assertEquals("zrif", packageExtractor.lastZRif);
+        assertTrue(historyManager.findByUrl(game.getPkgUrl()).isExtracted(),
+                "successful extraction must be recorded in history");
         assertTrue(stateManager.loadStates().isEmpty(), "state must be cleared after completion");
 
         List<DownloadHistory> history = historyManager.loadHistory();

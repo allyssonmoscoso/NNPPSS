@@ -74,6 +74,17 @@
                 </GridPane>
             </VBox>
 
+            <VBox fx:id="maintenanceSection" styleClass="settings-section" spacing="10.0">
+                <Label text="%config.section.cleanup" styleClass="section-title"/>
+                <Label text="%config.cleanup.hint" styleClass="field-hint" wrapText="true"/>
+                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                    <Label fx:id="cleanupHintLabel" styleClass="field-hint" wrapText="true"
+                           HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="btnCleanup" text="%button.cleanup"
+                            styleClass="subtle-button" onAction="#handleCleanup"/>
+                </HBox>
+            </VBox>
+
             <VBox fx:id="storageSection" styleClass="settings-section" spacing="10.0">
                 <Label text="%config.section.storage" styleClass="section-title"/>
                 <Label text="%config.section.storage.hint" styleClass="field-hint" wrapText="true"/>

@@ -10,6 +10,7 @@ public class DownloadHistory {
     private String status; // "completed", "failed", "paused"
     private long downloadDate;
     private String filePath;
+    private boolean extracted;
 
     public DownloadHistory() {
     }
@@ -69,5 +70,16 @@ public class DownloadHistory {
 
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+
+    /**
+     * True when the app completed pkg2zip extraction for this download.
+     */
+    public boolean isExtracted() {
+        return extracted;
+    }
+
+    public void setExtracted(boolean extracted) {
+        this.extracted = extracted;
     }
 }

@@ -59,6 +59,10 @@ All notable changes to NNPPSS are documented here.
 - pkg2zip is auto-detected from configuration, the bundled `lib` folder or
   `PATH`; users can pick the folder containing it. When missing, downloads are
   blocked unless “Download without extracting” is chosen explicitly.
+- Settings now includes “Free up space”: it lists and deletes only `.pkg` files
+  that have not gone through the app's extraction, with a confirmation dialog
+  showing file count and recoverable space. Extracted files and active
+  downloads are excluded.
 - Added local `act` support (`scripts/act-local.ps1`, `scripts/act-local.sh`,
   `.actrc` and `docs/ACT_LOCAL.md`), Linux workflow dependencies, and a
   gitignore fix so `src/main/java/.../app` and message bundles are not omitted

@@ -61,6 +61,9 @@ public class ConfigController {
     @FXML private VBox downloadsSection;
     @FXML private VBox appearanceSection;
     @FXML private VBox storageSection;
+    @FXML private VBox maintenanceSection;
+    @FXML private Label cleanupHintLabel;
+    @FXML private Button btnCleanup;
     @FXML private TextField txtDownloadsDir;
     @FXML private TextField txtExtractionDir;
     @FXML private Button btnChooseDownloads;
@@ -81,6 +84,7 @@ public class ConfigController {
     private Pkg2zipResolver pkg2zipResolver;
     private Path pendingPkg2zipPath;
     private boolean pkg2zipAutomatic = true;
+    private Runnable onCleanupRequested;
 
     public void setConfigManager(ConfigManager configManager) {
         this.configManager = configManager;
@@ -336,6 +340,7 @@ public class ConfigController {
         if (!wizard) {
             setSectionVisible(librariesSection, true);
             setSectionVisible(storageSection, true);
+            setSectionVisible(maintenanceSection, true);
             setSectionVisible(downloadsSection, true);
             setSectionVisible(appearanceSection, true);
             setButtonVisible(btnBack, false);
@@ -351,6 +356,7 @@ public class ConfigController {
         boolean librariesStep = wizardStep == 1;
         setSectionVisible(librariesSection, librariesStep);
         setSectionVisible(storageSection, true);
+        setSectionVisible(maintenanceSection, false);
         setSectionVisible(downloadsSection, !librariesStep);
         setSectionVisible(appearanceSection, !librariesStep);
         setButtonVisible(btnBack, !librariesStep);
@@ -403,6 +409,34 @@ public class ConfigController {
 
     public void setOnSaveCallback(Runnable onSaveCallback) {
         this.onSaveCallback = onSaveCallback;
+    }
+
+    public void setOnCleanupRequested(Runnable onCleanupRequested) {
+        this.onCleanupRequested = onCleanupRequested;
+    }
+
+    public void refreshStorageInfo() {
+        updateStorageInfo();
+    }
+
+    /** Refreshes the freeable-space hint after a cleanup. */
+    public void updateCleanupHint(long candidateCount, long candidateBytes) {
+        if (cleanupHintLabel == null) {
+            return;
+        }
+        if (candidateCount <= 0) {
+            cleanupHintLabel.setText(I18n.get("config.cleanup.none"));
+        } else {
+            cleanupHintLabel.setText(I18n.get("config.cleanup.available",
+                    candidateCount, formatBytes(candidateBytes)));
+        }
+    }
+
+    @FXML
+    private void handleCleanup() {
+        if (onCleanupRequested != null) {
+            onCleanupRequested.run();
+        }
     }
 
     @FXML

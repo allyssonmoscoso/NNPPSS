@@ -96,4 +96,44 @@ public class DownloadHistoryManager {
         DownloadHistory entry = findByUrl(pkgUrl);
         return entry != null && "paused".equals(entry.getStatus());
     }
+
+    /** Marks the history entry as successfully extracted. */
+    public void markExtracted(String pkgUrl) {
+        if (pkgUrl == null) {
+            return;
+        }
+        List<DownloadHistory> history = loadHistory();
+        boolean changed = false;
+        for (DownloadHistory entry : history) {
+            if (entry != null && java.util.Objects.equals(entry.getPkgUrl(), pkgUrl)
+                    && !entry.isExtracted()) {
+                entry.setExtracted(true);
+                changed = true;
+            }
+        }
+        if (changed) {
+            saveHistory(history);
+        }
+    }
+
+    /**
+     * True when the resolved file belongs to a history entry that was
+     * successfully extracted by the app.
+     */
+    public boolean isExtractedFile(Path file) {
+        if (file == null) {
+            return false;
+        }
+        Path normalized = file.toAbsolutePath().normalize();
+        for (DownloadHistory entry : loadHistory()) {
+            if (entry == null || !entry.isExtracted() || entry.getFilePath() == null) {
+                continue;
+            }
+            Path recorded = PathResolver.resolve(entry.getFilePath()).toAbsolutePath().normalize();
+            if (recorded.equals(normalized)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

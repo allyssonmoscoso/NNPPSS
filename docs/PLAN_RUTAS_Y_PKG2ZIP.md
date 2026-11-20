@@ -233,6 +233,19 @@ Estados visuales:
   - acción **Abrir carpeta de descargas** o **Abrir carpeta de extracción**.
 - Los errores de extracción no borran el `.pkg` automáticamente.
 
+### 7.5 Liberar espacio
+
+- Ajustes → **Liberar espacio** muestra cuántos `.pkg` no se han extraído y
+  cuánto espacio se recuperaría.
+- Solo se consideran archivos `.pkg` del directorio de descargas actual.
+- Se excluyen:
+  - archivos con extracción completada registrada en el historial;
+  - archivos de descargas activas o pausadas.
+- El usuario debe confirmar en un diálogo que enumera los archivos y el espacio;
+  **Cancelar** es la opción predeterminada.
+- Si no hay candidatos, se informa sin mostrar una acción destructiva.
+- Tras borrar, se actualiza el espacio libre y el contador de la sección.
+
 ### 7.5 Accesibilidad e i18n
 
 - Etiquetas accesibles en ambos selectores y en el botón de pkg2zip.

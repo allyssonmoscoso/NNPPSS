@@ -330,6 +330,7 @@ public class DownloadCoordinator {
                          String zRif, Console console) {
         packageExtractor.extractPackage(pkgPath, extractionDirectory, zRif, console, success -> {
             if (success) {
+                historyManager.markExtracted(task.getUrl());
                 log.info("Extraction completed for {}", task.getGame().getTitle());
             } else {
                 log.warn("Extraction failed for {}", task.getGame().getTitle());
