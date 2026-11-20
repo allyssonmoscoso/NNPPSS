@@ -106,6 +106,7 @@ public class MainController {
 
     @FXML private Button btnResumePause;
     @FXML private Button btnRetry;
+    @FXML private Button btnToggleDock;
     @FXML private VBox progressContainer;
     @FXML private Label statusLabel;
     @FXML private VBox queueDrawer;
@@ -120,6 +121,8 @@ public class MainController {
     @FXML private Button btnAddToQueue;
 
     private GlobalProgressIndicator globalProgress;
+    private final javafx.beans.property.BooleanProperty dockCollapsed =
+            new javafx.beans.property.SimpleBooleanProperty(false);
     private NotificationPane notificationPane;
 
     private AppContext context;
@@ -257,9 +260,14 @@ public class MainController {
 
         globalProgress = new GlobalProgressIndicator();
         progressContainer.getChildren().add(globalProgress);
-        // The download dock only takes space while a session is visible.
-        progressContainer.visibleProperty().bind(globalProgress.visibleProperty());
-        progressContainer.managedProperty().bind(globalProgress.visibleProperty());
+        // The download dock only takes space while a session is visible and not collapsed.
+        var dockVisible = globalProgress.visibleProperty().and(dockCollapsed.not());
+        progressContainer.visibleProperty().bind(dockVisible);
+        progressContainer.managedProperty().bind(dockVisible);
+
+        btnToggleDock.visibleProperty().bind(globalProgress.visibleProperty());
+        btnToggleDock.managedProperty().bind(globalProgress.visibleProperty());
+        updateDockToggle();
 
         notificationPane = new NotificationPane();
         rootStack.getChildren().add(notificationPane);
@@ -639,6 +647,7 @@ public class MainController {
         downloadQueueManager.saveQueue(new ArrayList<>(downloadQueue));
 
         resetDownloadUi();
+        showDownloadDock();
         globalProgress.startDownloads(1, game.getFileSize());
         if (!downloadCoordinator.start(List.of(game), Set.of())) {
             globalProgress.reset();
@@ -850,6 +859,7 @@ public class MainController {
         long totalBytes = gamesToStart.stream().mapToLong(Game::getFileSize).sum();
 
         resetDownloadUi();
+        showDownloadDock();
         globalProgress.startDownloads(gamesToStart.size(), totalBytes);
 
         if (!downloadCoordinator.start(gamesToStart, Set.of())) {
@@ -1217,6 +1227,25 @@ public class MainController {
                 downloadCoordinator.anyPaused(targets) ? "button.resume" : "button.pause"));
     }
 
+    @FXML
+    private void handleToggleDock() {
+        dockCollapsed.set(!dockCollapsed.get());
+        updateDockToggle();
+    }
+
+    private void updateDockToggle() {
+        if (btnToggleDock == null) {
+            return;
+        }
+        btnToggleDock.setText(I18n.get(
+                dockCollapsed.get() ? "button.dock.show" : "button.dock.hide"));
+    }
+
+    private void showDownloadDock() {
+        dockCollapsed.set(false);
+        updateDockToggle();
+    }
+
     private void addDownloadItem(DownloadTaskState task) {
         String url = task.getUrl();
         if (downloadItems.containsKey(url)) {
@@ -1442,6 +1471,7 @@ public class MainController {
         }
 
         resetDownloadUi();
+        showDownloadDock();
         globalProgress.startDownloads(games.size(),
                 games.stream().mapToLong(Game::getFileSize).sum());
         if (!downloadCoordinator.start(games, pausedUrls)) {

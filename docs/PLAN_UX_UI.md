@@ -448,13 +448,13 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
   - Añadir a la cola sin confirmación + snackbar con “Deshacer”.
   - Cola con contador en el botón (`Cola (N)`).
   - Notificaciones movidas a la esquina inferior izquierda para no tapar las acciones del detalle.
-- **UX4 — parcial:**
+- **UX4 — completado:**
   - La cola dejó de ser un diálogo modal y ahora es un drawer lateral de 420 px, debajo de la app bar.
   - El drawer no bloquea el catálogo; se cierra con “✕”, “Cerrar” o `Esc`.
   - Lista con índice, título, región, consola y tamaño; estadísticas y acciones (seleccionar, reordenar, quitar, limpiar, exportar/importar, iniciar).
   - Botones con ajuste en varias filas para el ancho del panel.
   - Pausa/reanudación inline en cada tarjeta de descarga, con texto accesible y estado visual.
-  - Pending: dock de descargas colapsable.
+  - Dock de descargas colapsable con “Ocultar descargas” / “Mostrar descargas”; se expande automáticamente al iniciar una sesión.
 - **UX5 — parcial:**
   - Contadores visibles con singular/plural (`1 resultado` / `N resultados`).
   - Textos accesibles en botones de icono (cerrar notificación, cerrar cola, pausar/cancelar descarga).
@@ -468,7 +468,6 @@ Observar dónde miran, cuántos clics hacen y qué texto leen; registrar friccio
 ### Pendiente
 
 - **UX2 (resto):** convertir la primera ejecución en un asistente de dos pasos (bibliotecas → preferencias) si la prueba con usuarios lo justifica.
-- **UX4 (resto):** dock de descargas colapsable y pulido de estados de la tarjeta.
 - **UX5 (resto):** estados de carga/vacío/error con acción, foco completo por teclado y revisión de contraste; la pluralización básica ya está aplicada a los contadores visibles.
 - **UX6:** pruebas con usuarios, pulido y validación visual final.
 
