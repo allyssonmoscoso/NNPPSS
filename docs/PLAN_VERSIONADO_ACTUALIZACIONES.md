@@ -1,6 +1,6 @@
 # Plan · Versionado y actualizaciones automáticas
 
-**Estado:** 2.0.2 publicado con etiquetas de estado · **Versión de desarrollo:** 2.0.0-SNAPSHOT · **Última release publicada:** 2.0.2 · **Fecha:** 2026-11-21.
+**Estado:** 2.0.3 publicado con la corrección del comprobador de updates · **Versión de desarrollo:** 2.0.0-SNAPSHOT · **Última release publicada:** 2.0.3 · **Fecha:** 2026-11-21.
 
 ## 1. Objetivo
 
@@ -329,7 +329,9 @@ Pendiente para cerrar el objetivo:
 
 - CI de rama: runs [44800940009](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44800940009), [44849526121](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44849526121) y [44851434253](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44851434253) — verdes en Ubuntu, Windows y macOS.
 - Release `v2.0.0`: run [44802330265](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44802330265) — publicado (sus assets antiguos reportan `2.0.0-SNAPSHOT`; usar 2.0.1).
-- Release `v2.0.2`: run [44861231002](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44861231002) — publicado, JAR `2.0.2`, con etiquetas de estado y todos los instaladores.
-- `releases/latest/download/update-manifest.json` devuelve `2.0.2`.
+- Release `v2.0.2`: run [44861231002](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44861231002) — publicado.
+- Release `v2.0.3`: run [44861978300](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44861978300) — publicado; corrige seguimiento de redirects y el JAR reporta 2.0.3.
+- `releases/latest/download/update-manifest.json` devuelve `2.0.3`.
+- 54 tests locales verdes, incluido el test de redirect de GitHub.
 - Act: job `validate` y build Linux (`deb` + app-image + upload) correctos.
-- 53 tests locales verdes, incluidos auto-cleanup y comparación `2.0.1 > 2.0.0-SNAPSHOT`.
+- 54 tests locales verdes, incluidos auto-cleanup, comparación de versiones y redirect de GitHub.
