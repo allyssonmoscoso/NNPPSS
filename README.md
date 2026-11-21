@@ -162,6 +162,7 @@ definitive JavaFX edition.
 - [Plan de versionado y actualizaciones](docs/PLAN_VERSIONADO_ACTUALIZACIONES.md)
 - [Plan de peso en descargas pendientes](docs/PLAN_PESO_DESCARGAS.md)
 - [Plan de soporte SMB montado](docs/PLAN_SMB.md)
+- [Plan de rutas de extracción por consola](docs/PLAN_RUTAS_POR_CONSOLA.md)
 
 ## Versioning and releases
 

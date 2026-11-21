@@ -104,6 +104,9 @@ SMB**. Por eso, por defecto:
 - descargas y extracción se configuran en el recurso montado;
 - el `.pkg` y la carpeta extraída pueden estar en el mismo share o en carpetas
   distintas del mismo recurso;
+- cada consola puede tener su propia carpeta de extracción (ver
+  [plan de rutas por consola](PLAN_RUTAS_POR_CONSOLA.md)); cada una se valida de
+  forma independiente;
 - la app no mueve el resultado a una carpeta local después de extraer.
 
 Advertencia de rendimiento:
