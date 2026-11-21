@@ -2,6 +2,13 @@
 
 All notable changes to NNPPSS are documented here.
 
+## [Unreleased]
+
+### Added
+
+- Optional per-console extraction folders for PS Vita, PSP and PSX. Empty
+  entries inherit the global extraction folder.
+
 ## [2.0.4] — 2026-11-21
 
 ### Added

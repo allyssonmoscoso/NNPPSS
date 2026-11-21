@@ -142,6 +142,32 @@ class DownloadCoordinatorTest {
     }
 
     @Test
+    void usesPerConsoleExtractionDirectories() throws Exception {
+        Path vitaDir = tempDir.resolve("vita-extracted");
+        Path pspDir = tempDir.resolve("psp-extracted");
+        configManager.setExtractionDirectory(Console.PSVITA, vitaDir);
+        configManager.setExtractionDirectory(Console.PSP, pspDir);
+
+        Game vita = game("Vita", "https://example.test/vita.pkg", 1024);
+        Game psp = new Game("PSP", "USA", Console.PSP,
+                "https://example.test/psp.pkg", null, 1024);
+        assertTrue(coordinator.start(List.of(vita, psp), Set.of()));
+
+        for (Game game : List.of(vita, psp)) {
+            DownloadService.DownloadListener listener = downloadClient.await(game.getPkgUrl());
+            Path destination = Path.of(coordinator.getTask(game.getPkgUrl()).getDestinationPath());
+            Files.createDirectories(destination.getParent());
+            Files.writeString(destination, "pkg");
+            listener.onComplete(destination.toFile());
+        }
+
+        assertEquals(vitaDir.toAbsolutePath().normalize(),
+                packageExtractor.outputByConsole.get(Console.PSVITA));
+        assertEquals(pspDir.toAbsolutePath().normalize(),
+                packageExtractor.outputByConsole.get(Console.PSP));
+    }
+
+    @Test
     void tracksFailedDownloadsForTheSession() throws Exception {
         Game game = game("Failure", "https://example.test/failure.pkg", 1024);
         assertTrue(coordinator.start(List.of(game), Set.of()));
@@ -355,12 +381,14 @@ class DownloadCoordinatorTest {
     private static final class FakePackageExtractor implements PackageExtractor {
         private int calls;
         private String lastZRif;
+        private final Map<Console, Path> outputByConsole = new HashMap<>();
 
         @Override
         public void extractPackage(Path pkgPath, Path outputDirectory, String zRifKey,
                                    Console console, PackageService.ExtractionListener listener) {
             calls++;
             lastZRif = zRifKey;
+            outputByConsole.put(console, outputDirectory);
             if (listener != null) {
                 listener.onExtractionComplete(true);
             }

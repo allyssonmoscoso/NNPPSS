@@ -121,6 +121,53 @@
                             onAction="#handleResetStorage"/>
                 </HBox>
 
+                <VBox fx:id="consoleExtractionSection" styleClass="settings-subsection" spacing="6.0">
+                    <Label text="%config.section.extractionbyconsole" styleClass="section-title"/>
+                    <Label text="%config.extractionbyconsole.hint" styleClass="field-hint" wrapText="true"/>
+                    <GridPane hgap="8.0" vgap="6.0">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="70.0" prefWidth="80.0"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+
+                        <Label text="%config.label.extraction.vita" styleClass="field-label" GridPane.rowIndex="0"/>
+                        <HBox spacing="5.0" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                            <TextField fx:id="txtVitaExtractionDir" promptText="%config.extraction.inherit"
+                                       HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="btnChooseVitaExtraction" text="%button.choose"
+                                    styleClass="subtle-button" onAction="#handleChooseVitaExtraction"/>
+                            <Button fx:id="btnOpenVitaExtraction" text="%button.open"
+                                    styleClass="subtle-button" onAction="#handleOpenVitaExtraction"/>
+                            <Button fx:id="btnInheritVitaExtraction" text="%button.useglobal"
+                                    styleClass="subtle-button" onAction="#handleInheritVitaExtraction"/>
+                        </HBox>
+
+                        <Label text="%config.label.extraction.psp" styleClass="field-label" GridPane.rowIndex="1"/>
+                        <HBox spacing="5.0" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                            <TextField fx:id="txtPspExtractionDir" promptText="%config.extraction.inherit"
+                                       HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="btnChoosePspExtraction" text="%button.choose"
+                                    styleClass="subtle-button" onAction="#handleChoosePspExtraction"/>
+                            <Button fx:id="btnOpenPspExtraction" text="%button.open"
+                                    styleClass="subtle-button" onAction="#handleOpenPspExtraction"/>
+                            <Button fx:id="btnInheritPspExtraction" text="%button.useglobal"
+                                    styleClass="subtle-button" onAction="#handleInheritPspExtraction"/>
+                        </HBox>
+
+                        <Label text="%config.label.extraction.psx" styleClass="field-label" GridPane.rowIndex="2"/>
+                        <HBox spacing="5.0" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                            <TextField fx:id="txtPsxExtractionDir" promptText="%config.extraction.inherit"
+                                       HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="btnChoosePsxExtraction" text="%button.choose"
+                                    styleClass="subtle-button" onAction="#handleChoosePsxExtraction"/>
+                            <Button fx:id="btnOpenPsxExtraction" text="%button.open"
+                                    styleClass="subtle-button" onAction="#handleOpenPsxExtraction"/>
+                            <Button fx:id="btnInheritPsxExtraction" text="%button.useglobal"
+                                    styleClass="subtle-button" onAction="#handleInheritPsxExtraction"/>
+                        </HBox>
+                    </GridPane>
+                </VBox>
+
                 <VBox styleClass="settings-subsection" spacing="6.0">
                     <Label text="%config.section.pkg2zip" styleClass="section-title"/>
                     <HBox alignment="CENTER_LEFT" spacing="8.0">

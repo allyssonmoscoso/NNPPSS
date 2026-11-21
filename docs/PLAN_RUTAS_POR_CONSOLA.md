@@ -1,6 +1,6 @@
 # Plan · Carpeta de extracción por consola
 
-**Estado:** propuesta · **Rama:** `develop` · **Fecha:** 2026-11-21.
+**Estado:** implementado en `develop` · **Rama:** `develop` · **Fecha:** 2026-11-21.
 
 ## 1. Objetivo
 

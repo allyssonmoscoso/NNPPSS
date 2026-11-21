@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.squarepeace.nnppss.app.AppPaths;
+import com.squarepeace.nnppss.model.Console;
 import com.squarepeace.nnppss.util.PathResolver;
 
 public class ConfigManager {
@@ -52,6 +53,9 @@ public class ConfigManager {
         properties.setProperty("language", "en");
         properties.setProperty("downloads.directory", "");
         properties.setProperty("extraction.directory", "");
+        properties.setProperty("extraction.psvita.directory", "");
+        properties.setProperty("extraction.psp.directory", "");
+        properties.setProperty("extraction.psx.directory", "");
         properties.setProperty("pkg2zip.path", "");
         properties.setProperty("updates.checkOnStartup", "true");
         saveConfig();
@@ -68,6 +72,9 @@ public class ConfigManager {
         putIfMissing("language", "en");
         putIfMissing("downloads.directory", "");
         putIfMissing("extraction.directory", "");
+        putIfMissing("extraction.psvita.directory", "");
+        putIfMissing("extraction.psp.directory", "");
+        putIfMissing("extraction.psx.directory", "");
         putIfMissing("pkg2zip.path", "");
         putIfMissing("updates.checkOnStartup", "true");
     }
@@ -177,6 +184,38 @@ public class ConfigManager {
         return resolveDirectory("extraction.directory", "extracted");
     }
 
+    /**
+     * Extraction folder for a console. A non-empty per-console override wins;
+     * otherwise the global extraction folder is used.
+     */
+    public Path getExtractionDirectory(Console console) {
+        Path override = getConfiguredExtractionDirectory(console);
+        return override == null ? getExtractionDirectory() : override;
+    }
+
+    /** Explicit per-console value, or null when the console inherits globally. */
+    public Path getConfiguredExtractionDirectory(Console console) {
+        if (console == null) {
+            return null;
+        }
+        return resolveOptionalDirectory(extractionKey(console));
+    }
+
+    public void setExtractionDirectory(Console console, Path directory) {
+        if (console == null) {
+            return;
+        }
+        setProperty(extractionKey(console), directory == null ? "" : toStoredPath(directory));
+    }
+
+    private String extractionKey(Console console) {
+        return switch (console) {
+            case PSVITA -> "extraction.psvita.directory";
+            case PSP -> "extraction.psp.directory";
+            case PSX -> "extraction.psx.directory";
+        };
+    }
+
     /** Configured pkg2zip executable, or null when automatic detection should run. */
     public Path getPkg2zipPath() {
         String value = getProperty("pkg2zip.path");
@@ -205,10 +244,16 @@ public class ConfigManager {
     }
 
     private Path resolveDirectory(String key, String defaultName) {
-        Path fallback = AppPaths.dataDir().resolve(defaultName).normalize();
+        Path configured = resolveOptionalDirectory(key);
+        return configured != null
+                ? configured
+                : AppPaths.dataDir().resolve(defaultName).normalize();
+    }
+
+    private Path resolveOptionalDirectory(String key) {
         String value = getProperty(key);
         if (value == null || value.isBlank()) {
-            return fallback;
+            return null;
         }
         try {
             Path path = Paths.get(value.trim());
@@ -217,8 +262,8 @@ public class ConfigManager {
             }
             return path.normalize();
         } catch (InvalidPathException e) {
-            log.warn("Invalid {} value, using default: {}", key, value);
-            return fallback;
+            log.warn("Invalid {} value, ignoring it: {}", key, value);
+            return null;
         }
     }
 

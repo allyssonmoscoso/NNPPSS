@@ -324,7 +324,7 @@ public class DownloadCoordinator {
         }
 
         Path pkgPath = Path.of(task.getDestinationPath());
-        Path extractionDirectory = configManager.getExtractionDirectory();
+        Path extractionDirectory = configManager.getExtractionDirectory(game.getConsole());
         if (game.getConsole() == Console.PSVITA) {
             if (game.getzRif() == null || game.getzRif().isBlank()) {
                 log.info("PSVITA package {} has no zRIF; skipping extraction", game.getTitle());

@@ -2,6 +2,7 @@ package com.squarepeace.nnppss.fx.controllers;
 
 import com.squarepeace.nnppss.app.AppPaths;
 import com.squarepeace.nnppss.app.BuildInfo;
+import com.squarepeace.nnppss.model.Console;
 import com.squarepeace.nnppss.service.ConfigManager;
 import com.squarepeace.nnppss.service.Pkg2zipResolver;
 import com.squarepeace.nnppss.util.I18n;
@@ -73,16 +74,29 @@ public class ConfigController {
     @FXML private CheckBox checkUpdates;
     @FXML private TextField txtDownloadsDir;
     @FXML private TextField txtExtractionDir;
+    @FXML private TextField txtVitaExtractionDir;
+    @FXML private TextField txtPspExtractionDir;
+    @FXML private TextField txtPsxExtractionDir;
     @FXML private Button btnChooseDownloads;
     @FXML private Button btnChooseExtraction;
     @FXML private Button btnOpenDownloads;
     @FXML private Button btnOpenExtraction;
+    @FXML private Button btnChooseVitaExtraction;
+    @FXML private Button btnOpenVitaExtraction;
+    @FXML private Button btnInheritVitaExtraction;
+    @FXML private Button btnChoosePspExtraction;
+    @FXML private Button btnOpenPspExtraction;
+    @FXML private Button btnInheritPspExtraction;
+    @FXML private Button btnChoosePsxExtraction;
+    @FXML private Button btnOpenPsxExtraction;
+    @FXML private Button btnInheritPsxExtraction;
     @FXML private Button btnResetStorage;
     @FXML private Button btnDetectPkg2zip;
     @FXML private Button btnChoosePkg2zip;
     @FXML private Label storageHint;
     @FXML private Label pkg2zipStatusLabel;
     @FXML private Label pkg2zipPathLabel;
+    @FXML private VBox consoleExtractionSection;
 
     private ConfigManager configManager;
     private Runnable onSaveCallback;
@@ -110,7 +124,14 @@ public class ConfigController {
         }
         txtDownloadsDir.setText(configManager.getDownloadsDirectory().toString());
         txtExtractionDir.setText(configManager.getExtractionDirectory().toString());
+        txtVitaExtractionDir.setText(textOrEmpty(configManager.getConfiguredExtractionDirectory(Console.PSVITA)));
+        txtPspExtractionDir.setText(textOrEmpty(configManager.getConfiguredExtractionDirectory(Console.PSP)));
+        txtPsxExtractionDir.setText(textOrEmpty(configManager.getConfiguredExtractionDirectory(Console.PSX)));
         updateStorageInfo();
+    }
+
+    private String textOrEmpty(Path path) {
+        return path == null ? "" : path.toString();
     }
 
     private void updateStorageInfo() {
@@ -219,6 +240,65 @@ public class ConfigController {
         chooseDirectory(txtExtractionDir, "config.label.extractiondir");
     }
 
+    @FXML
+    private void handleChooseVitaExtraction() {
+        chooseDirectory(txtVitaExtractionDir, "config.label.extraction.vita");
+    }
+
+    @FXML
+    private void handleChoosePspExtraction() {
+        chooseDirectory(txtPspExtractionDir, "config.label.extraction.psp");
+    }
+
+    @FXML
+    private void handleChoosePsxExtraction() {
+        chooseDirectory(txtPsxExtractionDir, "config.label.extraction.psx");
+    }
+
+    @FXML
+    private void handleOpenVitaExtraction() {
+        openEffectiveExtraction(txtVitaExtractionDir);
+    }
+
+    @FXML
+    private void handleOpenPspExtraction() {
+        openEffectiveExtraction(txtPspExtractionDir);
+    }
+
+    @FXML
+    private void handleOpenPsxExtraction() {
+        openEffectiveExtraction(txtPsxExtractionDir);
+    }
+
+    @FXML
+    private void handleInheritVitaExtraction() {
+        txtVitaExtractionDir.clear();
+        updateStorageInfo();
+        hideValidation();
+    }
+
+    @FXML
+    private void handleInheritPspExtraction() {
+        txtPspExtractionDir.clear();
+        updateStorageInfo();
+        hideValidation();
+    }
+
+    @FXML
+    private void handleInheritPsxExtraction() {
+        txtPsxExtractionDir.clear();
+        updateStorageInfo();
+        hideValidation();
+    }
+
+    private void openEffectiveExtraction(TextField field) {
+        if (!isBlank(field.getText())) {
+            openDirectory(field);
+        } else {
+            openDirectory(txtExtractionDir);
+        }
+    }
+
     private void chooseDirectory(TextField field, String titleKey) {
         DirectoryChooser chooser = new DirectoryChooser();
         chooser.setTitle(I18n.get(titleKey));
@@ -269,6 +349,9 @@ public class ConfigController {
     private void handleResetStorage() {
         txtDownloadsDir.setText(AppPaths.dataDir().resolve("packages").toString());
         txtExtractionDir.setText(AppPaths.dataDir().resolve("extracted").toString());
+        txtVitaExtractionDir.clear();
+        txtPspExtractionDir.clear();
+        txtPsxExtractionDir.clear();
         updateStorageInfo();
         hideValidation();
     }
@@ -285,20 +368,32 @@ public class ConfigController {
     }
 
     private Path validateDirectory(TextField field) {
+        return validateDirectory(field, null);
+    }
+
+    private Path validateDirectory(TextField field, String consoleLabel) {
         Path path = pathOrNull(field.getText());
         if (path == null) {
-            showError(I18n.get("config.error.pathempty"));
+            showError(consoleLabel == null
+                    ? I18n.get("config.error.pathempty")
+                    : I18n.get("config.error.consolepath", consoleLabel));
             return null;
         }
         path = path.toAbsolutePath().normalize();
         try {
             Files.createDirectories(path);
         } catch (IOException e) {
-            showError(I18n.get("config.error.pathcreate", path, e.getMessage()));
+            showError(consoleLabel == null
+                    ? I18n.get("config.error.pathcreate", path, e.getMessage())
+                    : I18n.get("config.error.consolepath.detail",
+                            consoleLabel, path, e.getMessage()));
             return null;
         }
         if (!Files.isDirectory(path) || !Files.isWritable(path)) {
-            showError(I18n.get("config.error.pathnotwritable", path));
+            showError(consoleLabel == null
+                    ? I18n.get("config.error.pathnotwritable", path)
+                    : I18n.get("config.error.consolepath.detail",
+                            consoleLabel, path, ""));
             return null;
         }
         return path;
@@ -348,6 +443,7 @@ public class ConfigController {
         if (!wizard) {
             setSectionVisible(librariesSection, true);
             setSectionVisible(storageSection, true);
+            setSectionVisible(consoleExtractionSection, true);
             setSectionVisible(maintenanceSection, true);
             setSectionVisible(updatesSection, true);
             setSectionVisible(downloadsSection, true);
@@ -365,6 +461,7 @@ public class ConfigController {
         boolean librariesStep = wizardStep == 1;
         setSectionVisible(librariesSection, librariesStep);
         setSectionVisible(storageSection, true);
+        setSectionVisible(consoleExtractionSection, false);
         setSectionVisible(maintenanceSection, false);
         setSectionVisible(updatesSection, false);
         setSectionVisible(downloadsSection, !librariesStep);
@@ -627,8 +724,33 @@ public class ConfigController {
             return;
         }
 
+        Path vitaExtraction = null;
+        if (!isBlank(txtVitaExtractionDir.getText())) {
+            vitaExtraction = validateDirectory(txtVitaExtractionDir, "PS Vita");
+            if (vitaExtraction == null) {
+                return;
+            }
+        }
+        Path pspExtraction = null;
+        if (!isBlank(txtPspExtractionDir.getText())) {
+            pspExtraction = validateDirectory(txtPspExtractionDir, "PSP");
+            if (pspExtraction == null) {
+                return;
+            }
+        }
+        Path psxExtraction = null;
+        if (!isBlank(txtPsxExtractionDir.getText())) {
+            psxExtraction = validateDirectory(txtPsxExtractionDir, "PSX");
+            if (psxExtraction == null) {
+                return;
+            }
+        }
+
         configManager.setDownloadsDirectory(downloads);
         configManager.setExtractionDirectory(extraction);
+        configManager.setExtractionDirectory(Console.PSVITA, vitaExtraction);
+        configManager.setExtractionDirectory(Console.PSP, pspExtraction);
+        configManager.setExtractionDirectory(Console.PSX, psxExtraction);
         if (pkg2zipAutomatic) {
             configManager.setPkg2zipPath(null);
         } else {

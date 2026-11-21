@@ -21,6 +21,8 @@ extraction and automatic cleanup.
 - Status tags in the catalogue for **Downloaded**, **Queued**, **Paused** and
   **Failed** games, instead of colouring entire rows.
 - Status filter for downloaded, queued, failed, paused and unmarked games.
+- Optional extraction folders per console (PS Vita, PSP, PSX), with global
+  fallback.
 - pkg2zip auto-detection (configured, bundled or `PATH`) with folder picker.
 - English/Spanish UI, light/dark theme.
 - Per-user data directory, so the app works when installed read-only.

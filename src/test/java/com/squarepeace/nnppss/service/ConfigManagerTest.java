@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.squarepeace.nnppss.app.AppPaths;
+import com.squarepeace.nnppss.model.Console;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,6 +72,37 @@ class ConfigManagerTest {
         assertEquals(downloads.toAbsolutePath().normalize(), reloaded.getDownloadsDirectory());
         assertEquals(extraction.toAbsolutePath().normalize(), reloaded.getExtractionDirectory());
         assertEquals(pkg2zip.toAbsolutePath().normalize(), reloaded.getPkg2zipPath());
+    }
+
+    @Test
+    void consoleExtractionFoldersInheritOrOverrideGlobal() {
+        ConfigManager manager = new ConfigManager();
+        Path global = tempDir.resolve("extracted");
+        Path vita = tempDir.resolve("vita");
+        Path psp = tempDir.resolve("psp");
+
+        manager.setExtractionDirectory(global);
+        manager.setExtractionDirectory(Console.PSVITA, vita);
+        manager.setExtractionDirectory(Console.PSP, psp);
+
+        assertEquals(global.toAbsolutePath().normalize(),
+                manager.getExtractionDirectory(Console.PSX));
+        assertEquals(vita.toAbsolutePath().normalize(),
+                manager.getExtractionDirectory(Console.PSVITA));
+        assertEquals(psp.toAbsolutePath().normalize(),
+                manager.getExtractionDirectory(Console.PSP));
+
+        manager.saveConfig();
+        ConfigManager reloaded = new ConfigManager();
+        assertEquals(vita.toAbsolutePath().normalize(),
+                reloaded.getExtractionDirectory(Console.PSVITA));
+        assertEquals(global.toAbsolutePath().normalize(),
+                reloaded.getExtractionDirectory(Console.PSX));
+
+        reloaded.setExtractionDirectory(Console.PSVITA, null);
+        assertNull(reloaded.getConfiguredExtractionDirectory(Console.PSVITA));
+        assertEquals(global.toAbsolutePath().normalize(),
+                reloaded.getExtractionDirectory(Console.PSVITA));
     }
 
     @Test
