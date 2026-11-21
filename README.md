@@ -166,7 +166,7 @@ manifest. Pushing a tag creates a **draft** GitHub release; a maintainer
 reviews and publishes it. The app only checks published stable releases and
 opens the release page; it never installs anything silently.
 
-Next planned version: **2.0.1**. See [the versioning and update plan](docs/PLAN_VERSIONADO_ACTUALIZACIONES.md)
+Current release: **2.0.1**. See [the versioning and update plan](docs/PLAN_VERSIONADO_ACTUALIZACIONES.md)
 and the [release checklist](docs/RELEASING.md).
 
 ## License
