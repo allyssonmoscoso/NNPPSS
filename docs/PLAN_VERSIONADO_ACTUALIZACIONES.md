@@ -1,6 +1,6 @@
 # Plan · Versionado y actualizaciones automáticas
 
-**Estado:** 2.0.4 publicado con filtro por estado y resumen de fallos · **Versión de desarrollo:** 2.0.0-SNAPSHOT · **Última release publicada:** 2.0.4 · **Fecha:** 2026-11-21.
+**Estado:** 2.0.5 publicado con carpetas por consola y validación SMB · **Versión de desarrollo:** 2.0.0-SNAPSHOT · **Última release publicada:** 2.0.5 · **Fecha:** 2026-11-21.
 
 ## 1. Objetivo
 
@@ -322,7 +322,7 @@ Implementado:
 
 Pendiente para cerrar el objetivo:
 
-- Probar MSI/DMG/DEB en máquinas limpias (los assets de 2.0.4 se generaron y el JAR reporta 2.0.4).
+- Probar MSI/DMG/DEB en máquinas limpias (los assets de 2.0.5 se generaron y el JAR reporta 2.0.5).
 - Firma y canal beta quedan fuera de 2.0.x por decisión.
 
 ## 15. Validación
@@ -332,7 +332,8 @@ Pendiente para cerrar el objetivo:
 - Release `v2.0.2`: run [44861231002](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44861231002) — publicado.
 - Release `v2.0.3`: run [44861978300](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44861978300) — publicado; corrige seguimiento de redirects y el JAR reporta 2.0.3.
 - Release `v2.0.4`: run [44863670691](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44863670691) — publicado; filtro por estado y resumen de fallos; JAR 2.0.4.
-- `releases/latest/download/update-manifest.json` devuelve `2.0.4`.
-- 56 tests locales verdes, incluidos redirect, filtro por estado y conteo de fallos.
+- Release `v2.0.5`: run [44867917383](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44867917383) — publicado; carpetas de extracción por consola y validación de SMB mapeado; JAR 2.0.5.
+- `releases/latest/download/update-manifest.json` devuelve `2.0.5`.
+- 61 tests locales verdes, incluidos los tests de `PathAccess` para rutas mapeadas.
 - Act: job `validate` y build Linux (`deb` + app-image + upload) correctos.
 - 54 tests locales verdes, incluidos auto-cleanup, comparación de versiones y redirect de GitHub.
