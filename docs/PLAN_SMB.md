@@ -93,17 +93,29 @@ Pero hay supuestos de disco local que hay que revisar:
   - queda el estado `failed` y el botón **Reintentar fallidas**;
   - no se borra el `.pkg` parcial.
 - No se inicia una descarga si la validación de escritura falla.
+- La carpeta de extracción se valida también antes de descargar, porque el
+  producto final debe quedar en el SMB.
 
 ### 4.3 Extracción
 
-La extracción puede ser en el SMB o local. Recomendación:
+El objetivo del producto es que **el contenido final extraído quede en el
+SMB**. Por eso, por defecto:
 
-- Permitir ambas, pero mostrar una advertencia de rendimiento si la extracción
-  va al SMB.
-- Valor por defecto: mantener la carpeta que el usuario elija; no cambiarla
-  automáticamente.
-- Si la extracción es local y las descargas SMB, el `.pkg` se lee por red y se
-  escribe localmente.
+- descargas y extracción se configuran en el recurso montado;
+- el `.pkg` y la carpeta extraída pueden estar en el mismo share o en carpetas
+  distintas del mismo recurso;
+- la app no mueve el resultado a una carpeta local después de extraer.
+
+Advertencia de rendimiento:
+
+- pkg2zip escribe muchos archivos pequeños; en SMB puede ser lento.
+- Mostrar una advertencia al guardar la configuración si ambas carpetas están
+  en red: “La extracción en el recurso de red puede ser más lenta.”
+- Mantener la misma carpeta SMB para el producto final; no se ofrece una
+  extracción local en la primera versión.
+- Una etapa de “descargar en local y copiar el resultado al SMB” queda fuera del
+  alcance inicial: duplica espacio, requiere mover grandes volúmenes y complica
+  la reanudación.
 
 ### 4.4 Limpieza
 
@@ -193,7 +205,8 @@ Heurísticas:
 - La salida de pkg2zip puede contener muchos archivos pequeños; el rendimiento
   en SMB puede ser pobre.
 - Mostrar advertencia si extracción y descargas están en SMB:
-  “La extracción en red puede ser lenta; considera una carpeta local.”
+  “La extracción en red puede ser lenta; el producto final quedará en el
+  recurso montado.”
 - El auto-cleanup ya reintenta `deleteIfExists`; añadir prueba específica con
   archivo temporal en un directorio con latencia simulada no es posible en
   unit tests, pero sí probar la lógica de reintentos.
@@ -229,7 +242,8 @@ Heurísticas:
   `\\10.0.0.33\Public`).
 - Windows sin conexión al share: no debe congelar la UI.
 - Linux con montaje `cifs`; macOS con `/Volumes`.
-- Descarga completa, pausa/reanudación, extracción local y extracción en SMB.
+- Descarga completa, pausa/reanudación, extracción en SMB y verificación del
+  producto final en el recurso.
 - Desconectar el servidor a mitad de descarga y reconectar.
 - “Liberar espacio” con el share desconectado.
 - Permisos de solo lectura.
@@ -254,19 +268,26 @@ Heurísticas:
 | `File.getUsableSpace()` devuelve 0 | No bloquear; mostrar desconocido y pedir confirmación. |
 | SMB desconectado durante la descarga | Fallo normal, estado failed, reintentos y reanudación. |
 | Escritura/borrado bloqueado por SMB | Reintentos y cierre explícito de handles. |
-| Extracción muy lenta | Aviso y opción de carpeta local. |
+| Extracción muy lenta | Aviso de rendimiento y posibilidad de bajar concurrencia; el producto final se queda en el SMB. |
 | Credenciales expuestas | Delegar en el SO y no almacenar secretos. |
 | Ruta UNC no accesible desde el proceso | Mensaje “montá/autenticá el recurso” y validación. |
 | Doble instancia sobre el mismo archivo | Documentar y no prometer bloqueo distribuido. |
 
-## 12. Decisiones pendientes
+## 12. Decisiones confirmadas
 
-1. ¿El soporte debe ser **solo Windows** o también Linux/macOS con montajes
-   `cifs`/`smbfs`?
-2. ¿La extracción por defecto debe quedarse en la carpeta SMB elegida o
-   recomendar una carpeta local?
-3. ¿Quieres un botón **Probar conexión** explícito o validar solo al guardar?
-4. ¿Se permite crear una carpeta nueva en el share desde la app, o solo elegir
-   una existente?
-5. ¿Aceptas que, si el espacio libre no se puede consultar, la app permita
-   continuar con una advertencia?
+El 2026-11-21 el usuario confirmó:
+
+1. Plataformas: **Windows, Linux y macOS** con montajes del sistema.
+2. La carpeta de destino se elige **globalmente en Ajustes**.
+3. El **producto final extraído debe quedar en el SMB**; descarga y extracción
+   se configuran sobre el recurso montado.
+4. Validación mediante **Probar conexión + validar al guardar**.
+5. La app puede **crear subcarpetas** dentro del share.
+6. Si el espacio libre no se puede consultar, **permitir con advertencia**.
+7. Autenticación: **solo montajes existentes del sistema operativo**, sin pedir
+   credenciales SMB.
+8. Configuración, cola e historial permanecen en el equipo local.
+
+Con esto se puede empezar por la fase 1 sin más preguntas de producto. La única
+decisión técnica abierta es si en el futuro se añade un modo de staging local;
+no es necesaria para la primera versión.
