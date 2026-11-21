@@ -9,7 +9,8 @@ cuánto suma la cola completa. Debe aplicar a:
 
 - la lista/columna de la cola de descargas;
 - el panel de descargas activas mientras están pendientes;
-- el resumen de la cola.
+- el resumen de la cola;
+- la tabla principal, cuando un juego ya está en la lista de espera.
 
 ## 2. Lo que ya existe
 
@@ -119,7 +120,58 @@ Con tests de:
 - Tooltip con el valor exacto.
 - No depender solo del color/estado.
 
-## 5. Criterios de aceptación
+## 5. Indicador de juego ya encolado
+
+### 5.1 Problema
+
+`MainController.isQueued(game)` ya existe y el panel de detalle muestra
+`detail.status.queued`; el botón cambia a “Quitar de la cola”. Sin embargo, la
+fila de la tabla principal no tiene una señal visual permanente, por lo que el
+usuario puede perder de vista que ese juego ya está en la lista de espera.
+
+### 5.2 UX propuesta
+
+En la tabla principal:
+
+- Una etiqueta compacta **“En cola”** junto al título, o una columna
+  **Estado** si se prefiere no tocar la celda del título.
+- Estilo de fila con un acento sutil (borde izquierdo y fondo suave), sin
+  depender solo del color.
+- Tooltip: “Ya está en la lista de espera”.
+- En el panel de detalle, mantener el estado **“En cola”** y el botón
+  **“Quitar de la cola”**.
+
+En la cola:
+
+- Cada fila sigue mostrando su posición (`#`).
+- La etiqueta puede ser **“Pendiente”** o **“En espera”** para diferenciarla de
+  una descarga activa.
+
+### 5.3 Comportamiento
+
+- Al añadir a la cola, la fila se actualiza inmediatamente.
+- Al quitar, el indicador desaparece al instante.
+- Al iniciar las descargas, el juego sale de la cola y pasa al panel de
+  descargas activas; la tabla principal deja de mostrar “En cola”.
+- La identidad se resuelve por `pkgUrl`, no por título, para evitar falsos
+  positivos con juegos homónimos.
+- La búsqueda/filtro no debe perder el indicador: se calcula contra la cola
+  actual, no contra las filas visibles.
+
+### 5.4 Implementación
+
+- Añadir un `ObservableSet<String> queuedUrls` o reutilizar
+  `downloadQueue`/`isQueued` en `MainController`.
+- Actualizar el indicador cuando cambie `downloadQueue` (lista observable).
+- `TableRow<Game>` con pseudo-clase `queued` + CSS.
+- Celda de título personalizada o columna `Estado` con badge.
+- Claves i18n:
+  - `table.column.status`
+  - `status.queued.badge=En cola`
+  - `status.queued.tooltip=Ya está en la lista de espera`
+- Accesibilidad: incluir “En cola” en el `accessibleText` de la fila/celda.
+
+## 6. Criterios de aceptación
 
 - [ ] La cola muestra el peso de cada juego pendiente.
 - [ ] La cola muestra el total pendiente y el total seleccionado.
@@ -127,10 +179,12 @@ Con tests de:
 - [ ] Un tamaño desconocido/0 se muestra como `—`, no como `0 B`.
 - [ ] La tabla principal, la cola y el panel usan el mismo formateador.
 - [ ] La columna de peso es visible a 420 px y a 460 px.
-- [ ] Tests de formateador, resumen y carga FXML en verde.
+- [ ] Un juego en la cola queda marcado como **“En cola”** en la tabla principal.
+- [ ] Al quitarlo o iniciar la descarga, el indicador desaparece.
+- [ ] Tests de formateador, resumen, estado encolado y carga FXML en verde.
 - [ ] Sin cambios en el formato de `download-queue.json` (sigue guardando `fileSize`).
 
-## 6. Riesgos y mitigaciones
+## 7. Riesgos y mitigaciones
 
 | Riesgo | Mitigación |
 |---|---|
@@ -139,8 +193,10 @@ Con tests de:
 | `fileSize` desconocido en datos antiguos | Mostrar `—` y no incluir esos juegos en el total, o contarlos como 0 y avisar. |
 | Cola muy grande | El total ya se calcula en O(n); actualizar solo al cambiar la lista. |
 | Locale español/inglés | Claves i18n y tests de paridad. |
+| Indicador de cola desactualizado tras filtros | Calcularlo contra `downloadQueue`, no contra `filteredData`. |
+| Juegos con el mismo título | Usar `pkgUrl` como identidad. |
 
-## 7. Fases y estimación
+## 8. Fases y estimación
 
 | Fase | Entregable | Horas |
 |---|---|---:|
@@ -148,11 +204,12 @@ Con tests de:
 | 2 | `SizeFormatter` + tests | 1 |
 | 3 | Cola: columna, total y selección | 1,5 |
 | 4 | Panel de descargas pendientes | 1 |
-| 5 | i18n, tooltips, accesibilidad | 0,5 |
-| 6 | Tests, captura y validación | 1 |
-| **Total** |  | **~5,5 h** |
+| 5 | Indicador **“En cola”** en tabla/detalle | 1 |
+| 6 | i18n, tooltips, accesibilidad | 0,5 |
+| 7 | Tests, captura y validación | 1 |
+| **Total** |  | **~6,5 h** |
 
-## 8. Decisiones pendientes
+## 9. Decisiones pendientes
 
 1. ¿La prioridad es la **cola** (drawer), el **panel de descargas activas**, o ambos?
 2. ¿Aceptas aumentar el drawer a 460 px para que la columna se vea bien?
@@ -160,3 +217,5 @@ Con tests de:
 4. ¿Unidades binarias (`GB` de 1024 MB) o decimales (`GB` de 1000 MB)?
 5. ¿Quieres que los juegos con tamaño desconocido cuenten como 0 o queden fuera
    del total con un aviso?
+6. ¿Prefieres una etiqueta **“En cola”** junto al título o una columna **Estado**
+   independiente?
