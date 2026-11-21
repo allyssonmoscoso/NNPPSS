@@ -110,6 +110,7 @@ public class MainController {
     @FXML private TableColumn<Game, String> colRegion;
     @FXML private TableColumn<Game, Long> colSize;
     @FXML private TableColumn<Game, String> colConsole;
+    @FXML private TableColumn<Game, Game> colStatus;
 
     @FXML private Button btnResumePause;
     @FXML private Button btnRetry;
@@ -201,6 +202,9 @@ public class MainController {
         this.downloadQueue = FXCollections.observableArrayList(downloadQueueManager.loadQueue());
         this.downloadQueue.addListener((javafx.collections.ListChangeListener<Game>) change -> {
             updateQueueButton();
+            if (tableGames != null) {
+                tableGames.refresh();
+            }
             Game selected = tableGames.getSelectionModel().getSelectedItem();
             updateDetailStatus(selected);
             updateAddToQueueButton(selected);
@@ -412,27 +416,57 @@ public class MainController {
             }
         });
 
+        colStatus.setCellValueFactory(data ->
+                new javafx.beans.property.ReadOnlyObjectWrapper<>(data.getValue()));
+        colStatus.setCellFactory(column -> new TableCell<Game, Game>() {
+            private final Label tag = new Label();
+
+            {
+                tag.getStyleClass().add("status-tag");
+                setGraphic(tag);
+            }
+
+            @Override
+            protected void updateItem(Game game, boolean empty) {
+                super.updateItem(game, empty);
+                tag.getStyleClass().removeAll(
+                        "status-tag-queued", "status-tag-downloaded",
+                        "status-tag-paused", "status-tag-failed");
+                if (empty || game == null) {
+                    tag.setText("");
+                    setAccessibleText(null);
+                    setGraphic(null);
+                    return;
+                }
+                String status = rowStatus(game);
+                if (status == null) {
+                    tag.setText("");
+                    setAccessibleText(null);
+                    setGraphic(null);
+                    return;
+                }
+                tag.setText(I18n.get(switch (status) {
+                    case "queued" -> "status.tag.queued";
+                    case "completed" -> "status.tag.downloaded";
+                    case "paused" -> "status.tag.paused";
+                    default -> "status.tag.failed";
+                }));
+                tag.getStyleClass().add(switch (status) {
+                    case "queued" -> "status-tag-queued";
+                    case "completed" -> "status-tag-downloaded";
+                    case "paused" -> "status-tag-paused";
+                    default -> "status-tag-failed";
+                });
+                setAccessibleText(tag.getText());
+                setGraphic(tag);
+            }
+        });
+
         filteredData = new FilteredList<>(masterData, p -> true);
         tableGames.setItems(filteredData);
 
         tableGames.setRowFactory(tv -> {
-            TableRow<Game> row = new TableRow<>() {
-                @Override
-                protected void updateItem(Game game, boolean empty) {
-                    super.updateItem(game, empty);
-                    getStyleClass().removeAll("row-completed", "row-paused", "row-failed");
-                    if (!empty && game != null) {
-                        String status = historyStatus(game.getPkgUrl());
-                        if ("completed".equals(status)) {
-                            getStyleClass().add("row-completed");
-                        } else if ("paused".equals(status)) {
-                            getStyleClass().add("row-paused");
-                        } else if ("failed".equals(status)) {
-                            getStyleClass().add("row-failed");
-                        }
-                    }
-                }
-            };
+            TableRow<Game> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 if (!row.isEmpty() && event.getButton() == MouseButton.PRIMARY
                         && event.getClickCount() == 2) {
@@ -978,8 +1012,17 @@ public class MainController {
                 && !"NOT REQUIRED".equals(pkgUrl);
     }
 
-    private void updateDetailStatus(Game game) {
-        if (detailStatus == null || game == null) {
+    private String rowStatus(Game game) {
+        if (game == null) {
+            return null;
+        }
+        if (isQueued(game)) {
+            return "queued";
+        }
+        return historyStatus(game.getPkgUrl());
+    }
+
+    private void updateDetailStatus(Game game) {        if (detailStatus == null || game == null) {
             return;
         }
         String status = historyStatus(game.getPkgUrl());

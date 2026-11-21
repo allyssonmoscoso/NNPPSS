@@ -70,6 +70,7 @@
                         <TableColumn fx:id="colRegion" text="%table.column.region" prefWidth="80.0"/>
                         <TableColumn fx:id="colSize" text="%table.column.size" prefWidth="110.0"/>
                         <TableColumn fx:id="colConsole" text="%table.column.console" prefWidth="90.0"/>
+                        <TableColumn fx:id="colStatus" text="%table.column.status" prefWidth="105.0"/>
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>

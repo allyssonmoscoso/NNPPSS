@@ -2,6 +2,13 @@
 
 All notable changes to NNPPSS are documented here.
 
+## [Unreleased]
+
+### Changed
+
+- Downloaded and queued games now use **Descargado/En cola** status tags in the
+  catalogue instead of colouring the whole row green.
+
 ## [2.0.1] — 2026-11-21
 
 ### Fixed
