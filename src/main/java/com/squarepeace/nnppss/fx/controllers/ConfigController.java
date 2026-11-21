@@ -6,6 +6,7 @@ import com.squarepeace.nnppss.model.Console;
 import com.squarepeace.nnppss.service.ConfigManager;
 import com.squarepeace.nnppss.service.Pkg2zipResolver;
 import com.squarepeace.nnppss.util.I18n;
+import com.squarepeace.nnppss.util.PathAccess;
 
 import javafx.concurrent.Task;
 import javafx.application.Platform;
@@ -389,7 +390,7 @@ public class ConfigController {
                             consoleLabel, path, e.getMessage()));
             return null;
         }
-        if (!Files.isDirectory(path) || !Files.isWritable(path)) {
+        if (!Files.isDirectory(path) || !PathAccess.isWritableDirectory(path)) {
             showError(consoleLabel == null
                     ? I18n.get("config.error.pathnotwritable", path)
                     : I18n.get("config.error.consolepath.detail",

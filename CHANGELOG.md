@@ -9,6 +9,11 @@ All notable changes to NNPPSS are documented here.
 - Optional per-console extraction folders for PS Vita, PSP and PSX. Empty
   entries inherit the global extraction folder.
 
+### Fixed
+
+- Storage validation now uses a real create/write/delete probe instead of
+  `Files.isWritable()`, which incorrectly rejects Windows mapped SMB drives.
+
 ## [2.0.4] — 2026-11-21
 
 ### Added
