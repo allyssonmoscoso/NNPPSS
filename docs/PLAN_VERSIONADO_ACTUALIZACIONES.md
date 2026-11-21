@@ -1,6 +1,6 @@
 # Plan · Versionado y actualizaciones automáticas
 
-**Estado:** 2.0.3 publicado con la corrección del comprobador de updates · **Versión de desarrollo:** 2.0.0-SNAPSHOT · **Última release publicada:** 2.0.3 · **Fecha:** 2026-11-21.
+**Estado:** 2.0.4 publicado con filtro por estado y resumen de fallos · **Versión de desarrollo:** 2.0.0-SNAPSHOT · **Última release publicada:** 2.0.4 · **Fecha:** 2026-11-21.
 
 ## 1. Objetivo
 
@@ -322,7 +322,7 @@ Implementado:
 
 Pendiente para cerrar el objetivo:
 
-- Probar MSI/DMG/DEB en máquinas limpias (los assets de 2.0.2 se generaron y el JAR reporta 2.0.2).
+- Probar MSI/DMG/DEB en máquinas limpias (los assets de 2.0.4 se generaron y el JAR reporta 2.0.4).
 - Firma y canal beta quedan fuera de 2.0.x por decisión.
 
 ## 15. Validación
@@ -331,7 +331,8 @@ Pendiente para cerrar el objetivo:
 - Release `v2.0.0`: run [44802330265](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44802330265) — publicado (sus assets antiguos reportan `2.0.0-SNAPSHOT`; usar 2.0.1).
 - Release `v2.0.2`: run [44861231002](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44861231002) — publicado.
 - Release `v2.0.3`: run [44861978300](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44861978300) — publicado; corrige seguimiento de redirects y el JAR reporta 2.0.3.
-- `releases/latest/download/update-manifest.json` devuelve `2.0.3`.
-- 54 tests locales verdes, incluido el test de redirect de GitHub.
+- Release `v2.0.4`: run [44863670691](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44863670691) — publicado; filtro por estado y resumen de fallos; JAR 2.0.4.
+- `releases/latest/download/update-manifest.json` devuelve `2.0.4`.
+- 56 tests locales verdes, incluidos redirect, filtro por estado y conteo de fallos.
 - Act: job `validate` y build Linux (`deb` + app-image + upload) correctos.
 - 54 tests locales verdes, incluidos auto-cleanup, comparación de versiones y redirect de GitHub.
