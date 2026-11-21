@@ -24,8 +24,14 @@ All notable changes to NNPPSS are documented here.
 - Keyboard shortcuts, focus handling, accessible labels and WCAG AA contrast
   checks.
 - Local `act` workflow support and Linux JavaFX runner dependencies.
-- 51 automated tests, including paths, update/config storage, pkg2zip
+- 53 automated tests, including paths, update/config storage, pkg2zip
   resolution, update checks and storage cleanup.
+
+### Fixed
+
+- “Auto-delete .pkg files after extraction” now runs in the download
+  coordinator after a successful extraction, with retries for transient Windows
+  file locks, and no longer leaves the package behind.
 
 ### Changed
 

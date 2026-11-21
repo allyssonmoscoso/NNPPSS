@@ -316,7 +316,7 @@ Implementado:
 - `UpdateService` con lectura del manifiesto, comparación SemVer y pruebas con servidor HTTP local.
 - Sección **Ajustes → Actualizaciones**, auto-check al inicio (24 h) y banner con “Ver release”.
 - `scripts/package-*` aceptan `NNPPSS_VERSION` y `JPACKAGE_TYPE` (MSI/DMG/DEB/app-image).
-- `CHANGELOG` 2.0.0 y tests: **51 verdes**.
+- `CHANGELOG` 2.0.0 y tests: **53 verdes**.
 - App image Windows versionada generada correctamente.
 - `release.yml` validado con act: job `validate` + build Linux (`deb`, app-image y upload de artefacto) correctos.
 
@@ -332,4 +332,4 @@ Pendiente para cerrar el objetivo:
 - Release `v2.0.0`: run [44802330265](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44802330265) — `validate`, los tres builds y `release` correctos.
 - Draft release: `v2.0.0`, con MSI, DMG, DEB, ZIP portables, `SHA256SUMS.txt` y `update-manifest.json`.
 - Act: job `validate` y build Linux (`deb` + app-image + upload) correctos.
-- 51 tests locales verdes.
+- 53 tests locales verdes.

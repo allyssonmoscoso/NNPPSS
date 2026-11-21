@@ -332,11 +332,45 @@ public class DownloadCoordinator {
             if (success) {
                 historyManager.markExtracted(task.getUrl());
                 log.info("Extraction completed for {}", task.getGame().getTitle());
+                if (configManager.isAutoCleanupEnabled()) {
+                    log.info("Auto-cleanup enabled; deleting package {}", pkgPath);
+                    cleanupPackageFile(pkgPath);
+                }
             } else {
                 log.warn("Extraction failed for {}", task.getGame().getTitle());
             }
             listener.onExtractionFinished(task, success);
         });
+    }
+
+    /**
+     * Deletes a successfully extracted package. Windows can briefly keep a
+     * handle open after pkg2zip exits, so retry instead of silently leaving the
+     * .pkg behind.
+     */
+    private void cleanupPackageFile(Path pkgPath) {
+        for (int attempt = 1; attempt <= 5; attempt++) {
+            try {
+                if (Files.deleteIfExists(pkgPath)) {
+                    log.info("Auto-cleanup: deleted package file {}", pkgPath);
+                } else {
+                    log.debug("Auto-cleanup: package file not found: {}", pkgPath);
+                }
+                return;
+            } catch (IOException e) {
+                if (attempt == 5) {
+                    log.error("Auto-cleanup: could not delete package file {}", pkgPath, e);
+                    return;
+                }
+                try {
+                    Thread.sleep(200L * attempt);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    log.warn("Auto-cleanup interrupted for {}", pkgPath);
+                    return;
+                }
+            }
+        }
     }
 
     public void pause(String url) {

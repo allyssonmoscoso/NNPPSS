@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 public class PackageService implements PackageExtractor {
     private static final Logger log = LoggerFactory.getLogger(PackageService.class);
 
-    private final ConfigManager configManager;
     private final Pkg2zipResolver resolver;
 
     public interface ExtractionListener {
@@ -33,7 +32,6 @@ public class PackageService implements PackageExtractor {
     }
 
     PackageService(ConfigManager configManager, Pkg2zipResolver resolver) {
-        this.configManager = configManager;
         this.resolver = resolver;
     }
 
@@ -70,7 +68,7 @@ public class PackageService implements PackageExtractor {
                 resolution.executable(), pkgPath, console, zRifKey);
         log.info("Starting package extraction with {} in {}",
                 resolution.source(), outputDirectory);
-        runCommand(command, outputDirectory, pkgPath, listener);
+        runCommand(command, outputDirectory, listener);
     }
 
     private List<String> buildCommand(Path executable, Path pkgPath,
@@ -91,7 +89,7 @@ public class PackageService implements PackageExtractor {
     }
 
     private void runCommand(List<String> command, Path outputDirectory,
-                            Path pkgPath, ExtractionListener listener) {
+                            ExtractionListener listener) {
         Thread worker = new Thread(() -> {
             try {
                 ProcessBuilder pb = new ProcessBuilder(command);
@@ -115,9 +113,6 @@ public class PackageService implements PackageExtractor {
                 }
 
                 log.info("Package extraction completed successfully");
-                if (configManager != null && configManager.isAutoCleanupEnabled()) {
-                    cleanupPkgFile(pkgPath);
-                }
                 notifyComplete(listener, true);
             } catch (Exception e) {
                 log.error("Error running pkg2zip command", e);
@@ -131,18 +126,6 @@ public class PackageService implements PackageExtractor {
     private void notifyComplete(ExtractionListener listener, boolean success) {
         if (listener != null) {
             listener.onExtractionComplete(success);
-        }
-    }
-
-    private void cleanupPkgFile(Path pkgPath) {
-        try {
-            if (Files.deleteIfExists(pkgPath)) {
-                log.info("Auto-cleanup: deleted package file {}", pkgPath);
-            } else {
-                log.debug("Auto-cleanup: package file not found: {}", pkgPath);
-            }
-        } catch (IOException e) {
-            log.warn("Auto-cleanup: could not delete package file {}", pkgPath, e);
         }
     }
 }

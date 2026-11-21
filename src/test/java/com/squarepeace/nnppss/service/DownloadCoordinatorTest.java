@@ -109,6 +109,39 @@ class DownloadCoordinatorTest {
     }
 
     @Test
+    void deletesPackageAfterSuccessfulExtractionWhenEnabled() throws Exception {
+        configManager.setProperty("autoCleanupPkg", "true");
+        Game game = game("Cleanup", "https://example.test/cleanup.pkg", 1024);
+        assertTrue(coordinator.start(List.of(game), Set.of()));
+
+        DownloadService.DownloadListener clientListener = downloadClient.await(game.getPkgUrl());
+        Path destination = Path.of(coordinator.getTask(game.getPkgUrl()).getDestinationPath());
+        Files.createDirectories(destination.getParent());
+        Files.writeString(destination, "pkg");
+
+        clientListener.onComplete(destination.toFile());
+
+        assertFalse(Files.exists(destination),
+                "successful extraction must delete the .pkg when auto-cleanup is enabled");
+    }
+
+    @Test
+    void keepsPackageAfterSuccessfulExtractionWhenDisabled() throws Exception {
+        Game game = game("Keep", "https://example.test/keep.pkg", 1024);
+        assertTrue(coordinator.start(List.of(game), Set.of()));
+
+        DownloadService.DownloadListener clientListener = downloadClient.await(game.getPkgUrl());
+        Path destination = Path.of(coordinator.getTask(game.getPkgUrl()).getDestinationPath());
+        Files.createDirectories(destination.getParent());
+        Files.writeString(destination, "pkg");
+
+        clientListener.onComplete(destination.toFile());
+
+        assertTrue(Files.exists(destination),
+                "the .pkg must remain when auto-cleanup is disabled");
+    }
+
+    @Test
     void skipsExtractionWhenSessionRequestsIt() throws Exception {
         Game game = game("NoExtract", "https://example.test/noextract.pkg", 1024);
         assertTrue(coordinator.start(List.of(game), Set.of(), false));
