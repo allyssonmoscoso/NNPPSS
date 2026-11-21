@@ -2,7 +2,7 @@
 
 All notable changes to NNPPSS are documented here.
 
-## [Unreleased]
+## [2.0.5] — 2026-11-21
 
 ### Added
 
