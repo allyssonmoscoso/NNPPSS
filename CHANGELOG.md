@@ -9,6 +9,9 @@ All notable changes to NNPPSS are documented here.
 - “Auto-delete .pkg files after extraction” now runs in the download
   coordinator after a successful extraction, with retries for transient Windows
   file locks, and no longer leaves the package behind.
+- Release packaging now cleans the build directory and selects the exact
+  versioned JAR, so installers report `2.0.1` instead of
+  `2.0.0-SNAPSHOT`.
 
 ## [2.0.0] — 2026-11-20
 

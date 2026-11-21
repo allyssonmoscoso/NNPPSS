@@ -40,10 +40,13 @@ jobs:
         include:
           - os: windows-latest
             platform: windows-x64
+            jar_path: dist/NNPPSS/app/NNPPSS.jar
           - os: macos-latest
             platform: macos
+            jar_path: dist/NNPPSS.app/Contents/app/NNPPSS.jar
           - os: ubuntu-latest
             platform: linux-x64
+            jar_path: dist/NNPPSS/lib/app/NNPPSS.jar
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -124,6 +127,20 @@ jobs:
           cp "$DEB" "release-assets/NNPPSS-$VERSION-linux-x64.deb"
           JPACKAGE_TYPE=app-image sh scripts/package-unix.sh
           tar -czf "release-assets/NNPPSS-$VERSION-linux-x64.tar.gz" -C dist NNPPSS
+
+      - name: Verify packaged version
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          JAR="${{ matrix.jar_path }}"
+          test -f "$JAR"
+          JAR_ABS="$(cd "$(dirname "$JAR")" && pwd)/$(basename "$JAR")"
+          TMP="$(mktemp -d)"
+          trap 'rm -rf "$TMP"' EXIT
+          (cd "$TMP" && jar xf "$JAR_ABS" META-INF/MANIFEST.MF)
+          grep -q "Implementation-Version: $VERSION" "$TMP/META-INF/MANIFEST.MF"
 
       - name: Upload release assets
         uses: actions/upload-artifact@v4

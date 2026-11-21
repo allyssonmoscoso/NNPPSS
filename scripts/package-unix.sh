@@ -7,12 +7,22 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
 echo "Building application JAR and runtime dependencies..."
-mvn -B -DskipTests package
+# Clean first: release builds run `mvn versions:set` after an earlier test
+# build, so a stale SNAPSHOT JAR could otherwise be packaged.
+mvn -B -DskipTests clean package
 
 APP_DIR="$ROOT_DIR/target/app"
-JAR="$(find "$ROOT_DIR/target" -maxdepth 1 -name 'NNPPSS-*.jar' \
-    ! -name '*sources*' ! -name '*javadoc*' | head -n 1)"
-if [ -z "$JAR" ]; then
+if [ -n "${NNPPSS_VERSION:-}" ]; then
+    JAR="$ROOT_DIR/target/NNPPSS-${NNPPSS_VERSION}.jar"
+    if [ ! -f "$JAR" ]; then
+        echo "Expected NNPPSS JAR not found: $JAR" >&2
+        exit 1
+    fi
+else
+    JAR="$(find "$ROOT_DIR/target" -maxdepth 1 -name 'NNPPSS-*.jar' \
+        ! -name '*sources*' ! -name '*javadoc*' | sort | tail -n 1)"
+fi
+if [ -z "$JAR" ] || [ ! -f "$JAR" ]; then
     echo "NNPPSS JAR was not produced by Maven" >&2
     exit 1
 fi

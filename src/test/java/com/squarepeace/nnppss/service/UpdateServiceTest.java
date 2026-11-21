@@ -19,6 +19,7 @@ class UpdateServiceTest {
     void comparesSemanticVersions() {
         assertTrue(UpdateService.isNewer("2.0.0", "1.9.9"));
         assertTrue(UpdateService.isNewer("2.0.1", "2.0.0"));
+        assertTrue(UpdateService.isNewer("2.0.1", "2.0.0-SNAPSHOT"));
         assertFalse(UpdateService.isNewer("2.0.0", "2.0.0"));
         assertFalse(UpdateService.isNewer("2.0.0", "2.0.1"));
         assertFalse(UpdateService.isNewer("dev", "2.0.0"));

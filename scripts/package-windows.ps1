@@ -6,15 +6,23 @@ $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
 
 Write-Host "Building application JAR and runtime dependencies..."
-mvn -B -DskipTests package
+# Clean first: release builds run `mvn versions:set` after an earlier test
+# build, so a stale SNAPSHOT JAR could otherwise be packaged.
+mvn -B -DskipTests clean package
 if ($LASTEXITCODE -ne 0) {
     throw "Maven package failed with exit code $LASTEXITCODE"
 }
 
 $appDir = Join-Path $Root "target\app"
-$jar = Get-ChildItem -Path (Join-Path $Root "target") -Filter "NNPPSS-*.jar" |
-    Where-Object { $_.Name -notmatch "sources|javadoc" } |
-    Select-Object -First 1
+if ($env:NNPPSS_VERSION) {
+    $jar = Get-Item (Join-Path $Root "target\NNPPSS-$($env:NNPPSS_VERSION).jar") `
+        -ErrorAction SilentlyContinue
+} else {
+    $jar = Get-ChildItem -Path (Join-Path $Root "target") -Filter "NNPPSS-*.jar" |
+        Where-Object { $_.Name -notmatch "sources|javadoc" } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+}
 if (-not $jar) {
     throw "NNPPSS JAR was not produced by Maven"
 }
