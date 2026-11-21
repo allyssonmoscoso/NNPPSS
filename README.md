@@ -157,6 +157,7 @@ definitive JavaFX edition.
 - [Plan de migración a JavaFX](docs/PLAN_MIGRACION_JAVAFX.md)
 - [Plan de mejora UI/UX](docs/PLAN_UX_UI.md)
 - [Plan de versionado y actualizaciones](docs/PLAN_VERSIONADO_ACTUALIZACIONES.md)
+- [Plan de peso en descargas pendientes](docs/PLAN_PESO_DESCARGAS.md)
 
 ## Versioning and releases
 
