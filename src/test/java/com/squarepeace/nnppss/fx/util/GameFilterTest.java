@@ -16,6 +16,12 @@ class GameFilterTest {
     private static final String LT_1GB = "< 1GB";
     private static final String ONE_TO_FIVE_GB = "1-5GB";
     private static final String GT_5GB = "> 5GB";
+    private static final String ALL_STATUSES = "All statuses";
+    private static final String DOWNLOADED = "Downloaded";
+    private static final String QUEUED = "Queued";
+    private static final String FAILED = "Failed";
+    private static final String PAUSED = "Paused";
+    private static final String NO_STATUS = "No status";
 
     private final Game alpha = game("Alpha Adventure", "USA", "PCSE00001",
             "https://example.test/alpha.pkg", 500L * 1024 * 1024);
@@ -78,9 +84,36 @@ class GameFilterTest {
         assertFalse(filter("beta", "EUR", LT_1GB).test(beta));
     }
 
+    @Test
+    void statusFilterKeepsOnlyTheSelectedState() {
+        Predicate<Game> downloaded = statusFilter(DOWNLOADED,
+                game -> game == alpha ? "completed" : "queued");
+        assertTrue(downloaded.test(alpha));
+        assertFalse(downloaded.test(beta));
+
+        Predicate<Game> queued = statusFilter(QUEUED,
+                game -> game == alpha ? "completed" : "queued");
+        assertTrue(queued.test(beta));
+        assertFalse(queued.test(alpha));
+
+        Predicate<Game> failed = statusFilter(FAILED, game -> "failed");
+        assertTrue(failed.test(gamma));
+
+        Predicate<Game> noStatus = statusFilter(NO_STATUS, game -> null);
+        assertTrue(noStatus.test(gamma));
+    }
+
     private Predicate<Game> filter(String search, String region, String size) {
         return GameFilter.predicate(search, region, ALL_REGIONS, size,
                 ALL_SIZES, LT_1GB, ONE_TO_FIVE_GB, GT_5GB);
+    }
+
+    private Predicate<Game> statusFilter(String status,
+                                         java.util.function.Function<Game, String> resolver) {
+        return GameFilter.predicate("", ALL_REGIONS, ALL_REGIONS, ALL_SIZES,
+                ALL_SIZES, LT_1GB, ONE_TO_FIVE_GB, GT_5GB,
+                status, ALL_STATUSES, DOWNLOADED, QUEUED, FAILED, PAUSED,
+                NO_STATUS, resolver);
     }
 
     private static Game game(String title, String region, String contentId, String url, long size) {

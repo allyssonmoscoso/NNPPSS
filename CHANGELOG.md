@@ -2,6 +2,14 @@
 
 All notable changes to NNPPSS are documented here.
 
+## [Unreleased]
+
+### Added
+
+- Catalogue filter by status: downloaded, queued, failed, paused and “no
+  status”.
+- Clearer end-of-session notification when one or more downloads failed.
+
 ## [2.0.3] — 2026-11-21
 
 ### Fixed

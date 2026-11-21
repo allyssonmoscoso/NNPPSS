@@ -98,6 +98,7 @@ public class MainController {
 
     @FXML private ComboBox<String> comboRegion;
     @FXML private ComboBox<String> comboSize;
+    @FXML private ComboBox<String> comboStatus;
     @FXML private TextField txtSearch;
     @FXML private Button btnRefresh;
     @FXML private Button btnSettings;
@@ -203,7 +204,7 @@ public class MainController {
         this.downloadQueue.addListener((javafx.collections.ListChangeListener<Game>) change -> {
             updateQueueButton();
             if (tableGames != null) {
-                tableGames.refresh();
+                updateFilter();
             }
             Game selected = tableGames.getSelectionModel().getSelectedItem();
             updateDetailStatus(selected);
@@ -388,6 +389,15 @@ public class MainController {
                 I18n.get("filter.size.gt5"));
         comboSize.getSelectionModel().selectFirst();
 
+        comboStatus.getItems().addAll(
+                I18n.get("filter.status.all"),
+                I18n.get("filter.status.downloaded"),
+                I18n.get("filter.status.queued"),
+                I18n.get("filter.status.failed"),
+                I18n.get("filter.status.paused"),
+                I18n.get("filter.status.none"));
+        comboStatus.getSelectionModel().selectFirst();
+
         if (btnDownloadNow != null) {
             btnDownloadNow.setMaxWidth(Double.MAX_VALUE);
         }
@@ -503,6 +513,7 @@ public class MainController {
         txtSearch.textProperty().addListener((observable, oldValue, newValue) -> scheduleFilter());
         comboRegion.valueProperty().addListener((obs, oldVal, newVal) -> scheduleFilter());
         comboSize.valueProperty().addListener((obs, oldVal, newVal) -> scheduleFilter());
+        comboStatus.valueProperty().addListener((obs, oldVal, newVal) -> scheduleFilter());
     }
 
     private void scheduleFilter() {
@@ -520,7 +531,15 @@ public class MainController {
                 I18n.get("filter.size.all"),
                 I18n.get("filter.size.lt1"),
                 I18n.get("filter.size.1to5"),
-                I18n.get("filter.size.gt5")));
+                I18n.get("filter.size.gt5"),
+                comboStatus.getValue(),
+                I18n.get("filter.status.all"),
+                I18n.get("filter.status.downloaded"),
+                I18n.get("filter.status.queued"),
+                I18n.get("filter.status.failed"),
+                I18n.get("filter.status.paused"),
+                I18n.get("filter.status.none"),
+                this::rowStatus));
 
         if (resultCountLabel != null) {
             resultCountLabel.setText(I18n.getCount(
@@ -617,6 +636,7 @@ public class MainController {
         txtSearch.clear();
         comboRegion.getSelectionModel().selectFirst();
         comboSize.getSelectionModel().selectFirst();
+        comboStatus.getSelectionModel().selectFirst();
         updateFilter();
         txtSearch.requestFocus();
     }
@@ -1501,7 +1521,7 @@ public class MainController {
             addRetriedGames(retryTask.getValue());
             statusLabel.setText(I18n.get("status.ready"));
             refreshHistoryCache();
-            tableGames.refresh();
+            updateFilter();
             updateRetryButton();
         });
 
@@ -1996,7 +2016,7 @@ public class MainController {
                 globalProgress.gameCompleted();
                 globalProgress.updateProgress(downloadCoordinator.getTotalDownloaded());
                 refreshHistoryCache();
-                tableGames.refresh();
+                updateFilter();
                 updateRetryButton();
                 updatePauseButton();
                 notificationPane.showNotification(
@@ -2013,7 +2033,7 @@ public class MainController {
                     item.setFailed(error == null ? null : error.getMessage());
                 }
                 refreshHistoryCache();
-                tableGames.refresh();
+                updateFilter();
                 updateRetryButton();
                 updatePauseButton();
                 notificationPane.showNotification(
@@ -2054,8 +2074,15 @@ public class MainController {
                 btnResumePause.setDisable(true);
                 updatePauseButton();
                 updateRetryButton();
-                notificationPane.showNotification(I18n.get("notify.allcompleted"),
-                        NotificationPane.NotificationType.SUCCESS);
+                int failed = downloadCoordinator.getFailedThisSessionCount();
+                if (failed > 0) {
+                    notificationPane.showNotification(
+                            I18n.get("notify.allcompleted.withfailures", failed),
+                            NotificationPane.NotificationType.WARNING);
+                } else {
+                    notificationPane.showNotification(I18n.get("notify.allcompleted"),
+                            NotificationPane.NotificationType.SUCCESS);
+                }
             });
         }
     }

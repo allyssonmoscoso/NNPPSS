@@ -51,6 +51,8 @@
                     <ComboBox fx:id="comboRegion" styleClass="filter-combo" prefWidth="130.0"/>
                     <Label text="%label.filesize" styleClass="filter-label"/>
                     <ComboBox fx:id="comboSize" styleClass="filter-combo" prefWidth="130.0"/>
+                    <Label text="%label.status" styleClass="filter-label"/>
+                    <ComboBox fx:id="comboStatus" styleClass="filter-combo" prefWidth="135.0"/>
 
                     <Region HBox.hgrow="ALWAYS" />
 

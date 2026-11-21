@@ -20,6 +20,7 @@ extraction and automatic cleanup.
   version shown in Settings and a link to the release page.
 - Status tags in the catalogue for **Downloaded**, **Queued**, **Paused** and
   **Failed** games, instead of colouring entire rows.
+- Status filter for downloaded, queued, failed, paused and unmarked games.
 - pkg2zip auto-detection (configured, bundled or `PATH`) with folder picker.
 - English/Spanish UI, light/dark theme.
 - Per-user data directory, so the app works when installed read-only.

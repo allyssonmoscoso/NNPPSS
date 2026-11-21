@@ -142,6 +142,19 @@ class DownloadCoordinatorTest {
     }
 
     @Test
+    void tracksFailedDownloadsForTheSession() throws Exception {
+        Game game = game("Failure", "https://example.test/failure.pkg", 1024);
+        assertTrue(coordinator.start(List.of(game), Set.of()));
+
+        DownloadService.DownloadListener clientListener = downloadClient.await(game.getPkgUrl());
+        clientListener.onError(new IOException("boom"));
+
+        assertEquals(DownloadTaskState.Status.FAILED,
+                coordinator.getTask(game.getPkgUrl()).getStatus());
+        assertEquals(1, coordinator.getFailedThisSessionCount());
+    }
+
+    @Test
     void skipsExtractionWhenSessionRequestsIt() throws Exception {
         Game game = game("NoExtract", "https://example.test/noextract.pkg", 1024);
         assertTrue(coordinator.start(List.of(game), Set.of(), false));

@@ -87,6 +87,7 @@ public class DownloadCoordinator {
     private volatile boolean downloading;
     private volatile boolean extractionEnabled = true;
     private volatile boolean shuttingDown;
+    private volatile int failedThisSession;
     private ExecutorService executor;
     private volatile long lastStateSaveMs = System.currentTimeMillis();
     private volatile String lastStartError = "";
@@ -186,6 +187,7 @@ public class DownloadCoordinator {
 
             downloading = true;
             extractionEnabled = extract;
+            failedThisSession = 0;
             lastStartError = "";
             tasks.clear();
 
@@ -286,10 +288,18 @@ public class DownloadCoordinator {
             return;
         }
         task.markFailed();
+        synchronized (taskLock) {
+            failedThisSession++;
+        }
         addHistory(task, "failed");
         listener.onTaskFailed(task, error);
         saveState();
         checkAllFinished();
+    }
+
+    /** Number of downloads that failed during the current session. */
+    public int getFailedThisSessionCount() {
+        return failedThisSession;
     }
 
     private void handleCancelled(DownloadTaskState task) {
