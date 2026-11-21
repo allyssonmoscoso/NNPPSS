@@ -161,6 +161,7 @@ definitive JavaFX edition.
 - [Plan de mejora UI/UX](docs/PLAN_UX_UI.md)
 - [Plan de versionado y actualizaciones](docs/PLAN_VERSIONADO_ACTUALIZACIONES.md)
 - [Plan de peso en descargas pendientes](docs/PLAN_PESO_DESCARGAS.md)
+- [Plan de soporte SMB montado](docs/PLAN_SMB.md)
 
 ## Versioning and releases
 
