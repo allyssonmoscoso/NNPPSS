@@ -1,6 +1,6 @@
 # Plan · Versionado y actualizaciones automáticas
 
-**Estado:** implementado; draft 2.0.0 generado, pendiente de publicación manual · **Versión de desarrollo:** 2.0.0-SNAPSHOT · **Última release publicada:** 1.1.0 · **Fecha:** 2026-11-20.
+**Estado:** 2.0.0 publicado; 2.0.1 en draft, pendiente de publicación manual · **Versión de desarrollo:** 2.0.0-SNAPSHOT · **Última release publicada:** 2.0.0 · **Fecha:** 2026-11-21.
 
 ## 1. Objetivo
 
@@ -322,14 +322,15 @@ Implementado:
 
 Pendiente para cerrar el objetivo:
 
-- Publicar el draft `v2.0.0` tras revisión manual.
-- Probar MSI/DMG/DEB en máquinas limpias (los assets se generaron correctamente).
-- Firma y canal beta quedan fuera de 2.0.0 por decisión.
+- Publicar el draft `v2.0.1` de la corrección de auto-cleanup.
+- Probar MSI/DMG/DEB en máquinas limpias (los assets de 2.0.0 y 2.0.1 se generaron correctamente).
+- Firma y canal beta quedan fuera de 2.0.x por decisión.
 
 ## 15. Validación
 
-- CI de rama: run [44800940009](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44800940009) — verde en Ubuntu, Windows y macOS (Linux necesitó un rerun por un fallo transitorio de Maven Central).
-- Release `v2.0.0`: run [44802330265](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44802330265) — `validate`, los tres builds y `release` correctos.
-- Draft release: `v2.0.0`, con MSI, DMG, DEB, ZIP portables, `SHA256SUMS.txt` y `update-manifest.json`.
+- CI de rama: runs [44800940009](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44800940009) y [44849526121](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44849526121) — verdes en Ubuntu, Windows y macOS.
+- Release `v2.0.0`: run [44802330265](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44802330265) — publicado.
+- Release `v2.0.1` (fix de auto-cleanup): run [44849757099](https://github.com/allyssonmoscoso/NNPPSS/actions/runs/44849757099) — draft con MSI, DMG, DEB, ZIP portables, checksums y manifiesto.
+- Draft release: `v2.0.1`.
 - Act: job `validate` y build Linux (`deb` + app-image + upload) correctos.
-- 53 tests locales verdes.
+- 53 tests locales verdes, incluidos dos tests de auto-cleanup.
