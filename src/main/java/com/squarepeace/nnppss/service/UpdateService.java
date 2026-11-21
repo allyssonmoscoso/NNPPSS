@@ -25,9 +25,12 @@ public class UpdateService {
     private final Gson gson = new Gson();
 
     public UpdateService() {
-        this(URI.create(MANIFEST_URL), HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(5))
-                .build());
+        this(URI.create(MANIFEST_URL));
+    }
+
+    /** Uses the production client with GitHub redirects enabled. */
+    UpdateService(URI manifestUri) {
+        this(manifestUri, defaultClient());
     }
 
     UpdateService(URI manifestUri, HttpClient client) {
@@ -35,11 +38,19 @@ public class UpdateService {
         this.client = client;
     }
 
+    private static HttpClient defaultClient() {
+        return HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5))
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build();
+    }
+
     public Optional<UpdateInfo> check(String currentVersion)
             throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(manifestUri)
                 .timeout(Duration.ofSeconds(5))
                 .header("Accept", "application/json")
+                .header("User-Agent", "NNPPSS")
                 .GET()
                 .build();
         HttpResponse<String> response = client.send(request,

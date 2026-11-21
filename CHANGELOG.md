@@ -2,6 +2,14 @@
 
 All notable changes to NNPPSS are documented here.
 
+## [2.0.3] — 2026-11-21
+
+### Fixed
+
+- The update checker now follows GitHub Releases redirects. Versions 2.0.1 and
+  2.0.2 incorrectly reported “up to date” because the manifest request received
+  a 302 and was treated as a failed check.
+
 ## [2.0.2] — 2026-11-21
 
 ### Changed

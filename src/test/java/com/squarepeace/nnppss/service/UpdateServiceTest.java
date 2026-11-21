@@ -54,6 +54,37 @@ class UpdateServiceTest {
     }
 
     @Test
+    void followsGitHubStyleRedirects() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/latest", exchange -> {
+            exchange.getResponseHeaders().add("Location", "/update-manifest.json");
+            exchange.sendResponseHeaders(302, -1);
+            exchange.close();
+        });
+        server.createContext("/update-manifest.json", exchange -> {
+            byte[] body = ("{\"version\":\"2.0.2\","
+                    + "\"notesUrl\":\"https://example.test/release\"}")
+                    .getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        server.start();
+        try {
+            URI uri = URI.create("http://127.0.0.1:"
+                    + server.getAddress().getPort() + "/latest");
+            UpdateService service = new UpdateService(uri);
+
+            Optional<UpdateService.UpdateInfo> update = service.check("2.0.1");
+
+            assertTrue(update.isPresent());
+            assertEquals("2.0.2", update.get().version());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
     void treatsMissingManifestAsNoUpdate() throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
         server.createContext("/update-manifest.json", exchange -> {
